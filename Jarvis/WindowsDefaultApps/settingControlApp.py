@@ -1,11 +1,37 @@
 import os
 import time
+import pickle
 import keyboard
 import threading
 import subprocess
-from typing import List, Dict, Set, Tuple, Optional
+
+from dill import settings
 from pywinauto import Desktop, Application, mouse
+from typing import List, Dict, Set, Tuple, Optional
 from pywinauto.findwindows import ElementNotFoundError
+
+sign, present, buttons, window_buttons = None, None, None, None
+
+
+def inputFromOtherDevices():
+    # Define the IP address and port to listen on (use your receiving laptop's IP address)
+    HOST = '0.0.0.0'  # Allows connections from any network interface
+    PORT = 12345  # Choose any free port
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
+        server_socket.bind((HOST, PORT))
+        server_socket.listen()
+        print(f'Server listening on {HOST}:{PORT}...')
+        conn, addr = server_socket.accept()
+        with conn:
+            print(f'Connected by {addr}')
+            while True:
+                data = conn.recv(1024)
+                if data == 'exit()':
+                    break
+                print("input =", data.decode())
+                thread = threading.Thread(target=passing_user_input(data.decode(), "socket -> "))
+                thread.start()
 
 
 class WindowsSettingsAutomation:
@@ -33,27 +59,27 @@ class WindowsSettingsAutomation:
             if control_type in ["Button", "Hyperlink", "MenuItem", "ListItem"]:
                 WindowsSettingsAutomation._move_mouse_to_button(control_)
                 control_.invoke()
-                rect = control_.rectangle()
+                # rect = control_.rectangle()
                 # print(f"Triggered action on: {control_name} at position: {rect}")
                 return True
             elif control_type in ["CheckBox", "RadioButton"]:
                 WindowsSettingsAutomation._move_mouse_to_button(control_)
                 control_.set_check()
-                rect = control_.rectangle()
+                # rect = control_.rectangle()
                 # print(f"Triggered action on: {control_name} at position: {rect}")
                 return True
             elif control_type == "Edit":
                 text = input(f"Enter text to input into {control_name} >>> ")
                 WindowsSettingsAutomation._move_mouse_to_button(control_)
                 control_.set_text(text)
-                rect = control_.rectangle()
+                # rect = control_.rectangle()
                 # print(f"Triggered action on: {control_name} at position: {rect}")
                 return True
             elif control_type == "Slider":
                 value = input(f"Enter value to set the slider {control_name} >>> ")
                 WindowsSettingsAutomation._move_mouse_to_button(control_)
                 control_.set_value(int(value))
-                rect = control_.rectangle()
+                # rect = control_.rectangle()
                 # print(f"Set slider value on: {control_name} at position: {rect}")
                 return True
         except Exception as e:
@@ -71,31 +97,31 @@ class WindowsSettingsAutomation:
                                 "MenuItem"] and _input.lower() == control_name.lower():
                 WindowsSettingsAutomation._move_mouse_to_button(control_)
                 control_.invoke()
-                rect = control_.rectangle()
+                # rect = control_.rectangle()
                 # print(f"Triggered action on: {control_name} at position: {rect}")
                 return True
             elif control_type in ["CheckBox", "RadioButton"] and _input.lower() == control_name.lower():
                 WindowsSettingsAutomation._move_mouse_to_button(control_)
                 control_.set_check(input("Enter true or false for 1") == "1")
-                rect = control_.rectangle()
+                # rect = control_.rectangle()
                 # print(f"Triggered action on: {control_name} at position: {rect}")
                 return True
             elif control_type == "Edit":
                 text = input(f"Enter text to input into {control_name} >>> ")
                 WindowsSettingsAutomation._move_mouse_to_button(control_)
                 control_.set_text(text)
-                rect = control_.rectangle()
+                # rect = control_.rectangle()
                 # print(f"Triggered action on: {control_name} at position: {rect}")
                 return True
             elif control_type == "Slider":
                 value = input(f"Enter value to set the slider {control_name} >>> ")
                 WindowsSettingsAutomation._move_mouse_to_button(control_)
                 control_.set_value(int(value))
-                rect = control_.rectangle()
+                # rect = control_.rectangle()
                 # print(f"Set slider value on: {control_name} at position: {rect}")
                 return True
         except Exception as e:
-            # print(f"Unable to perform action on {control_name} ({control_type}): {e}")
+            print(f"Unable to perform action on {control_name} ({control_type}): {e}")
             return False
 
     @staticmethod
@@ -198,7 +224,6 @@ class WindowsSettingsAutomation:
 
 
 class SystemSettings:
-    sign, present, buttons, window_buttons = None, None, None, None
 
     @staticmethod
     def open_system_settings(setting: str) -> None:
@@ -306,7 +331,7 @@ class SystemSettings:
                 # print(f"Unsupported network setting: {setting}")
                 return False
         except Exception as e:
-            # print(f"Failed to open network settings. Error: {e}")
+            print(f"Failed to open network settings. Error: {e}")
             return False
 
     @staticmethod
@@ -337,7 +362,7 @@ class SystemSettings:
                 # print(f"Unsupported personalization setting: {setting}")
                 return False
         except Exception as e:
-            # print(f"Failed to open personalization settings. Error: {e}")
+            print(f"Failed to open personalization settings. Error: {e}")
             return False
 
     @staticmethod
@@ -650,13 +675,12 @@ class SystemSettings:
 
     @staticmethod
     def open_phone_settings() -> None:
-        # print('Now opened ===>>')
         try:
             subprocess.run(["start", "ms-settings:phone"], shell=True)
             # print("Phone Settings opened.")
             return True
         except Exception as e:
-            # print(f"Failed to open Phone Settings. Error: {e}")
+            print(f"Failed to open Phone Settings. Error: {e}")
             return False
 
     @staticmethod
@@ -768,7 +792,6 @@ class SystemSettings:
         for element_info, depth in window_buttons:
             window_buttons_.append(element_info)
 
-        # Print the special output
         if buttons:
             button_names = [i[1] for i in buttons]
             if len(button_names) > 1:
@@ -792,7 +815,7 @@ class SystemSettings:
     @staticmethod
     def MainSettings(multiVals: Optional[List[str]] = None) -> bool:
         if multiVals is None:
-            multiVals = [""]
+            print('MainSettings input is Null')
             return False
         setting = {"home": "open_system_settings",
                    "system": "open_system_settings",
@@ -830,7 +853,7 @@ class SystemSettings:
                 function = function1
                 setting_ = multiVals[-1]
         except Exception as e:
-            # print("error:", e)
+            print("error:", e)
             pass
         if function is not None:
             # print("function ===>>", function)
@@ -871,8 +894,8 @@ class SystemSettings:
                     return SystemSettings.open_windows_update_settings(setting_)
                     # open_windows_update_settings(" ".join(" ".join(multiVals[1:])))
             else:
-                print("Dynamic access", multiVals[-1])
-                # activating Dynamic access
+                print("Activating Dynamic Access", multiVals[-1])
+                # Activating Dynamic Access
                 WindowsSettingsAutomation.open_windows_settings()
                 return False
         else:
@@ -880,41 +903,38 @@ class SystemSettings:
 
     @staticmethod
     def invoke_button_action(windowsButtons: str, userVal: str) -> None:
+        global sign, present, buttons, window_buttons
         if userVal in ['back']:
             for button_properties in windowsButtons:
                 if button_properties[0] == "Button" and button_properties[1] == 'Back':
                     button_properties[2].invoke()
-                    SystemSettings.update()
                     return True
         elif userVal in ['open navigation', 'navigation']:
             for button_properties in windowsButtons:
                 if button_properties[0] == "Button" and button_properties[1] == 'Open Navigation':
                     button_properties[2].invoke()
-                    SystemSettings.update()
                     return True
         elif userVal in ['minimize Settings', 'minimize']:
             for button_properties in windowsButtons:
                 if button_properties[0] == "Button" and button_properties[1] == 'Minimize Settings':
                     button_properties[2].invoke()
-                    SystemSettings.sign, SystemSettings.present, SystemSettings.buttons, SystemSettings.window_buttons = None, None, None, None
+                    sign, present, buttons, window_buttons = None, None, None, None
                     return True
         elif userVal in ['maximize Settings', 'maximize']:
             for button_properties in windowsButtons:
                 if button_properties[0] == "Button" and button_properties[1] == 'Maximize Settings':
                     button_properties[2].invoke()
-                    SystemSettings.update()
                     return True
         elif userVal in ['close Settings', 'close setting', 'close settings', 'close']:
             for button_properties in windowsButtons:
                 if button_properties[0] == "Button" and button_properties[1] == 'Close Settings':
                     button_properties[2].invoke()
-                    SystemSettings.sign, SystemSettings.present, SystemSettings.buttons, SystemSettings.window_buttons = None, None, None, None
+                    sign, present, buttons, window_buttons = None, None, None, None
                     return True
         else:
             for button_properties in windowsButtons:
                 if button_properties[0] == "Button" and button_properties[1].lower() == userVal.lower():
                     button_properties[2].invoke()
-                    SystemSettings.update()
                     return True
         return False
 
@@ -922,21 +942,20 @@ class SystemSettings:
     def open_settings_windows() -> None:
         subprocess.run('start ms-settings:', shell=True)
         time.sleep(1)
+        # thread = threading.Thread(target=SystemSettings.update)
+        # thread.start()
         SystemSettings.update()
         return True
 
     @staticmethod
-    def updateWithThread() -> None:
-        SystemSettings.sign, SystemSettings.present, SystemSettings.buttons, SystemSettings.window_buttons = get_present_location_in_setting()
+    def update() -> bool:
+        global sign, present, buttons, window_buttons
+        sign, present, buttons, window_buttons = (
+            SystemSettings.get_present_location_in_setting())
         for i in buttons:
             window_buttons.append(i)
-        return True
-
-    @staticmethod
-    def update() -> None:
-        SystemSettings.sign, SystemSettings.present, SystemSettings.buttons, SystemSettings.window_buttons = SystemSettings.get_present_location_in_setting()
-        for i in SystemSettings.buttons:
-            SystemSettings.window_buttons.append(i)
+        # full = [sign, present, buttons, window_buttons]
+        # save_class_files(full)
         return True
 
     @staticmethod
@@ -948,14 +967,14 @@ class SystemSettings:
                 if user in ["", "0", 'exit', 'exit()']:
                     exit()
                 else:
-                    MultVal = custom_split(SystemSettings.sign + " => " + user)
+                    MultVal = custom_split(sign + " => " + user)
                     # print("user full input ===>>>", MultVal)
-                    # print('Present ===>>>', SystemSettings.sign)
+                    # print('Present ===>>>', sign)
                     if not SystemSettings.invoke_button_action(window_buttons, user.lower()):
                         SystemSettings.MainSettings(MultVal[1:])
-                        thread = threading.Thread(target=SystemSettings.update)
-                        thread.start()
-                        # update()
+                        # thread = threading.Thread(target=SystemSettings.update)
+                        # thread.start()
+                        SystemSettings.update()
         else:
             # print('-' * 100)
             _users = user.split(" ")
@@ -965,27 +984,31 @@ class SystemSettings:
                     user = ' '.join(_users)
                 else:
                     user = _users[0]
-            MultVal = SystemSettings.custom_split(SystemSettings.sign + " => " + user)
-            if not SystemSettings.invoke_button_action(SystemSettings.window_buttons, user.lower()):
+            MultVal = SystemSettings.custom_split(sign + " => " + user)
+            val = False
+            if not SystemSettings.invoke_button_action(window_buttons, user.lower()):
                 val = SystemSettings.MainSettings(MultVal[1:])
-                SystemSettings.update()
-                return val
-            return False
+            # thread = threading.Thread(target=SystemSettings.update)
+            # thread.start()
+            SystemSettings.update()
+            return val
 
 
-def SettingControlAccess(operation: str = '', addr: str = '') -> None:
+def SettingControlAccess(operation: str = '', addr: str = '') -> bool:
     # print('operation =', operation, '  |  sign', sign, '  |  present', present)
     if operation.lower() in ["open setting", "open settings"]:
-        SystemSettings.open_settings_windows()
+        return SystemSettings.open_settings_windows()
     else:
-        if SystemSettings.sign is None:
+        if sign is None:
             SystemSettings.open_settings_windows()
-        SystemSettings.infinity(user=operation)
-    pass
+        return SystemSettings.infinity(user=operation)
+    # save_class_files(SystemSettings)
+    # return True
 
 
 if __name__ == '__main__':
     thread = threading.Thread(target=SystemSettings.update)
     thread.start()
-    infinity()
+    SystemSettings.update()
+    # infinity()
     pass
