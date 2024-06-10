@@ -1,0 +1,59 @@
+Timestamp: 2023-12-04 22:54:08
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-04 22:54:11
+Newly Opened Apps:
+- notepad.exe
+- SearchProtocolHost.exe
+- SearchFilterHost.exe
+- smartscreen.exe
+
+Timestamp: 2023-12-04 22:55:03
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-04 22:55:31
+Newly Opened Apps:
+- 4kvideodownloaderplus.exe
+
+Timestamp: 2023-12-04 22:55:35
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-04 22:55:36
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-04 22:55:39
+Newly Opened Apps:
+- crashpad_handler.exe
+
+Timestamp: 2023-12-04 22:55:48
+Newly Opened Apps:
+- QtWebEngineProcess.exe
+
+Timestamp: 2023-12-04 22:56:00
+Newly Opened Apps:
+- brave.exe
+
+Timestamp: 2023-12-04 22:56:05
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-04 22:56:14
+Newly Opened Apps:
+- audiodg.exe
+
+Timestamp: 2023-12-04 22:56:34
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-04 22:56:43
+Newly Opened Apps:
+- WmiPrvSE.exe
+
+Timestamp: 2023-12-04 22:57:00
+Newly Opened Apps:
+- SearchFilterHost.exe
+

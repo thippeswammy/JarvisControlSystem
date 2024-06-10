@@ -1,0 +1,1480 @@
+Timestamp: 2023-12-16 03:33:41
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-16 03:34:00
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 03:35:10
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 03:35:32
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-16 03:36:48
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 03:36:50
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-16 03:38:13
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-16 03:38:56
+Newly Opened Apps:
+- SystemSettings.exe
+
+Timestamp: 2023-12-16 03:38:59
+Newly Opened Apps:
+- FileCoAuth.exe
+- MoUsoCoreWorker.exe
+
+Timestamp: 2023-12-16 03:39:23
+Newly Opened Apps:
+- SystemSettings.exe
+
+Timestamp: 2023-12-16 03:39:24
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 03:52:49
+Newly Opened Apps:
+- FileCoAuth.exe
+- smartscreen.exe
+
+Timestamp: 2023-12-16 03:52:50
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-16 03:54:19
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-16 13:41:32
+Newly Opened Apps:
+- backgroundTaskHost.exe
+- MicrosoftEdgeUpdate.exe
+
+Timestamp: 2023-12-16 13:43:49
+Newly Opened Apps:
+- backgroundTaskHost.exe
+- HxTsr.exe
+
+Timestamp: 2023-12-16 13:44:47
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 13:44:48
+Newly Opened Apps:
+- smartscreen.exe
+- notepad.exe
+
+Timestamp: 2023-12-16 13:46:32
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-16 13:46:45
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 13:47:07
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-16 13:51:16
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-16 13:52:52
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 13:52:55
+Newly Opened Apps:
+- smartscreen.exe
+
+Timestamp: 2023-12-16 13:53:16
+Newly Opened Apps:
+- identity_helper.exe
+
+Timestamp: 2023-12-16 13:54:02
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-16 13:56:46
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 13:58:01
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 13:58:02
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-16 14:00:04
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-16 14:01:26
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-16 14:02:21
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-16 21:18:23
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 21:19:16
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-16 21:20:01
+Newly Opened Apps:
+- HxTsr.exe
+
+Timestamp: 2023-12-16 21:20:12
+Newly Opened Apps:
+- WmiPrvSE.exe
+
+Timestamp: 2023-12-16 21:20:28
+Newly Opened Apps:
+- consent.exe
+- smartscreen.exe
+
+Timestamp: 2023-12-16 21:20:29
+Newly Opened Apps:
+- audiodg.exe
+
+Timestamp: 2023-12-16 21:20:31
+Newly Opened Apps:
+- cmd.exe
+
+Timestamp: 2023-12-16 21:20:33
+Newly Opened Apps:
+- pip.exe
+
+Timestamp: 2023-12-16 21:24:00
+Newly Opened Apps:
+- backgroundTaskHost.exe
+- HxTsr.exe
+
+Timestamp: 2023-12-16 21:26:27
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 21:41:43
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 21:41:44
+Newly Opened Apps:
+- backgroundTaskHost.exe
+- smartscreen.exe
+
+Timestamp: 2023-12-16 21:41:45
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-16 21:43:44
+Newly Opened Apps:
+- OneDriveStandaloneUpdater.exe
+
+Timestamp: 2023-12-16 21:44:37
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-16 21:46:27
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 21:46:36
+Newly Opened Apps:
+- SystemSettings.exe
+
+Timestamp: 2023-12-16 21:46:38
+Newly Opened Apps:
+- FileCoAuth.exe
+- MoUsoCoreWorker.exe
+
+Timestamp: 2023-12-16 21:46:57
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 21:48:37
+Newly Opened Apps:
+- WhatsApp.exe
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-16 21:50:01
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-16 21:51:23
+Newly Opened Apps:
+- SystemSettings.exe
+- FileCoAuth.exe
+- MoUsoCoreWorker.exe
+
+Timestamp: 2023-12-16 21:51:41
+Newly Opened Apps:
+- audiodg.exe
+
+Timestamp: 2023-12-16 21:56:27
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 21:57:08
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 22:00:37
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-16 22:01:21
+Newly Opened Apps:
+- smartscreen.exe
+
+Timestamp: 2023-12-16 22:01:22
+Newly Opened Apps:
+- 4kvideodownloaderplus.exe
+
+Timestamp: 2023-12-16 22:01:27
+Newly Opened Apps:
+- crashpad_handler.exe
+
+Timestamp: 2023-12-16 22:01:38
+Newly Opened Apps:
+- QtWebEngineProcess.exe
+
+Timestamp: 2023-12-16 22:01:59
+Newly Opened Apps:
+- audiodg.exe
+
+Timestamp: 2023-12-16 22:04:36
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-16 22:06:23
+Newly Opened Apps:
+- CalculatorApp.exe
+
+Timestamp: 2023-12-16 22:06:27
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 22:06:30
+Newly Opened Apps:
+- TiWorker.exe
+- backgroundTaskHost.exe
+- TrustedInstaller.exe
+
+Timestamp: 2023-12-16 22:09:46
+Newly Opened Apps:
+- MicrosoftEdgeUpdate.exe
+
+Timestamp: 2023-12-16 22:09:50
+Newly Opened Apps:
+- TiWorker.exe
+- TrustedInstaller.exe
+
+Timestamp: 2023-12-16 22:10:53
+Newly Opened Apps:
+- MoUsoCoreWorker.exe
+- cleanmgr.exe
+
+Timestamp: 2023-12-16 22:10:55
+Newly Opened Apps:
+- CompatTelRunner.exe
+- MpCmdRun.exe
+- WmiPrvSE.exe
+
+Timestamp: 2023-12-16 22:11:04
+Newly Opened Apps:
+- Defrag.exe
+
+Timestamp: 2023-12-16 22:11:07
+Newly Opened Apps:
+- sppsvc.exe
+
+Timestamp: 2023-12-16 22:11:20
+Newly Opened Apps:
+- DismHost.exe
+
+Timestamp: 2023-12-16 22:12:08
+Newly Opened Apps:
+- BraveUpdate.exe
+
+Timestamp: 2023-12-16 22:16:27
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 22:16:36
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-16 22:20:01
+Newly Opened Apps:
+- backgroundTaskHost.exe
+- HxTsr.exe
+
+Timestamp: 2023-12-16 22:21:52
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-16 22:22:08
+Newly Opened Apps:
+- WmiPrvSE.exe
+
+Timestamp: 2023-12-16 22:22:18
+Newly Opened Apps:
+- wermgr.exe
+- sppsvc.exe
+
+Timestamp: 2023-12-16 22:22:22
+Newly Opened Apps:
+- SppExtComObj.Exe
+
+Timestamp: 2023-12-16 22:25:32
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 22:25:33
+Newly Opened Apps:
+- notepad.exe
+- smartscreen.exe
+
+Timestamp: 2023-12-16 22:26:27
+Newly Opened Apps:
+- FileCoAuth.exe
+- notepad.exe
+
+Timestamp: 2023-12-16 22:28:21
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-16 22:28:43
+Newly Opened Apps:
+- sendctrlc.x64.B37C5E935F3DA60B2940592241F826DA.exe
+
+Timestamp: 2023-12-16 22:28:54
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-16 22:30:13
+Newly Opened Apps:
+- GoogleUpdate.exe
+
+Timestamp: 2023-12-16 22:33:11
+Newly Opened Apps:
+- MoUsoCoreWorker.exe
+- cleanmgr.exe
+- TrustedInstaller.exe
+- TiWorker.exe
+
+Timestamp: 2023-12-16 22:33:12
+Newly Opened Apps:
+- MpCmdRun.exe
+
+Timestamp: 2023-12-16 22:33:17
+Newly Opened Apps:
+- Defrag.exe
+
+Timestamp: 2023-12-16 22:33:28
+Newly Opened Apps:
+- DismHost.exe
+
+Timestamp: 2023-12-16 22:34:13
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-16 22:34:36
+Newly Opened Apps:
+- WmiPrvSE.exe
+
+Timestamp: 2023-12-16 22:34:44
+Newly Opened Apps:
+- sppsvc.exe
+
+Timestamp: 2023-12-16 22:35:18
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 22:35:20
+Newly Opened Apps:
+- smartscreen.exe
+
+Timestamp: 2023-12-16 22:35:21
+Newly Opened Apps:
+- vlc.exe
+
+Timestamp: 2023-12-16 22:36:27
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 22:36:44
+Newly Opened Apps:
+- audiodg.exe
+
+Timestamp: 2023-12-16 22:36:45
+Newly Opened Apps:
+- WmiPrvSE.exe
+
+Timestamp: 2023-12-16 22:37:20
+Newly Opened Apps:
+- sppsvc.exe
+
+Timestamp: 2023-12-16 22:37:32
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-16 22:37:51
+Newly Opened Apps:
+- SearchFilterHost.exe
+- SearchProtocolHost.exe
+
+Timestamp: 2023-12-16 22:40:59
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 22:41:32
+Newly Opened Apps:
+- MicrosoftEdgeUpdate.exe
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-16 22:44:00
+Newly Opened Apps:
+- smartscreen.exe
+
+Timestamp: 2023-12-16 22:44:12
+Newly Opened Apps:
+- identity_helper.exe
+
+Timestamp: 2023-12-16 22:44:29
+Newly Opened Apps:
+- PhotosApp.exe
+
+Timestamp: 2023-12-16 22:44:33
+Newly Opened Apps:
+- PhotosService.exe
+
+Timestamp: 2023-12-16 22:44:34
+Newly Opened Apps:
+- SearchFilterHost.exe
+- SearchProtocolHost.exe
+
+Timestamp: 2023-12-16 22:44:44
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 22:44:54
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 22:46:27
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 22:49:07
+Newly Opened Apps:
+- cleanmgr.exe
+- MoUsoCoreWorker.exe
+
+Timestamp: 2023-12-16 22:49:07
+Newly Opened Apps:
+- MpCmdRun.exe
+
+Timestamp: 2023-12-16 22:49:15
+Newly Opened Apps:
+- Defrag.exe
+
+Timestamp: 2023-12-16 22:49:33
+Newly Opened Apps:
+- DismHost.exe
+
+Timestamp: 2023-12-16 22:49:46
+Newly Opened Apps:
+- TrustedInstaller.exe
+- TiWorker.exe
+
+Timestamp: 2023-12-16 22:50:01
+Newly Opened Apps:
+- WhatsApp.exe
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-16 22:51:43
+Newly Opened Apps:
+- SrTasks.exe
+
+Timestamp: 2023-12-16 22:51:44
+Newly Opened Apps:
+- VSSVC.exe
+
+Timestamp: 2023-12-16 22:52:32
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-16 22:55:25
+Newly Opened Apps:
+- audiodg.exe
+
+Timestamp: 2023-12-16 22:56:27
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 23:01:35
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 23:01:37
+Newly Opened Apps:
+- audiodg.exe
+
+Timestamp: 2023-12-16 23:01:56
+Newly Opened Apps:
+- smartscreen.exe
+- notepad++.exe
+
+Timestamp: 2023-12-16 23:01:58
+Newly Opened Apps:
+- SearchFilterHost.exe
+- SearchProtocolHost.exe
+
+Timestamp: 2023-12-16 23:05:02
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-16 23:06:27
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 23:09:46
+Newly Opened Apps:
+- MicrosoftEdgeUpdate.exe
+
+Timestamp: 2023-12-16 23:13:27
+Newly Opened Apps:
+- MoUsoCoreWorker.exe
+
+Timestamp: 2023-12-16 23:13:40
+Newly Opened Apps:
+- Defrag.exe
+
+Timestamp: 2023-12-16 23:14:32
+Newly Opened Apps:
+- WmiPrvSE.exe
+
+Timestamp: 2023-12-16 23:16:28
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 23:27:03
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 23:30:14
+Newly Opened Apps:
+- GoogleUpdate.exe
+
+Timestamp: 2023-12-16 23:31:54
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-16 23:32:03
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 23:35:02
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-16 23:36:27
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 23:37:11
+Newly Opened Apps:
+- MoUsoCoreWorker.exe
+
+Timestamp: 2023-12-16 23:37:12
+Newly Opened Apps:
+- sppsvc.exe
+
+Timestamp: 2023-12-16 23:37:16
+Newly Opened Apps:
+- Defrag.exe
+
+Timestamp: 2023-12-16 23:37:48
+Newly Opened Apps:
+- vlc.exe
+- smartscreen.exe
+
+Timestamp: 2023-12-16 23:37:59
+Newly Opened Apps:
+- audiodg.exe
+
+Timestamp: 2023-12-16 23:41:32
+Newly Opened Apps:
+- MicrosoftEdgeUpdate.exe
+
+Timestamp: 2023-12-16 23:46:27
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 23:48:03
+Newly Opened Apps:
+- MoUsoCoreWorker.exe
+
+Timestamp: 2023-12-16 23:50:01
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-16 23:55:06
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 23:56:27
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 23:59:19
+Newly Opened Apps:
+- MoUsoCoreWorker.exe
+
+Timestamp: 2023-12-17 00:05:43
+Newly Opened Apps:
+- MoUsoCoreWorker.exe
+
+Timestamp: 2023-12-17 00:06:27
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 00:09:54
+Newly Opened Apps:
+- WmiPrvSE.exe
+
+Timestamp: 2023-12-17 00:16:27
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 00:26:27
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 00:36:27
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 00:46:27
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 00:56:27
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 01:05:43
+Newly Opened Apps:
+- MoUsoCoreWorker.exe
+
+Timestamp: 2023-12-17 01:06:27
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 01:16:27
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 01:17:55
+Newly Opened Apps:
+- LogonUI.exe
+
+Timestamp: 2023-12-17 09:39:07
+Newly Opened Apps:
+- wsqmcons.exe
+
+Timestamp: 2023-12-17 09:39:28
+Newly Opened Apps:
+- BraveUpdate.exe
+- MicrosoftEdgeUpdate.exe
+- sppsvc.exe
+- FileCoAuth.exe
+- PLUGScheduler.exe
+- GoogleUpdate.exe
+
+Timestamp: 2023-12-17 09:39:48
+Newly Opened Apps:
+- SppExtComObj.Exe
+
+Timestamp: 2023-12-17 09:42:04
+Newly Opened Apps:
+- DeviceCensus.exe
+- wsqmcons.exe
+- wermgr.exe
+- GoogleUpdate.exe
+
+Timestamp: 2023-12-17 09:42:06
+Newly Opened Apps:
+- WmiPrvSE.exe
+
+Timestamp: 2023-12-17 09:42:07
+Newly Opened Apps:
+- WaaSMedicAgent.exe
+
+Timestamp: 2023-12-17 09:42:20
+Newly Opened Apps:
+- sppsvc.exe
+
+Timestamp: 2023-12-17 09:42:44
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 09:42:45
+Newly Opened Apps:
+- smartscreen.exe
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-17 09:42:46
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-17 09:43:33
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-17 09:44:05
+Newly Opened Apps:
+- MoUsoCoreWorker.exe
+- sppsvc.exe
+
+Timestamp: 2023-12-17 09:46:34
+Newly Opened Apps:
+- audiodg.exe
+
+Timestamp: 2023-12-17 09:49:03
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 09:52:08
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 09:52:10
+Newly Opened Apps:
+- smartscreen.exe
+
+Timestamp: 2023-12-17 09:52:11
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-17 09:54:02
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-17 09:56:03
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-17 09:57:33
+Newly Opened Apps:
+- SystemSettings.exe
+
+Timestamp: 2023-12-17 09:57:35
+Newly Opened Apps:
+- FileCoAuth.exe
+- MoUsoCoreWorker.exe
+
+Timestamp: 2023-12-17 09:58:32
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 09:59:03
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 10:00:21
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-17 10:07:02
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-17 10:08:50
+Newly Opened Apps:
+- Unity Hub.exe
+
+Timestamp: 2023-12-17 10:08:59
+Newly Opened Apps:
+- Unity.Licensing.Client.exe
+
+Timestamp: 2023-12-17 10:09:03
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 10:09:36
+Newly Opened Apps:
+- VisualStudioInstallChecker.exe
+
+Timestamp: 2023-12-17 10:09:47
+Newly Opened Apps:
+- backgroundTaskHost.exe
+- MicrosoftEdgeUpdate.exe
+
+Timestamp: 2023-12-17 10:11:15
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 10:11:16
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-17 10:12:08
+Newly Opened Apps:
+- BraveUpdate.exe
+
+Timestamp: 2023-12-17 10:12:18
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-17 10:14:45
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-17 10:20:31
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 10:20:33
+Newly Opened Apps:
+- smartscreen.exe
+
+Timestamp: 2023-12-17 10:20:34
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-17 10:22:22
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-17 10:29:03
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 10:30:13
+Newly Opened Apps:
+- GoogleUpdate.exe
+
+Timestamp: 2023-12-17 10:30:44
+Newly Opened Apps:
+- SystemSettings.exe
+
+Timestamp: 2023-12-17 10:30:47
+Newly Opened Apps:
+- FileCoAuth.exe
+- MoUsoCoreWorker.exe
+
+Timestamp: 2023-12-17 10:30:48
+Newly Opened Apps:
+- smartscreen.exe
+
+Timestamp: 2023-12-17 10:31:02
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 10:31:03
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-17 10:32:22
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-17 10:33:32
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-17 10:39:03
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 10:39:29
+Newly Opened Apps:
+- BraveUpdate.exe
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-17 10:42:04
+Newly Opened Apps:
+- GoogleUpdate.exe
+
+Timestamp: 2023-12-17 10:42:23
+Newly Opened Apps:
+- MoUsoCoreWorker.exe
+
+Timestamp: 2023-12-17 10:42:32
+Newly Opened Apps:
+- Defrag.exe
+
+Timestamp: 2023-12-17 10:49:04
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 10:56:28
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-17 10:59:26
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 11:05:41
+Newly Opened Apps:
+- MusNotification.exe
+
+Timestamp: 2023-12-17 11:06:08
+Newly Opened Apps:
+- MoUsoCoreWorker.exe
+
+Timestamp: 2023-12-17 11:06:41
+Newly Opened Apps:
+- MusNotificationUx.exe
+
+Timestamp: 2023-12-17 11:09:08
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 11:09:46
+Newly Opened Apps:
+- MicrosoftEdgeUpdate.exe
+
+Timestamp: 2023-12-17 11:12:09
+Newly Opened Apps:
+- BraveUpdate.exe
+
+Timestamp: 2023-12-17 11:14:13
+Newly Opened Apps:
+- SystemSettings.exe
+
+Timestamp: 2023-12-17 11:14:14
+Newly Opened Apps:
+- MoUsoCoreWorker.exe
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 11:14:16
+Newly Opened Apps:
+- smartscreen.exe
+
+Timestamp: 2023-12-17 11:19:03
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 11:29:03
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 11:30:13
+Newly Opened Apps:
+- GoogleUpdate.exe
+
+Timestamp: 2023-12-17 11:37:29
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-17 11:39:03
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 11:39:28
+Newly Opened Apps:
+- BraveUpdate.exe
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-17 11:39:38
+Newly Opened Apps:
+- sppsvc.exe
+
+Timestamp: 2023-12-17 11:39:49
+Newly Opened Apps:
+- SppExtComObj.Exe
+
+Timestamp: 2023-12-17 11:41:31
+Newly Opened Apps:
+- MoUsoCoreWorker.exe
+
+Timestamp: 2023-12-17 11:41:32
+Newly Opened Apps:
+- MpCmdRun.exe
+
+Timestamp: 2023-12-17 11:42:04
+Newly Opened Apps:
+- GoogleUpdate.exe
+
+Timestamp: 2023-12-17 11:49:03
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 11:56:04
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-17 11:59:03
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 12:09:03
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 12:11:31
+Newly Opened Apps:
+- MicrosoftEdgeUpdate.exe
+
+Timestamp: 2023-12-17 12:12:08
+Newly Opened Apps:
+- BraveUpdate.exe
+
+Timestamp: 2023-12-17 12:19:03
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 12:29:03
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 12:30:13
+Newly Opened Apps:
+- GoogleUpdate.exe
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-17 12:36:08
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-17 12:39:03
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 12:39:28
+Newly Opened Apps:
+- BraveUpdate.exe
+
+Timestamp: 2023-12-17 12:41:30
+Newly Opened Apps:
+- MoUsoCoreWorker.exe
+
+Timestamp: 2023-12-17 12:42:05
+Newly Opened Apps:
+- GoogleUpdate.exe
+
+Timestamp: 2023-12-17 12:49:03
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 12:56:04
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-17 12:59:03
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 13:09:03
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 13:09:05
+Newly Opened Apps:
+- SearchProtocolHost.exe
+- SearchFilterHost.exe
+
+Timestamp: 2023-12-17 13:12:07
+Newly Opened Apps:
+- BraveUpdate.exe
+
+Timestamp: 2023-12-17 13:19:03
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 13:29:03
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 13:30:13
+Newly Opened Apps:
+- GoogleUpdate.exe
+
+Timestamp: 2023-12-17 13:39:03
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 13:39:20
+Newly Opened Apps:
+- sppsvc.exe
+
+Timestamp: 2023-12-17 13:39:28
+Newly Opened Apps:
+- BraveUpdate.exe
+
+Timestamp: 2023-12-17 13:39:50
+Newly Opened Apps:
+- SppExtComObj.Exe
+
+Timestamp: 2023-12-17 13:41:30
+Newly Opened Apps:
+- MoUsoCoreWorker.exe
+
+Timestamp: 2023-12-17 13:42:05
+Newly Opened Apps:
+- GoogleUpdate.exe
+
+Timestamp: 2023-12-17 13:49:03
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 13:50:32
+Newly Opened Apps:
+- audiodg.exe
+
+Timestamp: 2023-12-17 13:51:30
+Newly Opened Apps:
+- MoUsoCoreWorker.exe
+
+Timestamp: 2023-12-17 13:52:14
+Newly Opened Apps:
+- sppsvc.exe
+
+Timestamp: 2023-12-17 13:52:15
+Newly Opened Apps:
+- CompatTelRunner.exe
+- msfeedssync.exe
+- wermgr.exe
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-17 13:52:18
+Newly Opened Apps:
+- HxTsr.exe
+
+Timestamp: 2023-12-17 13:52:20
+Newly Opened Apps:
+- SppExtComObj.Exe
+
+Timestamp: 2023-12-17 13:52:23
+Newly Opened Apps:
+- WmiPrvSE.exe
+
+Timestamp: 2023-12-17 13:52:25
+Newly Opened Apps:
+- ielowutil.exe
+- TrustedInstaller.exe
+- TiWorker.exe
+
+Timestamp: 2023-12-17 13:52:26
+Newly Opened Apps:
+- GameBar.exe
+
+Timestamp: 2023-12-17 13:52:30
+Newly Opened Apps:
+- GameBarFTServer.exe
+- brave.exe
+- smartscreen.exe
+
+Timestamp: 2023-12-17 13:52:47
+Newly Opened Apps:
+- BackgroundTransferHost.exe
+
+Timestamp: 2023-12-17 13:53:25
+Newly Opened Apps:
+- PLUGScheduler.exe
+
+Timestamp: 2023-12-17 13:54:09
+Newly Opened Apps:
+- MoUsoCoreWorker.exe
+
+Timestamp: 2023-12-17 13:55:47
+Newly Opened Apps:
+- PhoneExperienceHost.exe
+
+Timestamp: 2023-12-17 13:57:43
+Newly Opened Apps:
+- Microsoft.Media.Player.exe
+
+Timestamp: 2023-12-17 13:58:24
+Newly Opened Apps:
+- MoUsoCoreWorker.exe
+
+Timestamp: 2023-12-17 13:59:03
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 14:03:48
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 14:04:50
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-17 14:08:50
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-17 14:08:54
+Newly Opened Apps:
+- smartscreen.exe
+
+Timestamp: 2023-12-17 14:09:03
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 14:09:46
+Newly Opened Apps:
+- MicrosoftEdgeUpdate.exe
+
+Timestamp: 2023-12-17 14:12:08
+Newly Opened Apps:
+- BraveUpdate.exe
+
+Timestamp: 2023-12-17 14:13:22
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 14:14:44
+Newly Opened Apps:
+- smartscreen.exe
+
+Timestamp: 2023-12-17 14:15:33
+Newly Opened Apps:
+- SearchProtocolHost.exe
+- SearchFilterHost.exe
+
+Timestamp: 2023-12-17 14:15:55
+Newly Opened Apps:
+- identity_helper.exe
+
+Timestamp: 2023-12-17 14:16:51
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-17 14:19:03
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 14:20:50
+Newly Opened Apps:
+- HxTsr.exe
+
+Timestamp: 2023-12-17 14:23:24
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-17 14:24:50
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-17 14:28:09
+Newly Opened Apps:
+- MoUsoCoreWorker.exe
+- TrustedInstaller.exe
+
+Timestamp: 2023-12-17 14:28:10
+Newly Opened Apps:
+- TiWorker.exe
+- SpeechModelDownload.exe
+
+Timestamp: 2023-12-17 14:28:11
+Newly Opened Apps:
+- lpremove.exe
+- tzsync.exe
+
+Timestamp: 2023-12-17 14:28:12
+Newly Opened Apps:
+- dmclient.exe
+- dstokenclean.exe
+- DiskSnapshot.exe
+- sc.exe
+- WmiPrvSE.exe
+- AppHostRegistrationVerifier.exe
+
+Timestamp: 2023-12-17 14:28:14
+Newly Opened Apps:
+- CompatTelRunner.exe
+- cleanmgr.exe
+
+Timestamp: 2023-12-17 14:28:18
+Newly Opened Apps:
+- sppsvc.exe
+
+Timestamp: 2023-12-17 14:28:20
+Newly Opened Apps:
+- ngentask.exe
+
+Timestamp: 2023-12-17 14:28:26
+Newly Opened Apps:
+- ngen.exe
+
+Timestamp: 2023-12-17 14:28:29
+Newly Opened Apps:
+- fodhelper.exe
+
+Timestamp: 2023-12-17 14:28:41
+Newly Opened Apps:
+- ngen.exe
+- mscorsvw.exe
+
+Timestamp: 2023-12-17 14:28:52
+Newly Opened Apps:
+- smartscreen.exe
+
+Timestamp: 2023-12-17 14:29:03
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 14:29:09
+Newly Opened Apps:
+- ngen.exe
+- mscorsvw.exe
+- sppsvc.exe
+
+Timestamp: 2023-12-17 14:29:13
+Newly Opened Apps:
+- mscorsvw.exe
+
+Timestamp: 2023-12-17 14:29:17
+Newly Opened Apps:
+- ngen.exe
+
+Timestamp: 2023-12-17 14:29:18
+Newly Opened Apps:
+- mscorsvw.exe
+
+Timestamp: 2023-12-17 14:29:21
+Newly Opened Apps:
+- mscorsvw.exe
+
+Timestamp: 2023-12-17 14:29:47
+Newly Opened Apps:
+- DismHost.exe
+
+Timestamp: 2023-12-17 14:30:13
+Newly Opened Apps:
+- GoogleUpdate.exe
+
+Timestamp: 2023-12-17 14:32:07
+Newly Opened Apps:
+- WmiPrvSE.exe
+
+Timestamp: 2023-12-17 14:32:51
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-17 14:35:28
+Newly Opened Apps:
+- WmiPrvSE.exe
+
+Timestamp: 2023-12-17 14:36:32
+Newly Opened Apps:
+- upfc.exe
+
+Timestamp: 2023-12-17 14:36:50
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-17 14:37:01
+Newly Opened Apps:
+- SIHClient.exe
+
+Timestamp: 2023-12-17 14:39:04
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 14:39:28
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-17 14:42:04
+Newly Opened Apps:
+- GoogleUpdate.exe
+
+Timestamp: 2023-12-17 14:42:33
+Newly Opened Apps:
+- SystemSettings.exe
+
+Timestamp: 2023-12-17 14:42:36
+Newly Opened Apps:
+- MoUsoCoreWorker.exe
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 14:42:39
+Newly Opened Apps:
+- smartscreen.exe
+
+Timestamp: 2023-12-17 14:44:50
+Newly Opened Apps:
+- HxTsr.exe
+
+Timestamp: 2023-12-17 14:48:50
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-17 14:49:03
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 14:52:51
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-17 14:56:04
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-17 14:56:54
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-17 14:57:10
+Newly Opened Apps:
+- smartscreen.exe
+
+Timestamp: 2023-12-17 14:58:00
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-17 14:58:22
+Newly Opened Apps:
+- identity_helper.exe
+
+Timestamp: 2023-12-17 14:58:23
+Newly Opened Apps:
+- pythonw.exe
+
+Timestamp: 2023-12-17 14:59:03
+Newly Opened Apps:
+- SearchProtocolHost.exe
+- FileCoAuth.exe
+- SearchFilterHost.exe
+
+Timestamp: 2023-12-17 15:00:49
+Newly Opened Apps:
+- backgroundTaskHost.exe
+
+Timestamp: 2023-12-17 15:02:04
+Newly Opened Apps:
+- SearchProtocolHost.exe
+- SearchFilterHost.exe
+
+Timestamp: 2023-12-17 15:02:31
+Newly Opened Apps:
+- FileCoAuth.exe
+

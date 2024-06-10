@@ -1,0 +1,1053 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="644c0326-e092-42f1-80a4-88c29a5b77ac" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/Jarvis5.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/google-java-format.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/BardAccess/B1.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/BardAccess/main.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/BardAccess/main1.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/BardAccess/main3.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/BardAccess/main4.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/BardAccess/main5.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/CamearTest/1.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/CamearTest/2.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/CamearTest/3.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/CamearTest/4.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/CamearTest/5.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/CamearTest/6.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/CamearTest/7.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/CamearTest/8.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/CamearTest/9.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/CamearTest/dect/1.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/CamearTest/dect/2.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/CamearTest/dect/3.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/CamearTest/dect/4.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/Data_Information_Value/Data1.json.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/Data_Information_Value/RecentAppName.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/Data_Information_Value/newly_opened_apps.xlsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/JSON_Information_Center.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Data/XLSX_Information_Center.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Jarvies/ActivationFunction.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Jarvies/AppNameList.xlsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Jarvies/CameraFeatures/HandTracking.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Jarvies/CameraFeatures/output.mp4" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Jarvies/KeyBoard_Controls.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Jarvies/LnkIntoExe/converter.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Jarvies/Main.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Jarvies/RecentAppPerformanceMonitor.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Jarvies/Run_Speech.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Jarvies/Run_Text.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Jarvies/RunningApplication.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Jarvies/Setting/completed.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Jarvies/SpecialFeature/SentenceCorrection.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Jarvies/SpecialFeature/SpellingChecker.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Jarvies/SpecificFeature/OnActiveWindows.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Jarvies/SpecificFeature/ShortcutsForAction.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Jarvies/SpecificFeature/WINDOWS.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Jarvies/SpecificFeature/WindowsFrame.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Jarvies/Speech_Recognition.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Jarvies/SystemFilePathScanner.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Jarvies/mainTest.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/TEST/completed/newly_opened_apps.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/TEST/completed/newly_opened_apps11.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/TEST/completed/newly_opened_apps22.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/TEST/completed/newly_opened_apps45.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/TEST/completed/newly_opened_apps54.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/a/10.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/a/11.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/a/22.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/a/33.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/a/44.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/a/55.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/a/66.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/a/77.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/a/88.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/a/99.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/a/exam.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/b/111.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/b/19.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/b/20.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/b/21.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/b/22.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/b/222.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/b/23.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/b/24.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/b/25.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/b/26.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/b/27.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/b/28.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/b/29.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/b/30.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/b/31.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/b/32.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/b/33.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/b/34.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/b/444.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/b/555.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/b/666.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/b/777.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/b/888.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/b/999.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/b/PyWhatKit_DB.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/b/newly_opened_apps.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/b/newly_opened_apps1.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/b/newly_opened_apps2.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/b/opened_apps_record.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/b/opened_apps_record2.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/b/recently_opened_apps.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/c/10.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/c/11.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/c/12.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/c/13.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/c/14.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/c/15.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/c/16.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/c/18.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/c/19.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/c/2.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/c/20.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/c/21.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/c/22.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/c/23.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/c/24.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/c/25.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/c/26.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/c/27.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/c/28.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/c/29.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/c/3.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/c/30.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/c/31.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/c/32.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/c/4.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/c/5.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/c/6.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/c/7.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/c/8.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/c/9.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/ccccccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/completed/10.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/completed/11.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/completed/333.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/completed/newly_opened_apps45.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/completed/newly_opened_apps54.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/Screen/1ccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/Screen/2ccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/Screen/3.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/Screen/screenshot.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/1.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/10.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/11.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/12.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/13.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/14.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/15.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/16CCCCCCCCC.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/17.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/18.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/19.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/2.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/20.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/21cccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/22ccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/23.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/24cccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/25.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/26.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/27cccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/28.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/29cccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/3.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/30ccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/31ccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/32ccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/33ccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/34ccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/35ccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/36ccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/37ccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/38ccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/39ccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/4.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/40ccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/41ccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/42.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/43ccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/44ccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/45ccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/46ccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/47ccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/48ccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/49ccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/5.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/50ccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/51ccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/52ccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/53ccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/54ccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/55cccccccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/56.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/57.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/58.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/59ccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/6.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/60.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/61.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/62.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/63.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/64.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/65.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/66.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/67.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/68.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/69ccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/7.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/70ccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/71.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/72cccc.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/73.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/74.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/75.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/76.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/77.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/78.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/79.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/8.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/80.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/81.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/82.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/83.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/88.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/9.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/aaaa" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/bbb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/dddd" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/eeee" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/fff" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/ggg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/hhh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/hhh1" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/TEST/setting/d/hhh2" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/WastData/Data1.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/WastData/example.xlsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Windows/Setting/setting_change_brightness_for_the_built_in_display.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Windows/Setting/setting_night_lignt.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Windows/cmd_logo.PNG" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/aa.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/installed_apps.xlsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/wanted/1.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/wanted/17.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/wanted/2.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="master1" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "thippeswammy"
+  }
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/thippeswammy/JarvisControlSystem.git",
+    "accountId": "763936c1-4373-425b-8a09-60b3d7f5962b"
+  }
+}]]></component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://C:/Program Files/Python38/Lib/codecs.py" root0="SKIP_INSPECTION" />
+    <setting file="file://C:/Program Files/Python38/Lib/site-packages/pywinauto/controls/uiawrapper.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/CamearTest/9.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/Jarvies/ActivationFunction.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/Jarvies/Run_Speech.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/Jarvies/Setting/completed.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/Jarvies/SpecificFeature/WINDOWS.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/Jarvies/SpecificFeature/WindowsFrame.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/TEST/ccccccc.py" root0="SKIP_INSPECTION" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 7
+}</component>
+  <component name="ProjectId" id="2ZhxF42UfvuVfw3QjuPdnfrRv7J" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ACTIVE_CLOUD_PROJECT_ACCOUNT": "thippeswamy636408@gmail.com",
+    "ACTIVE_CLOUD_PROJECT_ID": "eco-theater-285415",
+    "ACTIVE_CLOUD_PROJECT_NAME": "Google",
+    "ACTIVE_CLOUD_PROJECT_NUMBER": "458044547605",
+    "Python.1.executor": "Run",
+    "Python.10.executor": "Run",
+    "Python.11.executor": "Run",
+    "Python.12.executor": "Run",
+    "Python.13.executor": "Run",
+    "Python.14.executor": "Run",
+    "Python.15.executor": "Run",
+    "Python.16.executor": "Run",
+    "Python.16CCCCCCCCC.executor": "Run",
+    "Python.17.executor": "Run",
+    "Python.18.executor": "Run",
+    "Python.19.executor": "Run",
+    "Python.1ccc.executor": "Run",
+    "Python.2.executor": "Run",
+    "Python.20.executor": "Run",
+    "Python.21.executor": "Run",
+    "Python.21cccc.executor": "Run",
+    "Python.22.executor": "Run",
+    "Python.22ccc (1).executor": "Run",
+    "Python.22ccc.executor": "Run",
+    "Python.23.executor": "Run",
+    "Python.24.executor": "Run",
+    "Python.24cccc.executor": "Run",
+    "Python.25.executor": "Run",
+    "Python.26.executor": "Run",
+    "Python.27.executor": "Run",
+    "Python.27cccc.executor": "Run",
+    "Python.28.executor": "Run",
+    "Python.29.executor": "Run",
+    "Python.2ccc.executor": "Run",
+    "Python.3.executor": "Run",
+    "Python.30.executor": "Run",
+    "Python.31.executor": "Run",
+    "Python.32.executor": "Run",
+    "Python.32ccc.executor": "Run",
+    "Python.33.executor": "Run",
+    "Python.34.executor": "Run",
+    "Python.35ccc.executor": "Run",
+    "Python.36ccc.executor": "Run",
+    "Python.37ccc.executor": "Run",
+    "Python.38ccc.executor": "Run",
+    "Python.39ccc.executor": "Run",
+    "Python.4.executor": "Run",
+    "Python.40ccc.executor": "Run",
+    "Python.41ccc.executor": "Run",
+    "Python.42.executor": "Run",
+    "Python.43ccc.executor": "Run",
+    "Python.44ccc.executor": "Run",
+    "Python.45ccc.executor": "Run",
+    "Python.46ccc.executor": "Run",
+    "Python.47ccc.executor": "Run",
+    "Python.48ccc.executor": "Run",
+    "Python.49ccc.executor": "Run",
+    "Python.5.executor": "Run",
+    "Python.50ccc.executor": "Run",
+    "Python.51ccc.executor": "Run",
+    "Python.52ccc.executor": "Run",
+    "Python.53ccc.executor": "Run",
+    "Python.54ccc.executor": "Run",
+    "Python.56.executor": "Run",
+    "Python.56ccc.executor": "Run",
+    "Python.57.executor": "Run",
+    "Python.57ccc.executor": "Run",
+    "Python.58.executor": "Run",
+    "Python.59ccc.executor": "Run",
+    "Python.6.executor": "Run",
+    "Python.60.executor": "Run",
+    "Python.61.executor": "Run",
+    "Python.62.executor": "Run",
+    "Python.63.executor": "Run",
+    "Python.64.executor": "Run",
+    "Python.65.executor": "Run",
+    "Python.66.executor": "Run",
+    "Python.67.executor": "Run",
+    "Python.68.executor": "Run",
+    "Python.69.executor": "Run",
+    "Python.69ccc (1).executor": "Run",
+    "Python.7.executor": "Run",
+    "Python.70.executor": "Run",
+    "Python.70ccc (1).executor": "Run",
+    "Python.71.executor": "Run",
+    "Python.72cccc.executor": "Run",
+    "Python.73.executor": "Run",
+    "Python.74.executor": "Run",
+    "Python.75.executor": "Run",
+    "Python.76.executor": "Run",
+    "Python.77.executor": "Run",
+    "Python.78.executor": "Run",
+    "Python.79.executor": "Run",
+    "Python.8.executor": "Run",
+    "Python.80.executor": "Run",
+    "Python.81.executor": "Run",
+    "Python.82.executor": "Run",
+    "Python.83.executor": "Run",
+    "Python.88.executor": "Run",
+    "Python.9.executor": "Run",
+    "Python.ActivationFunction.executor": "Run",
+    "Python.KeyBoard_Controls.executor": "Run",
+    "Python.OnActiveWindows.executor": "Run",
+    "Python.RecentAppPerformanceMonitor.executor": "Run",
+    "Python.Run_Speech.executor": "Run",
+    "Python.Run_Text (1).executor": "Run",
+    "Python.Run_Text.executor": "Debug",
+    "Python.Speech_Recognition.executor": "Run",
+    "Python.SystemFilePathScanner.executor": "Run",
+    "Python.WINDOWS.executor": "Run",
+    "Python.WindowsFrame.executor": "Run",
+    "Python.XLSX_Information_Center.executor": "Run",
+    "Python.aa.executor": "Run",
+    "Python.ccc4.executor": "Run",
+    "Python.ccccccc.executor": "Run",
+    "Python.class.executor": "Run",
+    "Python.completed.executor": "Run",
+    "Python.mainTest.executor": "Run",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "com.google.cloudcode.ide_session_index": "20240221_0002",
+    "git-widget-placeholder": "<unknown>",
+    "last_opened_file_path": "F:/RunningProjects/JarvisControlSystem",
+    "settings.editor.selected.configurable": "project.propVCSSupport.DirectoryMappings"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="F:\Pycham_programs\Jarvis55\Jarvies\Setting" />
+      <recent name="E:\Programs\pycham_programs\Jarvis5\wanted" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="F:\Pycham_programs\Jarvis55\TEST\setting\Screen" />
+      <recent name="E:\Programs\pycham_programs\Jarvis5\TEST\setting" />
+      <recent name="E:\Programs\pycham_programs\Jarvis5\wanted" />
+      <recent name="E:\Programs\pycham_programs\Jarvis5\Jarvies" />
+      <recent name="E:\Programs\pycham_programs\Jarvis5\Jarvies\Main" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Python.Run_Text">
+    <configuration name="ActivationFunction" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="Jarvis5" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Jarvies" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Jarvies/ActivationFunction.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="RecentAppPerformanceMonitor" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="Jarvis5" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Jarvies" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Jarvies/RecentAppPerformanceMonitor.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Run_Text" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="Jarvis5" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Jarvies" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Jarvies/Run_Text.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="SystemFilePathScanner" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="Jarvis5" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/Jarvies" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Jarvies/SystemFilePathScanner.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="aa" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="Jarvis5" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/aa.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.Run_Text" />
+        <item itemvalue="Python.RecentAppPerformanceMonitor" />
+        <item itemvalue="Python.SystemFilePathScanner" />
+        <item itemvalue="Python.aa" />
+        <item itemvalue="Python.ActivationFunction" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-python-sdk-babbdf50b680-746f403e7f0c-com.jetbrains.pycharm.community.sharedIndexes.bundled-PC-241.15989.155" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="644c0326-e092-42f1-80a4-88c29a5b77ac" name="Changes" comment="" />
+      <created>1702888006233</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1702888006233</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <ignored-roots>
+      <path value="$PROJECT_DIR$" />
+    </ignored-roots>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/CamearTest/2.py</url>
+          <line>50</line>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/CamearTest/3.py</url>
+          <line>46</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/5.py</url>
+          <line>6</line>
+          <option name="timeStamp" value="3" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/5.py</url>
+          <line>7</line>
+          <option name="timeStamp" value="4" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/5.py</url>
+          <line>8</line>
+          <option name="timeStamp" value="5" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/72cccc.py</url>
+          <line>15</line>
+          <option name="timeStamp" value="6" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/72cccc.py</url>
+          <line>16</line>
+          <option name="timeStamp" value="7" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/72cccc.py</url>
+          <line>19</line>
+          <option name="timeStamp" value="8" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/72cccc.py</url>
+          <line>22</line>
+          <option name="timeStamp" value="9" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/72cccc.py</url>
+          <line>23</line>
+          <option name="timeStamp" value="10" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/72cccc.py</url>
+          <line>26</line>
+          <option name="timeStamp" value="11" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/72cccc.py</url>
+          <line>27</line>
+          <option name="timeStamp" value="12" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/72cccc.py</url>
+          <line>32</line>
+          <option name="timeStamp" value="13" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/72cccc.py</url>
+          <line>35</line>
+          <option name="timeStamp" value="14" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/72cccc.py</url>
+          <line>36</line>
+          <option name="timeStamp" value="15" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/72cccc.py</url>
+          <line>39</line>
+          <option name="timeStamp" value="16" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/72cccc.py</url>
+          <line>42</line>
+          <option name="timeStamp" value="17" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/72cccc.py</url>
+          <line>43</line>
+          <option name="timeStamp" value="18" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/72cccc.py</url>
+          <line>46</line>
+          <option name="timeStamp" value="19" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/72cccc.py</url>
+          <line>49</line>
+          <option name="timeStamp" value="20" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/72cccc.py</url>
+          <line>51</line>
+          <option name="timeStamp" value="21" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/72cccc.py</url>
+          <line>59</line>
+          <option name="timeStamp" value="22" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/72cccc.py</url>
+          <line>56</line>
+          <option name="timeStamp" value="23" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/76.py</url>
+          <line>77</line>
+          <option name="timeStamp" value="42" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/76.py</url>
+          <line>76</line>
+          <option name="timeStamp" value="43" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/76.py</url>
+          <line>16</line>
+          <option name="timeStamp" value="44" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/76.py</url>
+          <line>18</line>
+          <option name="timeStamp" value="45" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>165</line>
+          <option name="timeStamp" value="50" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>156</line>
+          <option name="timeStamp" value="51" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>160</line>
+          <option name="timeStamp" value="52" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>21</line>
+          <option name="timeStamp" value="53" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>22</line>
+          <option name="timeStamp" value="54" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>28</line>
+          <option name="timeStamp" value="55" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>27</line>
+          <option name="timeStamp" value="56" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>33</line>
+          <option name="timeStamp" value="57" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>32</line>
+          <option name="timeStamp" value="58" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>41</line>
+          <option name="timeStamp" value="59" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>40</line>
+          <option name="timeStamp" value="60" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>37</line>
+          <option name="timeStamp" value="61" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>26</line>
+          <option name="timeStamp" value="62" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>20</line>
+          <option name="timeStamp" value="63" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>120</line>
+          <option name="timeStamp" value="65" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>121</line>
+          <option name="timeStamp" value="66" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>122</line>
+          <option name="timeStamp" value="67" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>123</line>
+          <option name="timeStamp" value="68" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>117</line>
+          <option name="timeStamp" value="69" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>115</line>
+          <option name="timeStamp" value="70" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>46</line>
+          <option name="timeStamp" value="71" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>52</line>
+          <option name="timeStamp" value="72" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>58</line>
+          <option name="timeStamp" value="73" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>76</line>
+          <option name="timeStamp" value="74" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>47</line>
+          <option name="timeStamp" value="77" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>48</line>
+          <option name="timeStamp" value="78" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>49</line>
+          <option name="timeStamp" value="79" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>64</line>
+          <option name="timeStamp" value="80" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>66</line>
+          <option name="timeStamp" value="81" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>65</line>
+          <option name="timeStamp" value="82" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>67</line>
+          <option name="timeStamp" value="83" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>68</line>
+          <option name="timeStamp" value="84" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>69</line>
+          <option name="timeStamp" value="85" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>59</line>
+          <option name="timeStamp" value="86" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>60</line>
+          <option name="timeStamp" value="87" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>61</line>
+          <option name="timeStamp" value="88" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>63</line>
+          <option name="timeStamp" value="89" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>62</line>
+          <option name="timeStamp" value="90" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>16</line>
+          <option name="timeStamp" value="91" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>17</line>
+          <option name="timeStamp" value="92" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>18</line>
+          <option name="timeStamp" value="93" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>19</line>
+          <option name="timeStamp" value="94" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>24</line>
+          <option name="timeStamp" value="95" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>23</line>
+          <option name="timeStamp" value="96" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>25</line>
+          <option name="timeStamp" value="97" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>29</line>
+          <option name="timeStamp" value="98" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>30</line>
+          <option name="timeStamp" value="99" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>31</line>
+          <option name="timeStamp" value="100" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>35</line>
+          <option name="timeStamp" value="101" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>34</line>
+          <option name="timeStamp" value="102" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>36</line>
+          <option name="timeStamp" value="103" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>13</line>
+          <option name="timeStamp" value="104" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TEST/setting/d/80.py</url>
+          <line>15</line>
+          <option name="timeStamp" value="105" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Jarvies/KeyBoard_Controls.py</url>
+          <line>124</line>
+          <option name="timeStamp" value="106" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Jarvies/KeyBoard_Controls.py</url>
+          <line>123</line>
+          <option name="timeStamp" value="107" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Jarvies/KeyBoard_Controls.py</url>
+          <line>125</line>
+          <option name="timeStamp" value="108" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Jarvies/KeyBoard_Controls.py</url>
+          <line>126</line>
+          <option name="timeStamp" value="109" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Jarvies/KeyBoard_Controls.py</url>
+          <line>132</line>
+          <option name="timeStamp" value="110" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Jarvies/KeyBoard_Controls.py</url>
+          <line>84</line>
+          <option name="timeStamp" value="111" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Jarvies/KeyBoard_Controls.py</url>
+          <line>79</line>
+          <option name="timeStamp" value="112" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+    <watches-manager>
+      <configuration name="PythonConfigurationType">
+        <watch expression="data_dict[0]" />
+      </configuration>
+    </watches-manager>
+  </component>
+</project>

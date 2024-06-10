@@ -1,0 +1,778 @@
+notepad.exe --->  C:\Windows\System32\notepad.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.226.1031.0003\FileCoAuth.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.226.1031.0003\FileCoAuth.exe 
+
+notepad.exe --->  C:\Windows\System32\notepad.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.226.1031.0003\FileCoAuth.exe 
+
+notepad.exe --->  C:\Windows\System32\notepad.exe 
+
+notepad.exe --->  C:\Windows\System32\notepad.exe 
+
+SystemSettings.exe --->  C:\Windows\ImmersiveControlPanel\SystemSettings.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.226.1031.0003\FileCoAuth.exe 
+MoUsoCoreWorker.exe --->  C:\Windows\System32\MoUsoCoreWorker.exe 
+
+SystemSettings.exe --->  C:\Windows\ImmersiveControlPanel\SystemSettings.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.226.1031.0003\FileCoAuth.exe 
+
+FileCoAuth.exe --->  C:\Windows\System32\smartscreen.exe 
+smartscreen.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.226.1031.0003\FileCoAuth.exe 
+
+notepad.exe --->  C:\Windows\System32\notepad.exe 
+
+notepad.exe --->  C:\Windows\System32\notepad.exe 
+
+backgroundTaskHost.exe --->  C:\Program Files (x86)\Microsoft\EdgeUpdate\MicrosoftEdgeUpdate.exe 
+MicrosoftEdgeUpdate.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+backgroundTaskHost.exe --->  C:\Program Files\WindowsApps\microsoft.windowscommunicationsapps_16005.14326.21768.0_x64__8wekyb3d8bbwe\HxTsr.exe 
+HxTsr.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.226.1031.0003\FileCoAuth.exe 
+
+smartscreen.exe --->  C:\Windows\System32\smartscreen.exe 
+notepad.exe --->  C:\Windows\System32\notepad.exe 
+
+notepad.exe --->  C:\Windows\System32\notepad.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.226.1031.0003\FileCoAuth.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.226.1031.0003\FileCoAuth.exe 
+
+smartscreen.exe --->  C:\Windows\System32\smartscreen.exe 
+
+identity_helper.exe --->  C:\Program Files (x86)\Microsoft\Edge\Application\120.0.2210.61\identity_helper.exe 
+
+notepad.exe --->  C:\Windows\System32\notepad.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.226.1031.0003\FileCoAuth.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.226.1031.0003\FileCoAuth.exe 
+
+notepad.exe --->  C:\Windows\System32\notepad.exe 
+
+notepad.exe --->  C:\Windows\System32\notepad.exe 
+
+notepad.exe --->  C:\Windows\System32\notepad.exe 
+
+notepad.exe --->  C:\Windows\System32\notepad.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+HxTsr.exe --->  C:\Program Files\WindowsApps\microsoft.windowscommunicationsapps_16005.14326.21768.0_x64__8wekyb3d8bbwe\HxTsr.exe 
+
+WmiPrvSE.exe --->  C:\Windows\System32\wbem\WmiPrvSE.exe 
+
+consent.exe --->  C:\Windows\System32\smartscreen.exe 
+smartscreen.exe --->  C:\Windows\System32\consent.exe 
+
+audiodg.exe --->  C:\Windows\System32\audiodg.exe 
+
+cmd.exe --->  C:\Windows\System32\cmd.exe 
+
+pip.exe --->  C:\Program Files\Python38\Scripts\pip.exe 
+
+backgroundTaskHost.exe --->  C:\Program Files\WindowsApps\microsoft.windowscommunicationsapps_16005.14326.21768.0_x64__8wekyb3d8bbwe\HxTsr.exe 
+HxTsr.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+smartscreen.exe --->  C:\Windows\System32\smartscreen.exe 
+
+notepad.exe --->  C:\Windows\System32\notepad.exe 
+
+OneDriveStandaloneUpdater.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\OneDriveStandaloneUpdater.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+SystemSettings.exe --->  C:\Windows\ImmersiveControlPanel\SystemSettings.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+MoUsoCoreWorker.exe --->  C:\Windows\System32\MoUsoCoreWorker.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+WhatsApp.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+backgroundTaskHost.exe --->  C:\Program Files\WindowsApps\5319275A.51895FA4EA97F_2.2350.3.0_x64__cv1g1gvanyjgm\WhatsApp.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+SystemSettings.exe --->  C:\Windows\ImmersiveControlPanel\SystemSettings.exe 
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+MoUsoCoreWorker.exe --->  C:\Windows\System32\MoUsoCoreWorker.exe 
+
+audiodg.exe --->  C:\Windows\System32\audiodg.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+smartscreen.exe --->  C:\Windows\System32\smartscreen.exe 
+
+4kvideodownloaderplus.exe --->  C:\Program Files\4KDownload\4kvideodownloaderplus\4kvideodownloaderplus.exe 
+
+crashpad_handler.exe --->  C:\Program Files\4KDownload\4kvideodownloaderplus\crashpad_handler.exe 
+
+QtWebEngineProcess.exe --->  C:\Program Files\4KDownload\4kvideodownloaderplus\QtWebEngineProcess.exe 
+
+audiodg.exe --->  C:\Windows\System32\audiodg.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+CalculatorApp.exe --->  C:\Program Files\WindowsApps\Microsoft.WindowsCalculator_11.2307.4.0_x64__8wekyb3d8bbwe\CalculatorApp.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+TiWorker.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+backgroundTaskHost.exe --->  C:\Windows\WinSxS\amd64_microsoft-windows-servicingstack_31bf3856ad364e35_10.0.19041.3745_none_7ded3f327ca60a41\TiWorker.exe 
+TrustedInstaller.exe --->  C:\Windows\servicing\TrustedInstaller.exe 
+
+MicrosoftEdgeUpdate.exe --->  C:\Program Files (x86)\Microsoft\EdgeUpdate\MicrosoftEdgeUpdate.exe 
+
+TiWorker.exe --->  C:\Windows\WinSxS\amd64_microsoft-windows-servicingstack_31bf3856ad364e35_10.0.19041.3745_none_7ded3f327ca60a41\TiWorker.exe 
+TrustedInstaller.exe --->  C:\Windows\servicing\TrustedInstaller.exe 
+
+MoUsoCoreWorker.exe --->  C:\Windows\System32\cleanmgr.exe 
+cleanmgr.exe --->  C:\Windows\System32\MoUsoCoreWorker.exe 
+
+CompatTelRunner.exe --->  C:\Windows\System32\wbem\WmiPrvSE.exe 
+MpCmdRun.exe --->  C:\ProgramData\Microsoft\Windows Defender\Platform\4.18.23110.3-0\MpCmdRun.exe 
+WmiPrvSE.exe --->  C:\Windows\System32\CompatTelRunner.exe 
+
+Defrag.exe --->  C:\Windows\System32\Defrag.exe 
+
+sppsvc.exe --->  C:\Windows\System32\sppsvc.exe 
+
+DismHost.exe --->  C:\Users\thipp\AppData\Local\Temp\F93E2944-5F12-43A5-870F-F4BA79B2C8A8\DismHost.exe 
+
+BraveUpdate.exe --->  C:\Program Files (x86)\BraveSoftware\Update\BraveUpdate.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+HxTsr.exe --->  C:\Program Files\WindowsApps\microsoft.windowscommunicationsapps_16005.14326.21768.0_x64__8wekyb3d8bbwe\HxTsr.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+WmiPrvSE.exe --->  C:\Windows\System32\wbem\WmiPrvSE.exe 
+
+wermgr.exe --->  C:\Windows\System32\wermgr.exe 
+sppsvc.exe --->  C:\Windows\System32\sppsvc.exe 
+
+SppExtComObj.Exe --->  C:\Windows\System32\SppExtComObj.Exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+notepad.exe --->  C:\Windows\System32\notepad.exe 
+smartscreen.exe --->  C:\Windows\System32\smartscreen.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+notepad.exe --->  C:\Windows\System32\notepad.exe 
+
+notepad.exe --->  C:\Windows\System32\notepad.exe 
+
+sendctrlc.x64.B37C5E935F3DA60B2940592241F826DA.exe --->  C:\Users\thipp\AppData\Local\JetBrains\PyCharmEdu2022.2\tmp\sendctrlc.x64.B37C5E935F3DA60B2940592241F826DA.exe 
+
+notepad.exe --->  C:\Windows\System32\notepad.exe 
+
+GoogleUpdate.exe --->  C:\Program Files (x86)\Google\Update\GoogleUpdate.exe 
+
+MoUsoCoreWorker.exe --->  C:\Windows\WinSxS\amd64_microsoft-windows-servicingstack_31bf3856ad364e35_10.0.19041.3745_none_7ded3f327ca60a41\TiWorker.exe 
+cleanmgr.exe --->  C:\Windows\System32\MoUsoCoreWorker.exe 
+TrustedInstaller.exe --->  C:\Windows\System32\cleanmgr.exe 
+TiWorker.exe --->  C:\Windows\servicing\TrustedInstaller.exe 
+
+MpCmdRun.exe --->  C:\ProgramData\Microsoft\Windows Defender\Platform\4.18.23110.3-0\MpCmdRun.exe 
+
+Defrag.exe --->  C:\Windows\System32\Defrag.exe 
+
+DismHost.exe --->  C:\Users\thipp\AppData\Local\Temp\E708E265-7387-460F-8E17-9406F101C99F\DismHost.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+WmiPrvSE.exe --->  C:\Windows\System32\wbem\WmiPrvSE.exe 
+
+sppsvc.exe --->  C:\Windows\System32\sppsvc.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+smartscreen.exe --->  C:\Windows\System32\smartscreen.exe 
+
+vlc.exe --->  D:\Installs\VLC\vlc.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+audiodg.exe --->  C:\Windows\System32\audiodg.exe 
+
+WmiPrvSE.exe --->  C:\Windows\System32\wbem\WmiPrvSE.exe 
+
+sppsvc.exe --->  C:\Windows\System32\sppsvc.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+SearchFilterHost.exe --->  C:\Windows\System32\SearchProtocolHost.exe 
+SearchProtocolHost.exe --->  C:\Windows\System32\SearchFilterHost.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+MicrosoftEdgeUpdate.exe --->  C:\Program Files (x86)\Microsoft\EdgeUpdate\MicrosoftEdgeUpdate.exe 
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+smartscreen.exe --->  C:\Windows\System32\smartscreen.exe 
+
+identity_helper.exe --->  C:\Program Files (x86)\Microsoft\Edge\Application\120.0.2210.61\identity_helper.exe 
+
+PhotosApp.exe --->  C:\Program Files\WindowsApps\Microsoft.Windows.Photos_2023.11110.29003.0_x64__8wekyb3d8bbwe\PhotosApp.exe 
+
+PhotosService.exe --->  C:\Program Files\WindowsApps\Microsoft.Windows.Photos_2023.11110.29003.0_x64__8wekyb3d8bbwe\PhotosService\PhotosService.exe 
+
+SearchFilterHost.exe --->  C:\Windows\System32\SearchProtocolHost.exe 
+SearchProtocolHost.exe --->  C:\Windows\System32\SearchFilterHost.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+cleanmgr.exe --->  C:\Windows\System32\MoUsoCoreWorker.exe 
+MoUsoCoreWorker.exe --->  C:\Windows\System32\cleanmgr.exe 
+
+MpCmdRun.exe --->  C:\ProgramData\Microsoft\Windows Defender\Platform\4.18.23110.3-0\MpCmdRun.exe 
+
+Defrag.exe --->  C:\Windows\System32\Defrag.exe 
+
+DismHost.exe --->  C:\Users\thipp\AppData\Local\Temp\30C971BA-5D32-4D5B-A775-11C708DBC65E\DismHost.exe 
+
+TrustedInstaller.exe --->  C:\Windows\WinSxS\amd64_microsoft-windows-servicingstack_31bf3856ad364e35_10.0.19041.3745_none_7ded3f327ca60a41\TiWorker.exe 
+TiWorker.exe --->  C:\Windows\servicing\TrustedInstaller.exe 
+
+WhatsApp.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+backgroundTaskHost.exe --->  C:\Program Files\WindowsApps\5319275A.51895FA4EA97F_2.2350.3.0_x64__cv1g1gvanyjgm\WhatsApp.exe 
+
+SrTasks.exe --->  C:\Windows\System32\SrTasks.exe 
+
+VSSVC.exe --->  C:\Windows\System32\VSSVC.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+audiodg.exe --->  C:\Windows\System32\audiodg.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+audiodg.exe --->  C:\Windows\System32\audiodg.exe 
+
+smartscreen.exe --->  C:\Windows\System32\smartscreen.exe 
+notepad++.exe --->  C:\Users\thipp\Desktop\notepad++.exe 
+
+SearchFilterHost.exe --->  C:\Windows\System32\SearchProtocolHost.exe 
+SearchProtocolHost.exe --->  C:\Windows\System32\SearchFilterHost.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+MicrosoftEdgeUpdate.exe --->  C:\Program Files (x86)\Microsoft\EdgeUpdate\MicrosoftEdgeUpdate.exe 
+
+MoUsoCoreWorker.exe --->  C:\Windows\System32\MoUsoCoreWorker.exe 
+
+Defrag.exe --->  C:\Windows\System32\Defrag.exe 
+
+WmiPrvSE.exe --->  C:\Windows\System32\wbem\WmiPrvSE.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+GoogleUpdate.exe --->  C:\Program Files (x86)\Google\Update\GoogleUpdate.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+MoUsoCoreWorker.exe --->  C:\Windows\System32\MoUsoCoreWorker.exe 
+
+sppsvc.exe --->  C:\Windows\System32\sppsvc.exe 
+
+Defrag.exe --->  C:\Windows\System32\Defrag.exe 
+
+vlc.exe --->  D:\Installs\VLC\vlc.exe 
+smartscreen.exe --->  C:\Windows\System32\smartscreen.exe 
+
+audiodg.exe --->  C:\Windows\System32\audiodg.exe 
+
+MicrosoftEdgeUpdate.exe --->  C:\Program Files (x86)\Microsoft\EdgeUpdate\MicrosoftEdgeUpdate.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+MoUsoCoreWorker.exe --->  C:\Windows\System32\MoUsoCoreWorker.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+MoUsoCoreWorker.exe --->  C:\Windows\System32\MoUsoCoreWorker.exe 
+
+MoUsoCoreWorker.exe --->  C:\Windows\System32\MoUsoCoreWorker.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+WmiPrvSE.exe --->  C:\Windows\System32\wbem\WmiPrvSE.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+MoUsoCoreWorker.exe --->  C:\Windows\System32\MoUsoCoreWorker.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+LogonUI.exe --->  C:\Windows\System32\LogonUI.exe 
+
+wsqmcons.exe --->  C:\Windows\System32\wsqmcons.exe 
+
+BraveUpdate.exe --->  C:\Program Files (x86)\BraveSoftware\Update\BraveUpdate.exe 
+MicrosoftEdgeUpdate.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+sppsvc.exe --->  C:\Program Files (x86)\Microsoft\EdgeUpdate\MicrosoftEdgeUpdate.exe 
+FileCoAuth.exe --->  C:\Program Files (x86)\Google\Update\GoogleUpdate.exe 
+PLUGScheduler.exe --->  C:\Windows\System32\sppsvc.exe 
+GoogleUpdate.exe --->  C:\Program Files\RUXIM\PLUGScheduler.exe 
+
+SppExtComObj.Exe --->  C:\Windows\System32\SppExtComObj.Exe 
+
+DeviceCensus.exe --->  C:\Program Files (x86)\Google\Update\GoogleUpdate.exe 
+wsqmcons.exe --->  C:\Windows\System32\wsqmcons.exe 
+wermgr.exe --->  C:\Windows\System32\wermgr.exe 
+GoogleUpdate.exe --->  C:\Windows\System32\DeviceCensus.exe 
+
+WmiPrvSE.exe --->  C:\Windows\System32\wbem\WmiPrvSE.exe 
+
+WaaSMedicAgent.exe --->  C:\Windows\System32\WaaSMedicAgent.exe 
+
+sppsvc.exe --->  C:\Windows\System32\sppsvc.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+smartscreen.exe --->  C:\Windows\System32\smartscreen.exe 
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+notepad.exe --->  C:\Windows\System32\notepad.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+MoUsoCoreWorker.exe --->  C:\Windows\System32\MoUsoCoreWorker.exe 
+sppsvc.exe --->  C:\Windows\System32\sppsvc.exe 
+
+audiodg.exe --->  C:\Windows\System32\audiodg.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+smartscreen.exe --->  C:\Windows\System32\smartscreen.exe 
+
+notepad.exe --->  C:\Windows\System32\notepad.exe 
+
+notepad.exe --->  C:\Windows\System32\notepad.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+SystemSettings.exe --->  C:\Windows\ImmersiveControlPanel\SystemSettings.exe 
+
+FileCoAuth.exe --->  C:\Windows\System32\MoUsoCoreWorker.exe 
+MoUsoCoreWorker.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+notepad.exe --->  C:\Windows\System32\notepad.exe 
+
+notepad.exe --->  C:\Windows\System32\notepad.exe 
+
+Unity Hub.exe --->  D:\SoftwareInstall\Unity Hub\Unity Hub.exe 
+
+Unity.Licensing.Client.exe --->  D:\SoftwareInstall\Unity Hub\UnityLicensingClient_V1\Unity.Licensing.Client.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+VisualStudioInstallChecker.exe --->  D:\SoftwareInstall\Unity Hub\resources\app.asar.unpacked\lib\win\VisualStudioInstallChecker.exe 
+
+backgroundTaskHost.exe --->  C:\Program Files (x86)\Microsoft\EdgeUpdate\MicrosoftEdgeUpdate.exe 
+MicrosoftEdgeUpdate.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+notepad.exe --->  C:\Windows\System32\notepad.exe 
+
+BraveUpdate.exe --->  C:\Program Files (x86)\BraveSoftware\Update\BraveUpdate.exe 
+
+notepad.exe --->  C:\Windows\System32\notepad.exe 
+
+notepad.exe --->  C:\Windows\System32\notepad.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+smartscreen.exe --->  C:\Windows\System32\smartscreen.exe 
+
+notepad.exe --->  C:\Windows\System32\notepad.exe 
+
+notepad.exe --->  C:\Windows\System32\notepad.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+GoogleUpdate.exe --->  C:\Program Files (x86)\Google\Update\GoogleUpdate.exe 
+
+SystemSettings.exe --->  C:\Windows\ImmersiveControlPanel\SystemSettings.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+MoUsoCoreWorker.exe --->  C:\Windows\System32\MoUsoCoreWorker.exe 
+
+smartscreen.exe --->  C:\Windows\System32\smartscreen.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+notepad.exe --->  C:\Windows\System32\notepad.exe 
+
+notepad.exe --->  C:\Windows\System32\notepad.exe 
+
+notepad.exe --->  C:\Windows\System32\notepad.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+BraveUpdate.exe --->  C:\Program Files (x86)\BraveSoftware\Update\BraveUpdate.exe 
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+GoogleUpdate.exe --->  C:\Program Files (x86)\Google\Update\GoogleUpdate.exe 
+
+MoUsoCoreWorker.exe --->  C:\Windows\System32\MoUsoCoreWorker.exe 
+
+Defrag.exe --->  C:\Windows\System32\Defrag.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+MusNotification.exe --->  C:\Windows\System32\MusNotification.exe 
+
+MoUsoCoreWorker.exe --->  C:\Windows\System32\MoUsoCoreWorker.exe 
+
+MusNotificationUx.exe --->  C:\Windows\System32\MusNotificationUx.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+MicrosoftEdgeUpdate.exe --->  C:\Program Files (x86)\Microsoft\EdgeUpdate\MicrosoftEdgeUpdate.exe 
+
+BraveUpdate.exe --->  C:\Program Files (x86)\BraveSoftware\Update\BraveUpdate.exe 
+
+SystemSettings.exe --->  C:\Windows\ImmersiveControlPanel\SystemSettings.exe 
+
+MoUsoCoreWorker.exe --->  C:\Windows\System32\MoUsoCoreWorker.exe 
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+smartscreen.exe --->  C:\Windows\System32\smartscreen.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+GoogleUpdate.exe --->  C:\Program Files (x86)\Google\Update\GoogleUpdate.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+BraveUpdate.exe --->  C:\Program Files (x86)\BraveSoftware\Update\BraveUpdate.exe 
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+sppsvc.exe --->  C:\Windows\System32\sppsvc.exe 
+
+SppExtComObj.Exe --->  C:\Windows\System32\SppExtComObj.Exe 
+
+MoUsoCoreWorker.exe --->  C:\Windows\System32\MoUsoCoreWorker.exe 
+
+MpCmdRun.exe --->  C:\ProgramData\Microsoft\Windows Defender\Platform\4.18.23110.3-0\MpCmdRun.exe 
+
+GoogleUpdate.exe --->  C:\Program Files (x86)\Google\Update\GoogleUpdate.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+MicrosoftEdgeUpdate.exe --->  C:\Program Files (x86)\Microsoft\EdgeUpdate\MicrosoftEdgeUpdate.exe 
+
+BraveUpdate.exe --->  C:\Program Files (x86)\BraveSoftware\Update\BraveUpdate.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+GoogleUpdate.exe --->  C:\Program Files (x86)\Google\Update\GoogleUpdate.exe 
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+BraveUpdate.exe --->  C:\Program Files (x86)\BraveSoftware\Update\BraveUpdate.exe 
+
+MoUsoCoreWorker.exe --->  C:\Windows\System32\MoUsoCoreWorker.exe 
+
+GoogleUpdate.exe --->  C:\Program Files (x86)\Google\Update\GoogleUpdate.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+SearchProtocolHost.exe --->  C:\Windows\System32\SearchFilterHost.exe 
+SearchFilterHost.exe --->  C:\Windows\System32\SearchProtocolHost.exe 
+
+BraveUpdate.exe --->  C:\Program Files (x86)\BraveSoftware\Update\BraveUpdate.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+GoogleUpdate.exe --->  C:\Program Files (x86)\Google\Update\GoogleUpdate.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+sppsvc.exe --->  C:\Windows\System32\sppsvc.exe 
+
+BraveUpdate.exe --->  C:\Program Files (x86)\BraveSoftware\Update\BraveUpdate.exe 
+
+SppExtComObj.Exe --->  C:\Windows\System32\SppExtComObj.Exe 
+
+MoUsoCoreWorker.exe --->  C:\Windows\System32\MoUsoCoreWorker.exe 
+
+GoogleUpdate.exe --->  C:\Program Files (x86)\Google\Update\GoogleUpdate.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+audiodg.exe --->  C:\Windows\System32\audiodg.exe 
+
+MoUsoCoreWorker.exe --->  C:\Windows\System32\MoUsoCoreWorker.exe 
+
+sppsvc.exe --->  C:\Windows\System32\sppsvc.exe 
+
+CompatTelRunner.exe --->  C:\Windows\System32\wermgr.exe 
+msfeedssync.exe --->  C:\Windows\System32\msfeedssync.exe 
+wermgr.exe --->  C:\Windows\System32\CompatTelRunner.exe 
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+HxTsr.exe --->  C:\Program Files\WindowsApps\microsoft.windowscommunicationsapps_16005.14326.21768.0_x64__8wekyb3d8bbwe\HxTsr.exe 
+
+SppExtComObj.Exe --->  C:\Windows\System32\SppExtComObj.Exe 
+
+WmiPrvSE.exe --->  C:\Windows\System32\wbem\WmiPrvSE.exe 
+
+ielowutil.exe --->  C:\Windows\servicing\TrustedInstaller.exe 
+TrustedInstaller.exe --->  C:\Windows\WinSxS\amd64_microsoft-windows-servicingstack_31bf3856ad364e35_10.0.19041.3745_none_7ded3f327ca60a41\TiWorker.exe 
+TiWorker.exe --->  C:\Program Files\Internet Explorer\ielowutil.exe 
+
+GameBar.exe --->  C:\Program Files\WindowsApps\Microsoft.XboxGamingOverlay_6.123.11012.0_x64__8wekyb3d8bbwe\GameBar.exe 
+
+GameBarFTServer.exe --->  C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe 
+brave.exe --->  C:\Windows\System32\smartscreen.exe 
+smartscreen.exe --->  C:\Program Files\WindowsApps\Microsoft.XboxGamingOverlay_6.123.11012.0_x64__8wekyb3d8bbwe\GameBarFTServer.exe 
+
+BackgroundTransferHost.exe --->  C:\Windows\System32\BackgroundTransferHost.exe 
+
+PLUGScheduler.exe --->  C:\Program Files\RUXIM\PLUGScheduler.exe 
+
+MoUsoCoreWorker.exe --->  C:\Windows\System32\MoUsoCoreWorker.exe 
+
+PhoneExperienceHost.exe --->  C:\Program Files\WindowsApps\Microsoft.YourPhone_1.23102.126.0_x64__8wekyb3d8bbwe\PhoneExperienceHost.exe 
+
+Microsoft.Media.Player.exe --->  C:\Program Files\WindowsApps\Microsoft.ZuneMusic_11.2310.8.0_x64__8wekyb3d8bbwe\Microsoft.Media.Player.exe 
+
+MoUsoCoreWorker.exe --->  C:\Windows\System32\MoUsoCoreWorker.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+smartscreen.exe --->  C:\Windows\System32\smartscreen.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+MicrosoftEdgeUpdate.exe --->  C:\Program Files (x86)\Microsoft\EdgeUpdate\MicrosoftEdgeUpdate.exe 
+
+BraveUpdate.exe --->  C:\Program Files (x86)\BraveSoftware\Update\BraveUpdate.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+smartscreen.exe --->  C:\Windows\System32\smartscreen.exe 
+
+SearchProtocolHost.exe --->  C:\Windows\System32\SearchFilterHost.exe 
+SearchFilterHost.exe --->  C:\Windows\System32\SearchProtocolHost.exe 
+
+identity_helper.exe --->  C:\Program Files (x86)\Microsoft\Edge\Application\120.0.2210.61\identity_helper.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+HxTsr.exe --->  C:\Program Files\WindowsApps\microsoft.windowscommunicationsapps_16005.14326.21768.0_x64__8wekyb3d8bbwe\HxTsr.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+MoUsoCoreWorker.exe --->  C:\Windows\servicing\TrustedInstaller.exe 
+TrustedInstaller.exe --->  C:\Windows\System32\MoUsoCoreWorker.exe 
+
+TiWorker.exe --->  C:\Windows\WinSxS\amd64_microsoft-windows-servicingstack_31bf3856ad364e35_10.0.19041.3745_none_7ded3f327ca60a41\TiWorker.exe 
+SpeechModelDownload.exe --->  C:\Windows\System32\Speech_OneCore\common\SpeechModelDownload.exe 
+
+lpremove.exe --->  C:\Windows\System32\lpremove.exe 
+tzsync.exe --->  C:\Windows\System32\tzsync.exe 
+
+dmclient.exe --->  C:\Windows\System32\dstokenclean.exe 
+dstokenclean.exe --->  C:\Windows\System32\sc.exe 
+DiskSnapshot.exe --->  C:\Windows\System32\dmclient.exe 
+sc.exe --->  C:\Windows\System32\wbem\WmiPrvSE.exe 
+WmiPrvSE.exe --->  C:\Windows\System32\AppHostRegistrationVerifier.exe 
+AppHostRegistrationVerifier.exe --->  C:\Windows\System32\DiskSnapshot.exe 
+
+CompatTelRunner.exe --->  C:\Windows\System32\cleanmgr.exe 
+cleanmgr.exe --->  C:\Windows\System32\CompatTelRunner.exe 
+
+sppsvc.exe --->  C:\Windows\System32\sppsvc.exe 
+
+ngentask.exe --->  C:\Windows\Microsoft.NET\Framework\v4.0.30319\ngentask.exe 
+
+ngen.exe --->  C:\Windows\Microsoft.NET\Framework64\v4.0.30319\ngen.exe 
+
+fodhelper.exe --->  C:\Windows\System32\fodhelper.exe 
+
+ngen.exe --->  C:\Windows\Microsoft.NET\Framework64\v4.0.30319\ngen.exe 
+mscorsvw.exe --->  C:\Windows\Microsoft.NET\Framework\v4.0.30319\mscorsvw.exe 
+
+smartscreen.exe --->  C:\Windows\System32\smartscreen.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+ngen.exe --->  C:\Windows\Microsoft.NET\Framework64\v4.0.30319\ngen.exe 
+mscorsvw.exe --->  C:\Windows\Microsoft.NET\Framework64\v4.0.30319\mscorsvw.exe 
+sppsvc.exe --->  C:\Windows\System32\sppsvc.exe 
+
+mscorsvw.exe --->  C:\Windows\Microsoft.NET\Framework64\v4.0.30319\mscorsvw.exe 
+
+ngen.exe --->  C:\Windows\Microsoft.NET\Framework64\v4.0.30319\ngen.exe 
+
+mscorsvw.exe --->  C:\Windows\Microsoft.NET\Framework64\v4.0.30319\mscorsvw.exe 
+
+mscorsvw.exe --->  C:\Windows\Microsoft.NET\Framework64\v4.0.30319\mscorsvw.exe 
+
+DismHost.exe --->  C:\Users\thipp\AppData\Local\Temp\439BB365-4755-4F0C-9B6E-0A99D07910FF\DismHost.exe 
+
+GoogleUpdate.exe --->  C:\Program Files (x86)\Google\Update\GoogleUpdate.exe 
+
+WmiPrvSE.exe --->  C:\Windows\System32\wbem\WmiPrvSE.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+WmiPrvSE.exe --->  C:\Windows\System32\wbem\WmiPrvSE.exe 
+
+upfc.exe --->  C:\Windows\System32\upfc.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+SIHClient.exe --->  C:\Windows\System32\SIHClient.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+GoogleUpdate.exe --->  C:\Program Files (x86)\Google\Update\GoogleUpdate.exe 
+
+SystemSettings.exe --->  C:\Windows\ImmersiveControlPanel\SystemSettings.exe 
+
+MoUsoCoreWorker.exe --->  C:\Windows\System32\MoUsoCoreWorker.exe 
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+smartscreen.exe --->  C:\Windows\System32\smartscreen.exe 
+
+HxTsr.exe --->  C:\Program Files\WindowsApps\microsoft.windowscommunicationsapps_16005.14326.21768.0_x64__8wekyb3d8bbwe\HxTsr.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+
+smartscreen.exe --->  C:\Windows\System32\smartscreen.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+identity_helper.exe --->  C:\Program Files (x86)\Microsoft\Edge\Application\120.0.2210.61\identity_helper.exe 
+
+pythonw.exe --->  C:\Program Files\Python38\pythonw.exe 
+
+SearchProtocolHost.exe --->  C:\Windows\System32\SearchFilterHost.exe 
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+SearchFilterHost.exe --->  C:\Windows\System32\SearchProtocolHost.exe 
+
+backgroundTaskHost.exe --->  C:\Windows\System32\backgroundTaskHost.exe 
+
+SearchProtocolHost.exe --->  C:\Windows\System32\SearchFilterHost.exe 
+SearchFilterHost.exe --->  C:\Windows\System32\SearchProtocolHost.exe 
+
+FileCoAuth.exe --->  C:\Users\thipp\AppData\Local\Microsoft\OneDrive\23.246.1127.0002\FileCoAuth.exe 
+

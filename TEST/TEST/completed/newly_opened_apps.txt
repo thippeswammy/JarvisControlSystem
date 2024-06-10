@@ -1,0 +1,4 @@
+Timestamp: 2023-12-16 03:21:04
+Newly Opened Apps:
+- smartscreen.exe
+

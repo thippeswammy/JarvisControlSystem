@@ -1,0 +1,95 @@
+{
+  "activating_jarvis": [
+    "hi",
+    "hi jarvis",
+    "jarvis",
+    "start jarvis",
+    "jarvis start"
+  ],
+  "deactivating_jarvis": [
+    "jarvis close",
+    "close jarvis",
+    "jarvis stop",
+    "stop jarvis"
+  ],
+  "typing_jarvies": [
+    "start typing",
+    "typing start",
+    "activate typing",
+    "typing activate"
+  ],
+  "stop_typing_jarvies": [
+    "stop typing",
+    "typing stop",
+    "deactivate typing",
+    "typing deactivateactivate"
+  ],
+  "presskey_jarvis": [
+    "press"
+  ],
+  "presskey_jarvis1": [
+    "press",
+    "press key",
+    "key press"
+  ],
+  "holdkey_jarvis": [
+    "hold",
+    "holdkey",
+    "hold key",
+    "keydown"
+  ],
+  "relasekey_jarvis": [
+    "release",
+    "releasekey",
+    "release key"
+  ],
+  "OpenApp_jarvis": [
+    "open",
+    "start",
+    "run"
+  ],
+  "CloseApp_jarvis": [
+    "close",
+    "exit",
+    "terminate"
+  ],
+  "SearchApp_jarvis": [
+    "search",
+    "find",
+    "windows search",
+    "window search",
+    "search windows",
+    "search window",
+    "search by windows",
+    "search by window"
+  ],
+  "WindowsSearchBarAccess_jarvis": [
+    "open by search",
+    "open by windows",
+    "open by windows search"
+  ],
+  "closeByWindows_jarvis": [
+    "stop by search",
+    "stop by windows",
+    "stop by windows search"
+  ],
+  "windows_Set": [
+    "set brightness level",
+    "set brightness",
+    "set light",
+    "increase brightness",
+    "increase brightness level",
+    "increase brightness in windows",
+    "increase brightness in windows",
+    "change brightness in windows",
+    "adjust brightness",
+    "reduce brightness"
+  ],
+  "stop_typing_jarvies111": [
+    "D1"
+  ],
+  "abcd": [
+    "sd",
+    "0"
+  ]
+}

@@ -1,0 +1,276 @@
+"C:\Program Files\Python38\python.exe" F:\Pycham_programs\Jarvis55\TEST\setting\d\68.py
+Control Type: Window, Control Name: Settings
+      Control Type: MenuItem, Control Name: System
+   Control Type: Button, Control Name: Minimize Settings
+   Control Type: Button, Control Name: Restore Settings
+   Control Type: Button, Control Name: Close Settings
+Control Type: MenuBar, Control Name: System
+   Control Type: MenuItem, Control Name: System
+Control Type: MenuItem, Control Name: System
+Control Type: Button, Control Name: Minimize Settings
+Control Type: Button, Control Name: Restore Settings
+Control Type: Button, Control Name: Close Settings
+Control Type: Window, Control Name: Settings
+   Control Type: Text, Control Name: Settings
+   Control Type: Pane, Control Name:
+      Control Type: Image, Control Name:
+      Control Type: Text, Control Name: thippeswammy k.s
+      Control Type: Text, Control Name: thippeswamy636408@gmail.com
+      Control Type: Hyperlink, Control Name: My Microsoft account
+         Control Type: Text, Control Name: My Microsoft account
+      Control Type: List, Control Name:
+         Control Type: ListItem, Control Name: OneDrive
+            Control Type: Text, Control Name: OneDrive
+            Control Type: Text, Control Name: Manage
+         Control Type: ListItem, Control Name: Windows Update
+            Control Type: Text, Control Name: Windows Update
+            Control Type: Text, Control Name: Last checked: 2 hours ago
+         Control Type: ListItem, Control Name: Web browsing
+            Control Type: Text, Control Name: Web browsing
+            Control Type: Text, Control Name: Restore recommended
+      Control Type: StatusBar, Control Name:
+      Control Type: Edit, Control Name:
+         Control Type: Text, Control Name: Find a setting
+      Control Type: List, Control Name:
+         Control Type: ListItem, Control Name: System
+            Control Type: Text, Control Name: System
+            Control Type: Text, Control Name: Display, sound, notifications, power
+         Control Type: ListItem, Control Name: Devices
+            Control Type: Text, Control Name: Devices
+            Control Type: Text, Control Name: Bluetooth, printers, mouse
+         Control Type: ListItem, Control Name: Phone
+            Control Type: Text, Control Name: Phone
+            Control Type: Text, Control Name: Link your Android, iPhone
+         Control Type: ListItem, Control Name: Network & Internet
+            Control Type: Text, Control Name: Network & Internet
+            Control Type: Text, Control Name: Wi-Fi, airplane mode, VPN
+         Control Type: ListItem, Control Name: Personalization
+            Control Type: Text, Control Name: Personalization
+            Control Type: Text, Control Name: Background, lock screen, colors
+         Control Type: ListItem, Control Name: Apps
+            Control Type: Text, Control Name: Apps
+            Control Type: Text, Control Name: Uninstall, defaults
+         Control Type: ListItem, Control Name: Accounts
+            Control Type: Text, Control Name: Accounts
+            Control Type: Text, Control Name: Your accounts, email, sync, work, family
+         Control Type: ListItem, Control Name: Time & Language
+            Control Type: Text, Control Name: Time & Language
+            Control Type: Text, Control Name: Speech, region, date
+         Control Type: ListItem, Control Name: Gaming
+            Control Type: Text, Control Name: Gaming
+            Control Type: Text, Control Name: Game Bar, captures, Game Mode
+         Control Type: ListItem, Control Name: Ease of Access
+            Control Type: Text, Control Name: Ease of Access
+            Control Type: Text, Control Name: Narrator, magnifier, high contrast
+         Control Type: ListItem, Control Name: Search
+            Control Type: Text, Control Name: Search
+            Control Type: Text, Control Name: Find my files, permissions
+         Control Type: ListItem, Control Name: Privacy
+            Control Type: Text, Control Name: Privacy
+            Control Type: Text, Control Name: Location, camera, microphone
+         Control Type: ListItem, Control Name: Update & Security
+            Control Type: Text, Control Name: Update & Security
+            Control Type: Text, Control Name: Windows Update, recovery, backup
+Control Type: Text, Control Name: Settings
+Control Type: Pane, Control Name:
+   Control Type: Image, Control Name:
+   Control Type: Text, Control Name: thippeswammy k.s
+   Control Type: Text, Control Name: thippeswamy636408@gmail.com
+   Control Type: Hyperlink, Control Name: My Microsoft account
+      Control Type: Text, Control Name: My Microsoft account
+   Control Type: List, Control Name:
+      Control Type: ListItem, Control Name: OneDrive
+         Control Type: Text, Control Name: OneDrive
+         Control Type: Text, Control Name: Manage
+      Control Type: ListItem, Control Name: Windows Update
+         Control Type: Text, Control Name: Windows Update
+         Control Type: Text, Control Name: Last checked: 2 hours ago
+      Control Type: ListItem, Control Name: Web browsing
+         Control Type: Text, Control Name: Web browsing
+         Control Type: Text, Control Name: Restore recommended
+   Control Type: StatusBar, Control Name:
+   Control Type: Edit, Control Name:
+      Control Type: Text, Control Name: Find a setting
+   Control Type: List, Control Name:
+      Control Type: ListItem, Control Name: System
+         Control Type: Text, Control Name: System
+         Control Type: Text, Control Name: Display, sound, notifications, power
+      Control Type: ListItem, Control Name: Devices
+         Control Type: Text, Control Name: Devices
+         Control Type: Text, Control Name: Bluetooth, printers, mouse
+      Control Type: ListItem, Control Name: Phone
+         Control Type: Text, Control Name: Phone
+         Control Type: Text, Control Name: Link your Android, iPhone
+      Control Type: ListItem, Control Name: Network & Internet
+         Control Type: Text, Control Name: Network & Internet
+         Control Type: Text, Control Name: Wi-Fi, airplane mode, VPN
+      Control Type: ListItem, Control Name: Personalization
+         Control Type: Text, Control Name: Personalization
+         Control Type: Text, Control Name: Background, lock screen, colors
+      Control Type: ListItem, Control Name: Apps
+         Control Type: Text, Control Name: Apps
+         Control Type: Text, Control Name: Uninstall, defaults
+      Control Type: ListItem, Control Name: Accounts
+         Control Type: Text, Control Name: Accounts
+         Control Type: Text, Control Name: Your accounts, email, sync, work, family
+      Control Type: ListItem, Control Name: Time & Language
+         Control Type: Text, Control Name: Time & Language
+         Control Type: Text, Control Name: Speech, region, date
+      Control Type: ListItem, Control Name: Gaming
+         Control Type: Text, Control Name: Gaming
+         Control Type: Text, Control Name: Game Bar, captures, Game Mode
+      Control Type: ListItem, Control Name: Ease of Access
+         Control Type: Text, Control Name: Ease of Access
+         Control Type: Text, Control Name: Narrator, magnifier, high contrast
+      Control Type: ListItem, Control Name: Search
+         Control Type: Text, Control Name: Search
+         Control Type: Text, Control Name: Find my files, permissions
+      Control Type: ListItem, Control Name: Privacy
+         Control Type: Text, Control Name: Privacy
+         Control Type: Text, Control Name: Location, camera, microphone
+      Control Type: ListItem, Control Name: Update & Security
+         Control Type: Text, Control Name: Update & Security
+         Control Type: Text, Control Name: Windows Update, recovery, backup
+Control Type: Image, Control Name:
+Control Type: Text, Control Name: thippeswammy k.s
+Control Type: Text, Control Name: thippeswamy636408@gmail.com
+Control Type: Hyperlink, Control Name: My Microsoft account
+   Control Type: Text, Control Name: My Microsoft account
+Control Type: Text, Control Name: My Microsoft account
+Control Type: List, Control Name:
+   Control Type: ListItem, Control Name: OneDrive
+      Control Type: Text, Control Name: OneDrive
+      Control Type: Text, Control Name: Manage
+   Control Type: ListItem, Control Name: Windows Update
+      Control Type: Text, Control Name: Windows Update
+      Control Type: Text, Control Name: Last checked: 2 hours ago
+   Control Type: ListItem, Control Name: Web browsing
+      Control Type: Text, Control Name: Web browsing
+      Control Type: Text, Control Name: Restore recommended
+Control Type: ListItem, Control Name: OneDrive
+   Control Type: Text, Control Name: OneDrive
+   Control Type: Text, Control Name: Manage
+Control Type: Text, Control Name: OneDrive
+Control Type: Text, Control Name: Manage
+Control Type: ListItem, Control Name: Windows Update
+   Control Type: Text, Control Name: Windows Update
+   Control Type: Text, Control Name: Last checked: 2 hours ago
+Control Type: Text, Control Name: Windows Update
+Control Type: Text, Control Name: Last checked: 2 hours ago
+Control Type: ListItem, Control Name: Web browsing
+   Control Type: Text, Control Name: Web browsing
+   Control Type: Text, Control Name: Restore recommended
+Control Type: Text, Control Name: Web browsing
+Control Type: Text, Control Name: Restore recommended
+Control Type: StatusBar, Control Name:
+Control Type: Edit, Control Name:
+   Control Type: Text, Control Name: Find a setting
+Control Type: Text, Control Name: Find a setting
+Control Type: List, Control Name:
+   Control Type: ListItem, Control Name: System
+      Control Type: Text, Control Name: System
+      Control Type: Text, Control Name: Display, sound, notifications, power
+   Control Type: ListItem, Control Name: Devices
+      Control Type: Text, Control Name: Devices
+      Control Type: Text, Control Name: Bluetooth, printers, mouse
+   Control Type: ListItem, Control Name: Phone
+      Control Type: Text, Control Name: Phone
+      Control Type: Text, Control Name: Link your Android, iPhone
+   Control Type: ListItem, Control Name: Network & Internet
+      Control Type: Text, Control Name: Network & Internet
+      Control Type: Text, Control Name: Wi-Fi, airplane mode, VPN
+   Control Type: ListItem, Control Name: Personalization
+      Control Type: Text, Control Name: Personalization
+      Control Type: Text, Control Name: Background, lock screen, colors
+   Control Type: ListItem, Control Name: Apps
+      Control Type: Text, Control Name: Apps
+      Control Type: Text, Control Name: Uninstall, defaults
+   Control Type: ListItem, Control Name: Accounts
+      Control Type: Text, Control Name: Accounts
+      Control Type: Text, Control Name: Your accounts, email, sync, work, family
+   Control Type: ListItem, Control Name: Time & Language
+      Control Type: Text, Control Name: Time & Language
+      Control Type: Text, Control Name: Speech, region, date
+   Control Type: ListItem, Control Name: Gaming
+      Control Type: Text, Control Name: Gaming
+      Control Type: Text, Control Name: Game Bar, captures, Game Mode
+   Control Type: ListItem, Control Name: Ease of Access
+      Control Type: Text, Control Name: Ease of Access
+      Control Type: Text, Control Name: Narrator, magnifier, high contrast
+   Control Type: ListItem, Control Name: Search
+      Control Type: Text, Control Name: Search
+      Control Type: Text, Control Name: Find my files, permissions
+   Control Type: ListItem, Control Name: Privacy
+      Control Type: Text, Control Name: Privacy
+      Control Type: Text, Control Name: Location, camera, microphone
+   Control Type: ListItem, Control Name: Update & Security
+      Control Type: Text, Control Name: Update & Security
+      Control Type: Text, Control Name: Windows Update, recovery, backup
+Control Type: ListItem, Control Name: System
+   Control Type: Text, Control Name: System
+   Control Type: Text, Control Name: Display, sound, notifications, power
+Control Type: Text, Control Name: System
+Control Type: Text, Control Name: Display, sound, notifications, power
+Control Type: ListItem, Control Name: Devices
+   Control Type: Text, Control Name: Devices
+   Control Type: Text, Control Name: Bluetooth, printers, mouse
+Control Type: Text, Control Name: Devices
+Control Type: Text, Control Name: Bluetooth, printers, mouse
+Control Type: ListItem, Control Name: Phone
+   Control Type: Text, Control Name: Phone
+   Control Type: Text, Control Name: Link your Android, iPhone
+Control Type: Text, Control Name: Phone
+Control Type: Text, Control Name: Link your Android, iPhone
+Control Type: ListItem, Control Name: Network & Internet
+   Control Type: Text, Control Name: Network & Internet
+   Control Type: Text, Control Name: Wi-Fi, airplane mode, VPN
+Control Type: Text, Control Name: Network & Internet
+Control Type: Text, Control Name: Wi-Fi, airplane mode, VPN
+Control Type: ListItem, Control Name: Personalization
+   Control Type: Text, Control Name: Personalization
+   Control Type: Text, Control Name: Background, lock screen, colors
+Control Type: Text, Control Name: Personalization
+Control Type: Text, Control Name: Background, lock screen, colors
+Control Type: ListItem, Control Name: Apps
+   Control Type: Text, Control Name: Apps
+   Control Type: Text, Control Name: Uninstall, defaults
+Control Type: Text, Control Name: Apps
+Control Type: Text, Control Name: Uninstall, defaults
+Control Type: ListItem, Control Name: Accounts
+   Control Type: Text, Control Name: Accounts
+   Control Type: Text, Control Name: Your accounts, email, sync, work, family
+Control Type: Text, Control Name: Accounts
+Control Type: Text, Control Name: Your accounts, email, sync, work, family
+Control Type: ListItem, Control Name: Time & Language
+   Control Type: Text, Control Name: Time & Language
+   Control Type: Text, Control Name: Speech, region, date
+Control Type: Text, Control Name: Time & Language
+Control Type: Text, Control Name: Speech, region, date
+Control Type: ListItem, Control Name: Gaming
+   Control Type: Text, Control Name: Gaming
+   Control Type: Text, Control Name: Game Bar, captures, Game Mode
+Control Type: Text, Control Name: Gaming
+Control Type: Text, Control Name: Game Bar, captures, Game Mode
+Control Type: ListItem, Control Name: Ease of Access
+   Control Type: Text, Control Name: Ease of Access
+   Control Type: Text, Control Name: Narrator, magnifier, high contrast
+Control Type: Text, Control Name: Ease of Access
+Control Type: Text, Control Name: Narrator, magnifier, high contrast
+Control Type: ListItem, Control Name: Search
+   Control Type: Text, Control Name: Search
+   Control Type: Text, Control Name: Find my files, permissions
+Control Type: Text, Control Name: Search
+Control Type: Text, Control Name: Find my files, permissions
+Control Type: ListItem, Control Name: Privacy
+   Control Type: Text, Control Name: Privacy
+   Control Type: Text, Control Name: Location, camera, microphone
+Control Type: Text, Control Name: Privacy
+Control Type: Text, Control Name: Location, camera, microphone
+Control Type: ListItem, Control Name: Update & Security
+   Control Type: Text, Control Name: Update & Security
+   Control Type: Text, Control Name: Windows Update, recovery, backup
+Control Type: Text, Control Name: Update & Security
+Control Type: Text, Control Name: Windows Update, recovery, backup
+Control Type: Pane, Control Name:
+
+Process finished with exit code 0

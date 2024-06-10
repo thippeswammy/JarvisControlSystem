@@ -1,0 +1,32 @@
+Timestamp: 2023-12-16 03:29:50
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-16 03:30:13
+Newly Opened Apps:
+- GoogleUpdate.exe
+
+Timestamp: 2023-12-16 03:30:53
+Newly Opened Apps:
+- FileCoAuth.exe
+
+Timestamp: 2023-12-16 03:30:55
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-16 03:31:03
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-16 03:31:34
+Newly Opened Apps:
+- notepad.exe
+
+Timestamp: 2023-12-16 03:31:49
+Newly Opened Apps:
+- WmiPrvSE.exe
+
+Timestamp: 2023-12-16 03:33:08
+Newly Opened Apps:
+- backgroundTaskHost.exe
+

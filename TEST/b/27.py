@@ -1,0 +1,40 @@
+import matplotlib.pyplot as plt
+import numpy as np
+
+x = np.arange(0, 6 * np.pi, 0.1)
+y = np.sin(30 * x) + np.cos(40 * x)
+plt.plot(x, y)
+plt.xlabel('x')
+plt.ylabel('f(t)')
+plt.title('Graph of f(t) = sin(30t) + cos(40t)')
+plt.show()
+
+x = np.arange(0, 6 * np.pi, 0.1)
+y = np.sin(30 * x)
+plt.plot(x, y)
+plt.xlabel('x')
+plt.ylabel('f(t)')
+plt.title('Graph of f(t) = sin(30t)')
+plt.show()
+
+x = np.arange(0, 6 * np.pi, 0.1)
+y = np.cos(40 * x)
+plt.plot(x, y)
+plt.xlabel('x')
+plt.ylabel('f(t)')
+plt.title('Graph of f(t) = cos(40t)')
+plt.show()
+
+y = np.tan(1 * x)
+plt.plot(x, y)
+plt.xlabel('x')
+plt.ylabel('f(t)')
+plt.title('Graph of f(t) = tan(1x)')
+plt.show()
+
+y = np.tan(10 * x)
+plt.plot(x, y)
+plt.xlabel('x')
+plt.ylabel('f(t)')
+plt.title('Graph of f(t) = tan(10x)')
+plt.show()
