@@ -2,531 +2,572 @@ import os
 import re
 import wmi
 import time
+import logging
 import pyautogui
-import pandas as pd
 import pygetwindow as gw
 from comtypes import CLSCTX_ALL
 from ctypes import cast, POINTER
 from difflib import get_close_matches
-from typing import List, Union, Optional
+from typing import List, Union, Optional, Dict, Tuple
 from Jarvis.KeyboardAutomationController import press_key
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 
-
-def read_app_list_from_excel(file_path: str) -> tuple:
-    import openpyxl
-    wb = openpyxl.load_workbook(file_path)
-    sheet = wb.active
-
-    data = []
-    for row in sheet.iter_rows(min_row=2, values_only=True):
-        # Only take first two non-empty values
-        if row and len(row) >= 2 and row[0] and row[1]:
-            data.append([str(row[0]).strip(), str(row[1]).strip()])
-
-    if not data:
-        raise ValueError("No valid data found in Excel file.")
-
-    app_names = [r[0] for r in data]
-    addresses = [r[1] for r in data]
-
-    return app_names, addresses
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 
+class AppManager:
+    """Manages application data loading and matching"""
+    _app_data: Optional[Tuple[List[str], List[str]]] = None
+    _last_loaded: float = 0
+    DATA_REFRESH_INTERVAL = 300  # 5 minutes
 
-file_path = "F:/RunningProjects/JarvisControlSystem/Jarvis/Data/Data_Information_Value/AppNameList.xlsx"
-app_names, app_addresses = read_app_list_from_excel(file_path)
+    @classmethod
+    def load_app_data(cls, file_path: str) -> None:
+        """Load application data from Excel with caching and periodic refresh"""
+        current_time = time.time()
+        if (cls._app_data is None or
+                current_time - cls._last_loaded > cls.DATA_REFRESH_INTERVAL):
 
+            try:
+                import openpyxl
+                wb = openpyxl.load_workbook(file_path)
+                sheet = wb.active
 
-class DesktopSystemController:
-    DesktopSystemController_set_data = {
-        "set brightness": ['set brightness level', 'set brightness to ', 'set brightness',
-                           'change brightness in windows', 'brightness level', 'brightness to level',
-                           'set brightness to level'],
+                app_names = []
+                addresses = []
 
-        "incr_decre brightness": ['increase brightness', 'increase brightness level',
-                                  'increase brightness in windows', 'increase brightness in windows',
-                                  'decrease brightness', 'decrease brightness level',
-                                  'decrease brightness in windows', 'decrease brightness in windows'],
+                for row in sheet.iter_rows(min_row=2, values_only=True):
+                    # Only take first two non-empty values
+                    if row and len(row) >= 2 and row[0] and row[1]:
+                        app_names.append(str(row[0]).strip())
+                        addresses.append(str(row[1]).strip())
 
-        "set volume": ['set volume level', 'set volume to ', 'set volume', 'set volume',
-                       'change volume in windows', 'adjust volume', 'reduce volume'],
+                if not app_names:
+                    raise ValueError("No valid data found in Excel file.")
 
-        "incr_decre volume": ['increase volume', 'increase volume level', 'increase volume in windows',
-                              'increase volume in windows', 'decrease volume', 'decrease volume level',
-                              'decrease volume in windows', 'decrease volume in windows'],
+                cls._app_data = (app_names, addresses)
+                cls._last_loaded = current_time
+                logger.info("Application data loaded successfully")
+            except Exception as e:
+                logger.error(f"Error loading app data: {e}")
+                if cls._app_data is None:
+                    raise
 
-        "shift windows right": ['shift windows right', 'shift tab right', 'shift frame right', 'shift right tab',
-                                'move to right windows', 'move to right windows', 'move to right frame',
-                                'move to next tab', 'next windows', 'move next tab', 'move to next windows',
-                                'move next windows'],
+    @classmethod
+    def get_app_data(cls) -> Tuple[List[str], List[str]]:
+        """Get application data, loading if necessary"""
+        if cls._app_data is None:
+            raise RuntimeError("App data not loaded. Call load_app_data first.")
+        return cls._app_data
 
-        "shift windows left": ['shift windows left', 'shift tab left', 'shift frame left', 'shift left tab',
-                               'move to left windows', 'move to left windows', 'move to left frame', 'move to past tab',
-                               'move past tab', 'move to past windows', 'move past windows'],
-    }
+    @classmethod
+    def find_best_app_matches(cls, term: str, n: int = 1) -> Tuple[List[str], List[str]]:
+        """Find closest matches for application names"""
+        if cls._app_data is None:
+            cls.load_app_data()
 
-    Dict_word_replacements = {"light": "brightness",
-                              "window": "windows",
-                              "sound": "volume",
-                              "reduce": "decrease",
-                              "shifting": "shift",
-                              "adjust": "change"}
-
-    @staticmethod
-    def find_best_app_matches(term: str, app_names: List[str], addresses: List[str], n: int = 1) -> tuple:
+        app_names, addresses = cls.get_app_data()
         matches = get_close_matches(term, app_names, n=n, cutoff=0.6)
-        match_addresses = [addresses[app_names.index(match)] for match in matches]
+        match_addresses = [
+            addresses[app_names.index(match)]
+            for match in matches
+            if match in app_names
+        ]
         return matches, match_addresses
 
+
+class SystemCommandHandler:
+    """Base class for command handling with common utilities"""
+    WORD_REPLACEMENTS = {
+        "light": "brightness",
+        "window": "windows",
+        "sound": "volume",
+        "reduce": "decrease",
+        "shifting": "shift",
+        "adjust": "change"
+    }
+
     @staticmethod
-    def replace_words_in_sentence(sentence: str) -> str:
+    def replace_words(sentence: str) -> str:
+        """Normalize words in command strings"""
         words = sentence.split()
-        new_sentence = ' '.join(DesktopSystemController.Dict_word_replacements.get(word, word) for word in words)
-        return new_sentence
+        return ' '.join(
+            SystemCommandHandler.WORD_REPLACEMENTS.get(word, word)
+            for word in words
+        )
 
     @staticmethod
-    def extract_numbers_from_text(text: str) -> List[int]:
+    def extract_numbers(text: str) -> List[int]:
+        """Extract all integers from text"""
         numbers = re.findall(r'\d+', text)
-        return [int(number) for number in numbers]
+        return [int(num) for num in numbers] if numbers else [10]
+
+
+class DesktopSystemController(SystemCommandHandler):
+    """Handles system-level operations like brightness and volume control"""
+    COMMAND_MAP = {
+        "set brightness": {
+            'phrases': [
+                'set brightness level', 'set brightness to', 'set brightness',
+                'change brightness in windows', 'brightness level',
+                'brightness to level', 'set brightness to level'
+            ],
+            'handler': 'handle_brightness_set'
+        },
+        "adjust brightness": {
+            'phrases': [
+                'increase brightness', 'increase brightness level',
+                'decrease brightness', 'decrease brightness level'
+            ],
+            'handler': 'handle_brightness_adjust'
+        },
+        "set volume": {
+            'phrases': [
+                'set volume level', 'set volume to', 'set volume',
+                'change volume in windows', 'adjust volume', 'reduce volume'
+            ],
+            'handler': 'handle_volume_set'
+        },
+        "adjust volume": {
+            'phrases': [
+                'increase volume', 'increase volume level',
+                'decrease volume', 'decrease volume level'
+            ],
+            'handler': 'handle_volume_adjust'
+        }
+    }
 
     @staticmethod
-    def search_windows_for_term(search: List[str], addr: str) -> bool:
-        pyautogui.press("win")
-        time.sleep(0.5)
-        pyautogui.typewrite(" ".join(search[1:]))
-        return True
+    def set_brightness(level: int) -> bool:
+        """Set screen brightness (0-100)"""
+        try:
+            level = max(0, min(100, level))
+            c = wmi.WMI(namespace='wmi')
+            methods = c.WmiMonitorBrightnessMethods()[0]
+            methods.WmiSetBrightness(level, 0)
+            logger.info(f"Brightness set to {level}%")
+            return True
+        except Exception as e:
+            logger.error(f"Brightness set failed: {e}")
+            return False
 
     @staticmethod
-    def open_apps_by_windows_search(search: List[str], addr: str) -> bool:
-        DesktopSystemController.search_windows_for_term(search, addr + "SearchByWindows -> ")
-        time.sleep(0.1)
-        press_key("enter", addr + "press_key -> ")
-        return True
-
-    @staticmethod
-    def open_app_by_file_search(search: List[str], addr: str) -> Union[None, tuple]:
-        print("=" * 50, "open_app_by_file_search => ", search, "=" * 50)
-        search_term = " ".join(search[1:])
-        best_matches, match_addresses = (
-            DesktopSystemController.find_best_app_matches(search_term, app_names, app_addresses))
-        print(f"Best matches for '{search_term}':")
-        for match, address in zip(best_matches, match_addresses):
-            print(f"App Name: {match}, Address: {address}")
-            return match, address
-        return None, None
-
-    @staticmethod
-    def set_system_volume_level(new_volume: int) -> bool:
-        new_volume = min(100, max(0, new_volume))
-        new_volume = new_volume / 100
-        devices = AudioUtilities.GetSpeakers()
-        # noinspection PyProtectedMember
-        interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-        volume = cast(interface, POINTER(IAudioEndpointVolume))
-        volume.SetMasterVolumeLevelScalar(new_volume, None)
-        return True
-
-    @staticmethod
-    def get_system_volume_level() -> int:
-        devices = AudioUtilities.GetSpeakers()
-        # noinspection PyProtectedMember
-        interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-        volume = cast(interface, POINTER(IAudioEndpointVolume))
-        return int(volume.GetMasterVolumeLevelScalar() * 100)
-
-    @staticmethod
-    def set_screen_brightness_level(brightness_level: int) -> bool:
-        brightness_level = min(100, max(0, brightness_level))  # Ensure brightness is between 0 and 100
-        c = wmi.WMI(namespace='wmi')
-        methods = c.WmiMonitorBrightnessMethods()[0]
-        methods.WmiSetBrightness(brightness_level, 0)
-        return True
-
-    @staticmethod
-    def get_screen_brightness_level() -> int:
+    def get_brightness() -> int:
+        """Get current brightness level (0-100)"""
         try:
             w = wmi.WMI(namespace='wmi')
-            brightness = w.WmiMonitorBrightness()[0].CurrentBrightness
+            return w.WmiMonitorBrightness()[0].CurrentBrightness
         except Exception as e:
-            print(f"Error: {e}")
-            return False
-        return brightness
+            logger.error(f"Brightness get failed: {e}")
+            return 50  # Default value
 
     @staticmethod
-    def perform_background_activation(operation: str = '', addr: str = '') -> bool:
-        operation = DesktopSystemController.replace_words_in_sentence(operation)
-        for i in DesktopSystemController.DesktopSystemController_set_data["set brightness"]:
-            if i in operation:
-                val = DesktopSystemController.extract_numbers_from_text(operation)
-                if len(val) == 0:
-                    return DesktopSystemController.set_screen_brightness_level(
-                        DesktopSystemController.get_screen_brightness_level() + 10)
-                else:
-                    return DesktopSystemController.set_screen_brightness_level(val[0])
-        for i in DesktopSystemController.DesktopSystemController_set_data["incr_decre brightness"]:
-            if i in operation:
-                val = DesktopSystemController.extract_numbers_from_text(operation)
-                if len(val) > 0:
-                    if "increase" in operation:
-                        return DesktopSystemController.set_screen_brightness_level(
-                            DesktopSystemController.get_screen_brightness_level() + val[0])
+    def set_volume(level: int) -> bool:
+        """Set system volume (0-100)"""
+        try:
+            level = max(0, min(100, level)) / 100.0
+            devices = AudioUtilities.GetSpeakers()
+            interface = devices.Activate(
+                IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+            volume = cast(interface, POINTER(IAudioEndpointVolume))
+            volume.SetMasterVolumeLevelScalar(level, None)
+            logger.info(f"Volume set to {int(level * 100)}%")
+            return True
+        except Exception as e:
+            logger.error(f"Volume set failed: {e}")
+            return False
 
-                    elif "decrease" in operation:
-                        return DesktopSystemController.set_screen_brightness_level(
-                            DesktopSystemController.get_screen_brightness_level() - val[0])
+    @staticmethod
+    def get_volume() -> int:
+        """Get current volume level (0-100)"""
+        try:
+            devices = AudioUtilities.GetSpeakers()
+            interface = devices.Activate(
+                IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+            volume = cast(interface, POINTER(IAudioEndpointVolume))
+            return int(volume.GetMasterVolumeLevelScalar() * 100)
+        except Exception as e:
+            logger.error(f"Volume get failed: {e}")
+            return 50  # Default value
 
-                else:
-                    val = 10
-                    if "increase" in operation:
-                        return DesktopSystemController.set_screen_brightness_level(
-                            DesktopSystemController.get_screen_brightness_level() + val)
+    @classmethod
+    def handle_brightness_set(cls, operation: str) -> bool:
+        """Handle brightness set commands"""
+        numbers = cls.extract_numbers(operation)
+        level = numbers[0] if numbers else cls.get_brightness()
+        return cls.set_brightness(level)
 
-                    elif "decrease" in operation:
-                        return DesktopSystemController.set_screen_brightness_level(
-                            DesktopSystemController.get_screen_brightness_level() - val)
+    @classmethod
+    def handle_brightness_adjust(cls, operation: str) -> bool:
+        """Handle brightness increase/decrease commands"""
+        current = cls.get_brightness()
+        numbers = cls.extract_numbers(operation)
+        delta = numbers[0] if numbers else 10
 
-        for i in DesktopSystemController.DesktopSystemController_set_data["set volume"]:
-            if i in operation:
-                val = DesktopSystemController.extract_numbers_from_text(operation)
-                if len(val) == 0:
-                    return DesktopSystemController.set_system_volume_level(
-                        DesktopSystemController.get_system_volume_level() + 10)
-                else:
-                    return DesktopSystemController.set_system_volume_level(val[0])
-        for i in DesktopSystemController.DesktopSystemController_set_data["incr_decre volume"]:
-            if i in operation:
-                val = DesktopSystemController.extract_numbers_from_text(operation)
-                if len(val) > 0:
-                    if "increase" in operation:
-                        return DesktopSystemController.set_system_volume_level(
-                            DesktopSystemController.get_system_volume_level() + val[0])
+        if "increase" in operation:
+            new_level = min(100, current + delta)
+        else:  # decrease
+            new_level = max(0, current - delta)
 
-                    elif "decrease" in operation:
-                        return DesktopSystemController.set_system_volume_level(
-                            DesktopSystemController.get_system_volume_level() - val[0])
+        return cls.set_brightness(new_level)
 
-                else:
-                    val = 10
-                    if "increase" in operation:
-                        return DesktopSystemController.set_system_volume_level(
-                            DesktopSystemController.get_system_volume_level() + val)
+    @classmethod
+    def handle_volume_set(cls, operation: str) -> bool:
+        """Handle volume set commands"""
+        numbers = cls.extract_numbers(operation)
+        level = numbers[0] if numbers else cls.get_volume()
+        return cls.set_volume(level)
 
-                    elif "decrease" in operation:
-                        return DesktopSystemController.set_system_volume_level(
-                            DesktopSystemController.get_system_volume_level() - val)
+    @classmethod
+    def handle_volume_adjust(cls, operation: str) -> bool:
+        """Handle volume increase/decrease commands"""
+        current = cls.get_volume()
+        numbers = cls.extract_numbers(operation)
+        delta = numbers[0] if numbers else 10
 
-                break
+        if "increase" in operation:
+            new_level = min(100, current + delta)
+        else:  # decrease
+            new_level = max(0, current - delta)
 
-        # for ope in DesktopSystemController.DesktopSystemController_set_data["shift windows right"]:
-        #     if ope in operation:
-        #         return WindowsFrame.SwitchingFocusToNextActiveWindow("")
+        return cls.set_volume(new_level)
 
+    @classmethod
+    def execute_command(cls, operation: str) -> bool:
+        """Execute system command based on normalized operation string"""
+        normalized = cls.replace_words(operation.lower())
+
+        for _, command_info in cls.COMMAND_MAP.items():
+            for phrase in command_info['phrases']:
+                if phrase in normalized:
+                    handler = getattr(cls, command_info['handler'])
+                    return handler(normalized)
         return False
 
 
-class WindowsAppController:
-    WindowsAppController_set_data = {
-        'minimize_wind': ['minimize windows', 'minimize window', 'minimize active windows', 'minimize active window',
-                          'minimize opened windows', 'minimize opened window', 'minimise windows', 'minimise window',
-                          'minimise active windows', 'minimise active window',
-                          'minimise opened windows', 'minimise opened window', ],
-        'minimize_all_wind': ['minimize all windows', 'minimize all window', 'minimise all windows',
-                              'minimise all window'],
-        'maximize_wind': ['maximize windows', 'maximize window', 'maximize active windows', 'maximize active window',
-                          'maximize opened windows', 'maximize opened window', 'maximise windows', 'maximise window',
-                          'maximise active windows', 'maximise active window',
-                          'maximise opened windows', 'maximise opened window', 'full windows', 'full window',
-                          'full screen', 'full screen windows', 'full screen window'],
-        'maximize_all_wind': ['maximize all windows', 'maximize all window', 'maximise all windows',
-                              'maximise all window',
-                              'all full screen windows', 'all full screen window'],
-        'close_wind': ['close present windows', 'close present window', 'close active windows', 'close active window',
-                       'close opened windows', 'close opened window'],
-        'close_all_wind': ['close all windows', 'close all window'],
-        'shift_windows': ['shift windows', 'shift window', 'next window', 'next windows', 'goto next window',
-                          'goto next windows', 'to next window', 'to next windows'],
-        'move_wind_left': ['move windows left', 'move window left', 'move windows to left', 'move window to left'],
-        'move_wind_right': ['move windows right', 'move window right', 'move windows to right', 'move window to right']
+class WindowsAppController(SystemCommandHandler):
+    """Manages window operations like minimize/maximize/close"""
+    COMMAND_MAP = {
+        'minimize': {
+            'phrases': [
+                'minimize window', 'minimize windows', 'minimize active window',
+                'minimize active windows', 'minimize opened window', 'minimize opened windows',
+                'minimise window', 'minimise windows', 'minimise active window',
+                'minimise active windows', 'minimise opened window', 'minimise opened windows'
+            ],
+            'handler': 'minimize_window'
+        },
+        'minimize_all': {
+            'phrases': [
+                'minimize all windows', 'minimize all window',
+                'minimise all windows', 'minimise all window'
+            ],
+            'handler': 'minimize_all_windows'
+        },
+        'maximize': {
+            'phrases': [
+                'maximize window', 'maximize windows', 'maximize active window',
+                'maximize active windows', 'maximize opened window', 'maximize opened windows',
+                'maximise window', 'maximise windows', 'maximise active window',
+                'maximise active windows', 'maximise opened window', 'maximise opened windows',
+                'full window', 'full windows', 'full screen', 'full screen window', 'full screen windows'
+            ],
+            'handler': 'maximize_window'
+        },
+        'maximize_all': {
+            'phrases': [
+                'maximize all windows', 'maximize all window',
+                'maximise all windows', 'maximise all window',
+                'all full screen windows', 'all full screen window'
+            ],
+            'handler': 'maximize_all_windows'
+        },
+        'close': {
+            'phrases': [
+                'close window', 'close windows', 'close present window', 'close present windows',
+                'close active window', 'close active windows', 'close opened window', 'close opened windows'
+            ],
+            'handler': 'close_window'
+        },
+        'close_all': {
+            'phrases': ['close all windows', 'close all window'],
+            'handler': 'close_all_windows'
+        },
+        'shift': {
+            'phrases': [
+                'shift window', 'shift windows', 'next window', 'next windows', 'goto next window',
+                'goto next windows', 'to next window', 'to next windows', 'switch window',
+                'switch windows', 'switch to next window', 'switch to next windows'
+            ],
+            'handler': 'switch_windows'
+        },
+        'move_left': {
+            'phrases': [
+                'move window left', 'move windows left', 'move window to left', 'move windows to left',
+                'move to left', 'snap left', 'window left', 'move left', 'left window'
+            ],
+            'handler': 'move_window_to_left'
+        },
+        'move_right': {
+            'phrases': [
+                'move window right', 'move windows right', 'move window to right', 'move windows to right',
+                'move to right', 'snap right', 'window right', 'move right', 'right window'
+            ],
+            'handler': 'move_window_to_right'
+        }
     }
 
     @staticmethod
     def get_active_window() -> Optional[gw.Window]:
-        active_window = gw.getActiveWindow()
-        if active_window:
-            return active_window
-        else:
-            # print("No active window found.")
+        """Get currently active window"""
+        try:
+            return gw.getActiveWindow()
+        except Exception:
+            logger.warning("No active window found")
             return None
 
     @staticmethod
-    def get_all_visible_windows() -> List[gw.Window]:
-        windows = gw.getAllWindows()
-        visible_windows = [win for win in windows if
-                           (win.isActive or win.isMaximized or win.isMinimized) and win.title != '']
-        return visible_windows[:-1]
+    def get_visible_windows() -> List[gw.Window]:
+        """Get all visible non-empty windows"""
+        try:
+            return [
+                win for win in gw.getAllWindows()
+                if win.visible and win.title
+            ]
+        except Exception as e:
+            logger.error(f"Error getting windows: {e}")
+            return []
 
     @staticmethod
     def minimize_window(window: Optional[gw.Window] = None) -> bool:
-        if window is None:
-            window = WindowsAppController.get_active_window()
-        if window:
-            try:
-                window.minimize()
-                return True
-            except gw.PyGetWindowException as e:
-                print(f"Could not minimize window {window}: {e}")
-                return False
-        return False
+        """Minimize specified or active window"""
+        win = window or WindowsAppController.get_active_window()
+        if not win:
+            return False
+        try:
+            win.minimize()
+            return True
+        except Exception as e:
+            logger.error(f"Minimize failed: {e}")
+            return False
 
     @staticmethod
     def maximize_window(window: Optional[gw.Window] = None) -> bool:
-        if window is None:
-            window = WindowsAppController.get_active_window()
-        if window:
-            try:
-                if window.left == -32000 and window.top == -32000:
-                    window.restore()
-                window.activate()
-                if not window.isMaximized:
-                    window.maximize()
-                window.show()
-                return True
-            except gw.PyGetWindowException as e:
-                print(f"Could not maximize window {window}: {e}")
-                return False
-        return False
+        """Maximize specified or active window"""
+        win = window or WindowsAppController.get_active_window()
+        if not win:
+            return False
+        try:
+            if win.isMinimized:
+                win.restore()
+            if not win.isMaximized:
+                win.maximize()
+            return True
+        except Exception as e:
+            logger.error(f"Maximize failed: {e}")
+            return False
 
     @staticmethod
     def close_window(window: Optional[gw.Window] = None) -> bool:
-        time.sleep(5)
-        if window is None:
-            window = WindowsAppController.get_active_window()
-        if window:
-            try:
-                window.close()
-                return True
-            except gw.PyGetWindowException as e:
-                print(f"Could not close window {window}: {e}")
-                return False
-        return False
-
-    @staticmethod
-    def activate_window(window: Optional[gw.Window] = None) -> bool:
-        if window is None:
-            window = WindowsAppController.get_active_window()
-        if window:
-            try:
-                window.show()
-                window.activate()
-                return True
-            except gw.PyGetWindowException as e:
-                print(f"Could not activate window {window}: {e}")
-                return False
-        return False
-
-    @staticmethod
-    def minimize_all_windows() -> bool:
-        success = True
-        visible_windows = WindowsAppController.get_all_visible_windows()
-        for win in visible_windows:
-            if not WindowsAppController.minimize_window(win):
-                success = False
-        return success
-
-    @staticmethod
-    def maximize_all_windows() -> bool:
-        success = True
-        visible_windows = WindowsAppController.get_all_visible_windows()
-        for win in visible_windows:
-            if not WindowsAppController.maximize_window(win):
-                success = False
-            if not WindowsAppController.activate_window(win):
-                success = False
-            # time.sleep(2)
-        return success
-
-    @staticmethod
-    def close_all_windows() -> bool:
-        success = True
-        visible_windows = WindowsAppController.get_all_visible_windows()
-        for win in visible_windows:
-            if win.isMinimized or win.isMaximized or win.isActive:
-                if not WindowsAppController.close_window(win):
-                    success = False
-        return success
-
-    @staticmethod
-    def move_window_to_left(window: Optional[gw.Window] = None) -> bool:
-        if window is None:
-            window = WindowsAppController.get_active_window()
-        if window and window.isActive:
-            pyautogui.hotkey("win", "left")
+        """Close specified or active window"""
+        win = window or WindowsAppController.get_active_window()
+        if not win:
+            return False
+        try:
+            win.close()
             return True
-        return False
+        except Exception as e:
+            logger.error(f"Close failed: {e}")
+            return False
 
     @staticmethod
-    def move_window_to_right(window: Optional[gw.Window] = None) -> bool:
-        if window is None:
-            window = WindowsAppController.get_active_window()
-        if window and window.isActive:
-            pyautogui.hotkey("win", "right")
-            return True
-        return False
+    def activate_window(window: gw.Window) -> bool:
+        """Activate and bring window to foreground"""
+        try:
+            # First try standard activation
+            window.activate()
 
-    @staticmethod
-    def switch_windows(frame_number: int = 1) -> bool:
-        visible_windows = WindowsAppController.get_all_visible_windows()
-        ActiveWindow = gw.getActiveWindow()
-        visible_windows.remove(ActiveWindow)
-        visible_windows.insert(0, ActiveWindow)
-        if len(visible_windows) > 0:
-            if frame_number >= 0:
-                if frame_number < len(visible_windows):
-                    target_window = visible_windows[frame_number]
-                else:
-                    # print(f"Frame number {frame_number} exceeds the number of visible windows.")
-                    return False
-            else:
-                if -frame_number <= len(visible_windows):
-                    frame_number = len(visible_windows) + frame_number
-                    target_window = visible_windows[frame_number]
-                else:
-                    # print(f"Frame number {frame_number} exceeds the number of visible windows.")
-                    return False
-
-            try:
-                # time.sleep(1)
-                WindowsAppController.maximize_window(target_window)
-                for i, win in enumerate(visible_windows):
-                    if i != frame_number:
-                        WindowsAppController.minimize_window(win)
-                return True
-            except gw.PyGetWindowException as e:
-                print(f"An error occurred while handling window {target_window}: {e}")
-                return False
-        else:
-            # print("No visible windows to switch to.")
-            pass
-        return False
-
-    @staticmethod
-    def move_window_to_left_and_click(window: Optional[gw.Window] = None) -> bool:
-        if window is None:
-            window = WindowsAppController.get_active_window()
-        if window and window.isActive:
-            pyautogui.hotkey("win", "left")
+            # Verify activation
             time.sleep(0.5)
-            window_x, window_y, window_width, window_height = window.left, window.top, window.width, window.height
-            mox, moy = pyautogui.position()
-            click_x = window_x + window_width - 200  # Click towards the left side
-            click_y = window_y + 20  # Click on an empty space near the top
-            pyautogui.click(click_x, click_y, duration=0)  # Adjust click duration as needed
-            time.sleep(0.1)
-            pyautogui.click(mox, moy, duration=0)  # Adjust click duration as needed
-            return True
-        return False
+            active = gw.getActiveWindow()
+            if active and active.title == window.title:
+                return True
 
-    @staticmethod
-    def move_window_to_right_and_click(window: Optional[gw.Window] = None) -> bool:
-        if window is None:
-            window = WindowsAppController.get_active_window()
-        if window and window.isActive:
-            pyautogui.hotkey("win", "right")
+            # If verification failed, try alternative method
+            logger.warning("Standard activation failed, trying alt method")
+            if window.isMinimized:
+                window.restore()
+            window.maximize()
+            time.sleep(0.1)
+            window.minimize()
+            time.sleep(0.1)
+            window.restore()
+            window.activate()
+
+            # Final verification
             time.sleep(0.5)
-            window_x, window_y, window_width, window_height = window.left, window.top, window.width, window.height
-            mox, moy = pyautogui.position()
-            click_x = window_x + window_width - 200  # Click towards the left side
-            click_y = window_y + 20  # Click on an empty space near the top
-            pyautogui.click(click_x, click_y, duration=0)  # Adjust click duration as needed
-            time.sleep(0.1)
-            pyautogui.click(mox, moy, duration=0)  # Adjust click duration as needed
+            active = gw.getActiveWindow()
+            return active and active.title == window.title
+        except Exception as e:
+            # Check if the error message indicates success
+            if "0" in str(e) and "success" in str(e).lower():
+                logger.info(f"Ignoring benign activation error: {e}")
+                return True
+            logger.error(f"Activation failed: {e}")
+            return False
+
+    @classmethod
+    def minimize_all_windows(cls) -> bool:
+        """Minimize all visible windows"""
+        success = True
+        for win in cls.get_visible_windows():
+            if not cls.minimize_window(win):
+                success = False
+        return success
+
+    @classmethod
+    def maximize_all_windows(cls) -> bool:
+        """Maximize all visible windows"""
+        success = True
+        for win in cls.get_visible_windows():
+            if not cls.maximize_window(win):
+                success = False
+        return success
+
+    @classmethod
+    def close_all_windows(cls) -> bool:
+        """Close all visible windows"""
+        success = True
+        for win in cls.get_visible_windows():
+            if not cls.close_window(win):
+                success = False
+        return success
+
+    @staticmethod
+    def move_window_to_left() -> bool:
+        """Move active window to left half of screen"""
+        try:
+            pyautogui.hotkey("win", "left")
+            time.sleep(0.5)  # Allow time for animation
             return True
-        return False
+        except Exception as e:
+            logger.error(f"Move left failed: {e}")
+            return False
 
     @staticmethod
-    def switch_focus_to_next_active_window() -> bool:
-        return WindowsAppController.switch_windows(1)
+    def move_window_to_right() -> bool:
+        """Move active window to right half of screen"""
+        try:
+            pyautogui.hotkey("win", "right")
+            time.sleep(0.5)  # Allow time for animation
+            return True
+        except Exception as e:
+            logger.error(f"Move right failed: {e}")
+            return False
 
-    @staticmethod
-    def display_visible_windows() -> List[gw.Window]:
-        ActiveWindow = gw.getActiveWindow()
-        visible_windows = WindowsAppController.get_all_visible_windows()
-        visible_windows.remove(ActiveWindow)
-        visible_windows.insert(0, ActiveWindow)
-        for win in visible_windows:
-            try:
-                # Restore window if it is minimized
-                if win.isMinimized:
-                    win.restore()
-                    # time.sleep(1)
-                # Maximize window if it's not maximized
-                if not win.isMaximized:
-                    win.maximize()
-                    # time.sleep(1)
-                # Activate window if it's not active
-                if not win.isActive:
-                    win.activate()
-                    # time.sleep(1)
-            except gw.PyGetWindowException as e:
-                if "Access is denied" in str(e):
-                    print(f"Skipping window {win} due to access denial.")
-                else:
-                    print(f"An error occurred while handling window {win}: {e}")
-                return False
-        return visible_windows
+    @classmethod
+    def switch_windows(cls) -> bool:
+        """Switch focus to next window in rotation"""
+        windows = cls.get_visible_windows()
+        if not windows:
+            return False
 
-    @staticmethod
-    def perform_background_activation(operation: str = '', addr: str = '') -> bool:
-        for minimize_wind in WindowsAppController.WindowsAppController_set_data['minimize_wind']:
-            if operation in minimize_wind:
-                return WindowsAppController.minimize_window()
-        for maximize_wind in WindowsAppController.WindowsAppController_set_data['maximize_wind']:
-            if operation in maximize_wind:
-                return WindowsAppController.maximize_window()
-        for minimize_all_wind in WindowsAppController.WindowsAppController_set_data['minimize_all_wind']:
-            if operation in minimize_all_wind:
-                return WindowsAppController.minimize_all_windows()
-        for maximize_all_wind in WindowsAppController.WindowsAppController_set_data['maximize_all_wind']:
-            if operation in maximize_all_wind:
-                return WindowsAppController.maximize_all_windows()
-        for close_wind in WindowsAppController.WindowsAppController_set_data['close_wind']:
-            if operation in close_wind:
-                return WindowsAppController.close_window()
-        for close_all_wind in WindowsAppController.WindowsAppController_set_data['close_all_wind']:
-            if operation in close_all_wind:
-                return WindowsAppController.close_all_windows()
-        for shift_windows in WindowsAppController.WindowsAppController_set_data['shift_windows']:
-            if operation in shift_windows:
-                return WindowsAppController.switch_windows()
-        for move_wind_left in WindowsAppController.WindowsAppController_set_data['move_wind_left']:
-            if operation in move_wind_left:
-                return WindowsAppController.move_window_to_left()
-        for move_wind_right in WindowsAppController.WindowsAppController_set_data['move_wind_right']:
-            if operation in move_wind_right:
-                return WindowsAppController.move_window_to_right()
-        return False
+        active = cls.get_active_window()
+        if not active:
+            return cls.activate_window(windows[0])
 
-
-def process_operation(operation):
-    if not isinstance(operation, str):
-        if len(operation) > 1:
-            operation = " ".join(operation)
+        if active in windows:
+            current_idx = windows.index(active)
+            next_idx = (current_idx + 1) % len(windows)
         else:
-            operation = operation[0]
-    return operation
+            next_idx = 0
+
+        logger.info(f"Switching from window {current_idx} to {next_idx}")
+        return cls.activate_window(windows[next_idx])
+
+    @classmethod
+    def execute_command(cls, operation: str) -> bool:
+        """Execute window command based on normalized operation string"""
+        normalized = cls.replace_words(operation.lower().strip())
+        logger.debug(f"Processing command: {normalized}")
+
+        # Check both original and normalized phrases
+        for _, command_info in cls.COMMAND_MAP.items():
+            for phrase in command_info['phrases']:
+                # Check if phrase matches normalized command
+                if phrase in normalized:
+                    logger.info(f"Matched command: {phrase}")
+                    handler = getattr(cls, command_info['handler'])
+                    return handler()
+
+                # Also check without word replacement for close commands
+                if "close" in phrase and phrase in operation.lower():
+                    logger.info(f"Matched original command: {phrase}")
+                    handler = getattr(cls, command_info['handler'])
+                    return handler()
+
+        logger.warning(f"No handler found for: {operation}")
+        return False
 
 
-def MainActivationWindows(operation: str = "", addr: str = "") -> bool:
-    operation = process_operation(operation)
-    if DesktopSystemController.perform_background_activation(operation.lower(), ""):
+def MainActivationWindows(operation: Union[str, List[str]], addr: str = "") -> bool:
+    """Main entry point for desktop/window operations"""
+    # Normalize input
+    if isinstance(operation, list):
+        operation = " ".join(operation)
+    original_operation = operation
+    operation = operation.lower().strip()
+
+    logger.info(f"Processing operation: {original_operation}")
+
+    # Execute system commands
+    if DesktopSystemController.execute_command(operation):
         return True
-    elif WindowsAppController.perform_background_activation(operation.lower(), ""):
+
+    # Execute window commands with original operation for close commands
+    result = WindowsAppController.execute_command(operation)
+    if not result and "close" in operation:
+        # Retry with original operation if close command failed
+        result = WindowsAppController.execute_command(original_operation)
+
+    if result:
         return True
+
+    logger.warning(f"No handler found for: {original_operation}")
     return False
 
 
+# Initialization
 if __name__ == "__main__":
-    # print(MainActivationWindows("set brightness 500", ''))
-    # print(WindowsAppController.switch_windows(2))
-    pass
+    try:
+        # Enable debug logging for troubleshooting
+        logger.setLevel(logging.DEBUG)
+
+        AppManager.load_app_data(
+            "F:/RunningProjects/JarvisControlSystem/Jarvis/Data/Data_Information_Value/AppNameList.xlsx"
+        )
+        logger.info("System initialized successfully")
+
+        # Test commands
+        test_commands = [
+            "set brightness 50",
+            "increase volume",
+            "next window",
+            "move window left",
+            "close window",
+            "close windows"
+        ]
+        time.sleep(10)
+        for cmd in test_commands:
+            logger.info(f"Testing command: {cmd}")
+            result = MainActivationWindows(cmd)
+            logger.info(f"Result: {'Success' if result else 'Failed'}")
+            time.sleep(1)
+
+    except Exception as e:
+        logger.error(f"Initialization failed: {e}")
