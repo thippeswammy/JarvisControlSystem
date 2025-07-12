@@ -5,7 +5,7 @@ from Jarvis import RecentAppPerformanceMonitor
 from WindowsDefaultApps import settingControlApp
 from WindowsFeature import WINDOWS_SystemController
 from Data import JSON_Information_Center, XLSX_Information_Center
-from CameraFeatures import handSectionMovement
+# from CameraFeatures import handSectionMovement
 
 
 def inputFromOtherDevices():
@@ -43,7 +43,7 @@ def monitor_camera():
 
 
 def Text_input():
-    # passing_user_input("close present windows", "|| -->>>")
+    passing_user_input("hi jarvis", "|| -->>>")
     while True:
         text = input("Enter =>")
         passing_user_input(text, "| -->>>")
@@ -65,5 +65,5 @@ if __name__ == "__main__":
     # thread1.start()
     # thread2 = threading.Thread(target=monitor_camera)
     # thread2.start()
-    # Text_input()
-    inputFromOtherDevices()
+    Text_input()
+    # inputFromOtherDevices()

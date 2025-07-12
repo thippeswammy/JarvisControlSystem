@@ -14,11 +14,24 @@ from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
 
 
 def read_app_list_from_excel(file_path: str) -> tuple:
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    df = pd.read_excel(file_path)
-    app_names = df.iloc[:, 0].tolist()  # Assuming the first column contains app names
-    addresses = df.iloc[:, 1].tolist()  # Assuming the second column contains addresses
+    import openpyxl
+    wb = openpyxl.load_workbook(file_path)
+    sheet = wb.active
+
+    data = []
+    for row in sheet.iter_rows(min_row=2, values_only=True):
+        # Only take first two non-empty values
+        if row and len(row) >= 2 and row[0] and row[1]:
+            data.append([str(row[0]).strip(), str(row[1]).strip()])
+
+    if not data:
+        raise ValueError("No valid data found in Excel file.")
+
+    app_names = [r[0] for r in data]
+    addresses = [r[1] for r in data]
+
     return app_names, addresses
+
 
 
 file_path = "F:/RunningProjects/JarvisControlSystem/Jarvis/Data/Data_Information_Value/AppNameList.xlsx"
