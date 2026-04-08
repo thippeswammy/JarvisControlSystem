@@ -338,6 +338,7 @@ SCENARIOS: list[Scenario] = [
             Step("hi jarvis",                    wait=0.5,  description="Activate"),
             Step("open settings system",         wait=2.0,  description="Open Settings System page"),
             Step("open settings display",        wait=1.5,  description="Go to Display"),
+            Step("scroll down",                  wait=1.0,  description="Scroll down to reveal options"),
             Step("click advanced display",       wait=1.5,  description="Click Advanced Display via pywinauto"),
             Step("snap left",                    wait=1.0,  description="Snap window to the left"),
             Step("press win m",                  wait=0.8,  description="Minimize all windows (Win+M)"),
