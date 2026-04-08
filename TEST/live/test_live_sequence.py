@@ -346,6 +346,24 @@ SCENARIOS: list[Scenario] = [
         ],
         cleanup=["close settings"],
     ),
+
+    # ──────────────────────────────────────────
+    Scenario(
+        id=12,
+        name="Special File Explorer UI Navigation Test",
+        description="Open explorer -> go to documents -> scroll -> click view -> snap right -> minimize all",
+        steps=[
+            Step("hi jarvis",                    wait=0.5,  description="Activate"),
+            Step("open file explorer",           wait=2.5,  description="Open File Explorer"),
+            Step("go to documents",              wait=1.5,  description="Navigate to Documents"),
+            Step("scroll down",                  wait=1.0,  description="Scroll down to reveal files"),
+            Step("click view",                   wait=1.5,  description="Click View tab via pywinauto"),
+            Step("snap right",                   wait=1.0,  description="Snap window to the right"),
+            Step("press win m",                  wait=0.8,  description="Minimize all windows (Win+M)"),
+            Step("close jarvis",                 wait=0.3,  description="Deactivate"),
+        ],
+        cleanup=["close explorer"],
+    ),
 ]
 
 

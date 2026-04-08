@@ -79,6 +79,7 @@ class AppNavigator:
 
     def __init__(self):
         self._finder = UIFinder(min_score=0.4)
+        self._ocr_clicker = None
 
     # ─────────────────────────────────────────
     #  Click Element (any app)
@@ -113,7 +114,17 @@ class AppNavigator:
             logger.info(f"Used keyboard shortcut {keys} for '{target}'")
             return True
 
-        logger.warning(f"Could not find element or shortcut for: {target!r}")
+        # Step 3: OCR Visual Scan Fallback (Ultimate Fallback)
+        logger.info(f"UI and Keyboard shortcuts failed. Attempting visual OCR scan for '{target}'...")
+        if self._ocr_clicker is None:
+            from Jarvis.navigator.ocr_clicker import VisualClicker
+            self._ocr_clicker = VisualClicker()
+            
+        if self._ocr_clicker.click_text(target):
+            logger.info(f"Clicked '{target}' visually using OCR.")
+            return True
+
+        logger.warning(f"Could not find element visually or via shortcut: {target!r}")
         return False
 
     # ─────────────────────────────────────────
@@ -200,10 +211,13 @@ class AppNavigator:
         try:
             direction_lower = direction.lower()
             if direction_lower in ("down", "up"):
-                clicks = amount if direction_lower == "down" else -amount
-                pyautogui.scroll(clicks)
+                # On Windows: negative value scrolls DOWN, positive scrolls UP.
+                # So if direction="down", we negate the amount.
+                clicks = -amount if direction_lower == "down" else amount
+                # Multiply by 100 because PyAutoGUI amount on Windows is very small per tick
+                pyautogui.scroll(clicks * 100)
             elif direction_lower == "left":
-                pyautogui.hscroll(-amount)
+                pyautogui.hscroll(-amount * 100)
             elif direction_lower == "right":
                 pyautogui.hscroll(amount)
             logger.info(f"Scrolled {direction} by {amount}")
