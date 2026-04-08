@@ -25,6 +25,13 @@ from typing import Optional
 # ── Setup path ──────────────────────────────
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
+import pyautogui
+from PIL import ImageChops
+try:
+    from TEST.live.eval_report_generator import VisualReportGenerator
+except ImportError:
+    VisualReportGenerator = None
+
 # ── Minimal logging during live tests ───────
 logging.basicConfig(
     level=logging.WARNING,
@@ -44,6 +51,7 @@ class Step:
     wait: float = 1.5          # seconds to wait AFTER sending command
     description: str = ""      # human label for the report
     expect_success: bool = True
+    expect_visual_change: bool = False
 
 
 @dataclass
@@ -61,6 +69,8 @@ class StepResult:
     success: bool
     message: str
     duration: float
+    img_before: Optional[object] = None
+    img_after: Optional[object] = None
 
 
 @dataclass
@@ -351,15 +361,15 @@ SCENARIOS: list[Scenario] = [
     Scenario(
         id=12,
         name="Special File Explorer UI Navigation Test",
-        description="Open explorer -> go to documents -> scroll -> click view -> snap right -> minimize all",
+        description="Open file explorer -> maximize -> go to documents -> scroll -> open Arduino -> minimize all",
         steps=[
             Step("hi jarvis",                    wait=0.5,  description="Activate"),
-            Step("open file explorer",           wait=2.5,  description="Open File Explorer"),
-            Step("go to documents",              wait=1.5,  description="Navigate to Documents"),
-            Step("scroll down",                  wait=1.0,  description="Scroll down to reveal files"),
-            Step("click view",                   wait=1.5,  description="Click View tab via pywinauto"),
-            Step("snap right",                   wait=1.0,  description="Snap window to the right"),
-            Step("press win m",                  wait=0.8,  description="Minimize all windows (Win+M)"),
+            Step("open file explorer",           wait=2.5,  description="Open File Explorer", expect_visual_change=True),
+            Step("maximize window",              wait=1.0,  description="Maximize window", expect_visual_change=True),
+            Step("go to documents",              wait=1.5,  description="Navigate to Documents", expect_visual_change=True),
+            Step("scroll down",                  wait=1.0,  description="Scroll down to reveal files", expect_visual_change=True),
+            Step("open folder Arduino",          wait=1.5,  description="Open Arduino folder via address bar", expect_visual_change=True),
+            Step("press win m",                  wait=0.8,  description="Minimize all windows (Win+M)", expect_visual_change=True),
             Step("close jarvis",                 wait=0.3,  description="Deactivate"),
         ],
         cleanup=["close explorer"],
@@ -408,15 +418,36 @@ class LiveTestRunner:
                 message=f"[DRY] → {intent.action.name}({intent.target!r})",
                 duration=0.0,
             )
+            
+        img_before = None
+        img_after = None
+        
         try:
+            img_before = pyautogui.screenshot()
+            
             result = engine.process(step.command)
-            duration = time.time() - t0
             time.sleep(step.wait)
+            
+            img_after = pyautogui.screenshot()
+            duration = time.time() - t0
+            
+            actual_success = result.success
+            message = result.message or "(no message)"
+            
+            if actual_success and step.expect_visual_change:
+                diff = ImageChops.difference(img_before.convert("RGB"), img_after.convert("RGB")).getbbox()
+                if diff is None:
+                    actual_success = False
+                    message = "FAILED VISUAL ASSERTION: Engine returned PASS but screen did not change."
+                    print(f"        → [Visual Alert] Step failed because screen did not update visually!")
+
             return StepResult(
                 step=step,
-                success=result.success,
-                message=result.message or "(no message)",
-                duration=duration + step.wait,
+                success=actual_success,
+                message=message,
+                duration=duration,
+                img_before=img_before,
+                img_after=img_after
             )
         except Exception as e:
             duration = time.time() - t0
@@ -424,6 +455,8 @@ class LiveTestRunner:
                 step=step, success=False,
                 message=f"EXCEPTION: {e}",
                 duration=duration,
+                img_before=img_before,
+                img_after=img_after
             )
 
     # ── Run single scenario ──────────────────
@@ -467,7 +500,6 @@ class LiveTestRunner:
         s_result.total_time = time.time() - t0
         return s_result
 
-    # ── Run all scenarios ────────────────────
     def run_all(self, scenario_ids: list[int] = None) -> list[ScenarioResult]:
         targets = [s for s in SCENARIOS if (scenario_ids is None or s.id in scenario_ids)]
 
@@ -478,11 +510,36 @@ class LiveTestRunner:
         print("═" * 70)
 
         all_results = []
+        if not self.dry_run:
+            report_gen = VisualReportGenerator()
+        else:
+            report_gen = None
+
         for scenario in targets:
             result = self.run_scenario(scenario)
             all_results.append(result)
+            
+            if report_gen:
+                report_gen.add_scenario(scenario.name, result.passed)
+                for sr in result.step_results:
+                    report_gen.add_step(
+                        command=sr.step.command,
+                        desc=sr.step.description,
+                        expect_success=sr.step.expect_success,
+                        expect_visual=sr.step.expect_visual_change,
+                        success=sr.success,
+                        message=sr.message,
+                        img_before=sr.img_before,
+                        img_after=sr.img_after
+                    )
+                report_gen.end_scenario()
 
         self._print_summary(all_results)
+        
+        if report_gen:
+            report_path = report_gen.save()
+            print(f"\n  [✔] Visual Evaluation Report Generated at: {report_path}")
+            
         self._shutdown()
         return all_results
 

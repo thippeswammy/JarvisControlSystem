@@ -143,6 +143,23 @@ class DesktopSystemController(SystemCommandHandler):
     }
 
     @staticmethod
+    def open_apps_by_windows_search(query: str, addr: str = "") -> bool:
+        """Fallback: uses Windows Start Menu search to open an app"""
+        try:
+            logger.info(f"{addr} Opening Windows Search for: {query}")
+            pyautogui.press('win')
+            time.sleep(0.5)
+            # Extract just the app name if query has 'open ' prefix
+            app_name = query[5:] if query.startswith("open ") else query
+            pyautogui.write(app_name, interval=0.02)
+            time.sleep(1.0)
+            pyautogui.press('enter')
+            return True
+        except Exception as e:
+            logger.error(f"Windows search failed: {e}")
+            return False
+
+    @staticmethod
     def set_brightness(level: int) -> bool:
         """Set screen brightness (0-100)"""
         try:

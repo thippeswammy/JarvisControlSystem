@@ -206,9 +206,23 @@ class AppNavigator:
     # ─────────────────────────────────────────
     #  Scroll
     # ─────────────────────────────────────────
-    def scroll(self, direction: str = "down", amount: int = 3) -> bool:
-        """Scroll the active window."""
+    def scroll(self, direction: str = "down", amount: int = 3, window=None) -> bool:
+        """Scroll the active window by ensuring the mouse is over it first."""
         try:
+            # Ensure mouse is over the active window so scroll events actually target it
+            if _HAS_PYWINAUTO:
+                win = window or self._finder.get_active_window()
+                if win:
+                    try:
+                        rect = win.rectangle()
+                        # Move to dead center of the window
+                        x = (rect.left + rect.right) // 2
+                        y = (rect.top + rect.bottom) // 2
+                        pyautogui.moveTo(x, y)
+                        time.sleep(0.1)  # tiny sleep to let cursor register
+                    except Exception as e:
+                        logger.debug(f"Could not center mouse for scroll: {e}")
+
             direction_lower = direction.lower()
             if direction_lower in ("down", "up"):
                 # On Windows: negative value scrolls DOWN, positive scrolls UP.

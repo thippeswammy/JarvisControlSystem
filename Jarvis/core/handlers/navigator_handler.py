@@ -71,7 +71,7 @@ def handle_navigate_location(intent: Intent, context) -> ActionResult:
         return ActionResult.ok(f"Navigated to {target}.")
 
     # Try as raw path
-    if resolved and resolved != target:
+    if resolved:
         success = explorer.navigate_to_path(resolved)
         if success:
             return ActionResult.ok(f"Navigated to {resolved}.")

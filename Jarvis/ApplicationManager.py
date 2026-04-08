@@ -23,6 +23,11 @@ def clean_app_name(name: str) -> str:
 
     # Remove extensions
     name_lower = name_lower.replace(".exe", "").replace(".lnk", "")
+    
+    # Map common alias
+    if name_lower.strip() == "file explorer":
+        name_lower = "explorer"
+        
     return name_lower.strip()
 
 
@@ -52,6 +57,14 @@ def open_application(app_name_query: str, app_path_override: Optional[str] = Non
         if not cleaned_name:
             # print(f"{addr}Cleaned app name is empty for query: '{app_name_query}'. Cannot open.")
             return False
+
+        # Native Windows File Explorer bypass
+        if cleaned_name == "explorer":
+            try:
+                subprocess.Popen(r"C:\Windows\explorer.exe", shell=True)
+                return True
+            except Exception:
+                return False
 
         # print(f"{addr}Calling GetFilePath with cleaned name: '{cleaned_name}'")
         found_path = GetFilePath(cleaned_name, addr + "GetFilePath -> ")
