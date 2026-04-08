@@ -1,5 +1,19 @@
-/.idea/
+# Project Specific Data
 /speech/
 /Jarvis/Data/Data_Information_Value/newly_opened_apps45.txt
 /Jarvis/Data/Data_Information_Value/newly_opened_apps54.txt
 /Jarvis/Data/Data_Information_Value/newly_openedḍ_apps.xlsx
+
+# IDEs and Environments
+.idea/
+.venv/
+.vscode/
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+*.log
+

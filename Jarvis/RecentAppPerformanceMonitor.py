@@ -1,17 +1,21 @@
 import os
 import time
-import psutil
+
 import pandas as pd
+import psutil
 
 from Jarvis.Data.JSON_Information_Center import AddDate
 
-FileName = r"F:/RunningProjects/JarvisControlSystem/Jarvis/Data/Data_Information_Value/RecentAppName"
+# Constants
+FILE_NAME = r"F:/RunningProjects/JarvisControlSystem/Jarvis/Data/Data_Information_Value/RecentAppName"
+TEXT_LOG_1 = r"Data/Data_Information_Value/newly_opened_apps45.txt"
+TEXT_LOG_2 = r"Data/Data_Information_Value/newly_opened_apps54.txt"
+EXCEL_LOG = r"Data/Data_Information_Value/newly_opened_apps.xlsx"
 
 
-def append_to_excel(new_apps, new_path, excel_file):
+def append_to_excel(new_apps, new_paths, excel_file):
     os.makedirs(os.path.dirname(excel_file), exist_ok=True)
-    data = {'AppName': new_apps, 'Path': new_path}
-    df = pd.DataFrame(data)
+    df = pd.DataFrame({'AppName': new_apps, 'Path': new_paths})
     try:
         existing_df = pd.read_excel(excel_file)
         combined_df = pd.concat([existing_df, df], ignore_index=True)
@@ -21,53 +25,59 @@ def append_to_excel(new_apps, new_path, excel_file):
 
 
 def get_opened_apps():
-    current_apps = []
-    current_path = []
-    for proc in psutil.process_iter(['pid', 'name', 'exe']):
+    apps, paths = set(), set()
+    for proc in psutil.process_iter(['name', 'exe']):
         try:
-            current_apps.append(proc.info['name'])
-            current_path.append(proc.info['exe'])
-            current_apps = list(set(current_apps))
-            current_path = list(set(current_path))
+            apps.add(proc.info['name'])
+            if proc.info['exe']:
+                paths.add(proc.info['exe'])
         except (psutil.AccessDenied, psutil.NoSuchProcess, psutil.ZombieProcess):
-            pass
+            continue
+    return apps, paths
 
-    return [set(current_apps), set(current_path)]
 
-
-previous_apps = get_opened_apps()
+# Initial snapshot
+previous_apps, previous_paths = get_opened_apps()
 
 
 def RecentAppPerformanceMonitorFun():
-    global previous_apps  # Declare previous_apps as a global variable
+    global previous_apps, previous_paths
 
-    current_apps = get_opened_apps()
+    current_apps, current_paths = get_opened_apps()
 
-    # Identify newly opened apps
-    new_apps = current_apps[0] - previous_apps[0]
-    new_path = current_apps[1] - previous_apps[1]
+    new_apps = current_apps - previous_apps
+    new_paths = current_paths - previous_paths
 
     if new_apps:
-        with open('Data\Data_Information_Value/newly_opened_apps45.txt',
-                  'a') as file:
-            file.write(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-            file.write("Newly Opened Apps:\n")
+        timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+
+        # Log app names
+        with open(TEXT_LOG_1, 'a') as f1:
+            f1.write(f"Timestamp: {timestamp}\nNewly Opened Apps:\n")
             for app in new_apps:
-                file.write(f"- {app}\n")
-            file.write("\n")
-        new_apps = list(new_apps)
-        new_path = list(new_path)
-        with open('Data\Data_Information_Value/newly_opened_apps54.txt',
-                  'a') as file:
-            for i in range(len(new_apps)):
-                file.write(new_apps[i])
-                file.write(" --->  " + new_path[i] + " \n")
-            file.write("\n")
-        append_to_excel(new_apps, new_path[:len(new_apps)],
-                        r"Data\Data_Information_Value/newly_openedḍ_apps.xlsx")
+                f1.write(f"- {app}\n")
+            f1.write("\n")
 
-        for i in range(len(new_apps)):
-            AddDate(FileName, new_apps[i], [new_path[i]])
+        # Prepare matching paths for new apps
+        matched_paths = list(new_paths)[:len(new_apps)]
+        app_list = list(new_apps)
 
-    previous_apps = current_apps
-    time.sleep(1)  # Adjust the interval as needed
+        # Log app names with paths
+        with open(TEXT_LOG_2, 'a') as f2:
+            for app, path in zip(app_list, matched_paths):
+                f2.write(f"{app} ---> {path}\n")
+            f2.write("\n")
+
+        # Append to Excel
+        append_to_excel(app_list, matched_paths, EXCEL_LOG)
+
+        # Update JSON
+        for app, path in zip(app_list, matched_paths):
+            AddDate(FILE_NAME, app, [path])
+
+    previous_apps.clear()
+    previous_apps.update(current_apps)
+    previous_paths.clear()
+    previous_paths.update(current_paths)
+
+    time.sleep(1)
