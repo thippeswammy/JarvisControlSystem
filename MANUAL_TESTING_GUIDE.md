@@ -97,3 +97,17 @@ Follow these steps to manually verify the new Jarvis AI architecture. You will p
 ---
 
 If all of the above works cleanly, the new intent engine, action registry, and generic UI navigator are fully battle-ready!
+
+## 🟪 Phase 6: Special Settings UI Walkthrough
+*Goal: Navigate deep into settings, interact within the UI, snap the window, and minimize the desktop.*
+
+- [ ] **Type:** \open settings system\
+   - **Expect:** Settings opens directly to the System page.
+- [ ] **Type:** \open settings display\
+   - **Expect:** Settings navigates to the Display section.
+- [ ] **Type:** \click advanced display\
+   - **Expect:** Jarvis looks inside the Pywinauto UI tree and clicks the 'Advanced Display' button.
+- [ ] **Type:** \snap left\
+   - **Expect:** The Settings app is snapped to the left half of the screen.
+- [ ] **Type:** \press win m\
+   - **Expect:** Your windows all minimize to the desktop.

@@ -328,6 +328,23 @@ SCENARIOS: list[Scenario] = [
         ],
         cleanup=["close notepad", "close explorer", "close settings"],
     ),
+
+    # ──────────────────────────────────────────
+    Scenario(
+        id=11,
+        name="Special Settings UI Navigation Test",
+        description="Open settings -> system -> display -> click advanced display -> snap left -> minimize all",
+        steps=[
+            Step("hi jarvis",                    wait=0.5,  description="Activate"),
+            Step("open settings system",         wait=2.0,  description="Open Settings System page"),
+            Step("open settings display",        wait=1.5,  description="Go to Display"),
+            Step("click advanced display",       wait=1.5,  description="Click Advanced Display via pywinauto"),
+            Step("snap left",                    wait=1.0,  description="Snap window to the left"),
+            Step("press win m",                  wait=0.8,  description="Minimize all windows (Win+M)"),
+            Step("close jarvis",                 wait=0.3,  description="Deactivate"),
+        ],
+        cleanup=["close settings"],
+    ),
 ]
 
 
