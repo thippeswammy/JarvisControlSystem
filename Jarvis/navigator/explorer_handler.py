@@ -240,6 +240,22 @@ class ExplorerHandler:
             pyautogui.typewrite(path, interval=0.03)
             pyautogui.press("enter")
             time.sleep(0.5)
+            
+            # Check for error dialogs. Usually they are tiny popups, or the active window title changes to the error.
+            if _HAS_PYWINAUTO:
+                error_wins = Desktop(backend="uia").windows(title=os.path.basename(path), control_type="Window")
+                if error_wins and len(error_wins) > 0:
+                    error_win = error_wins[0]
+                    text = error_win.window_text()
+                    if "Windows can't find" in text or "Check the spelling" in text or "is not available" in text:
+                        error_win.set_focus()
+                        pyautogui.press("enter") # Dismiss the error dialog "OK"
+                        logger.error(f"Address bar navigation failed: error popup for {path}")
+                        return False
+            
+            # Alternatively, if pywinauto isn't available or didn't catch it, check if we're still exactly where we were?
+            # It's okay, the main error is the "Windows can't find" dialog which is named after the path.
+            
             logger.info(f"Navigated address bar to: {path}")
             return True
         except Exception as e:

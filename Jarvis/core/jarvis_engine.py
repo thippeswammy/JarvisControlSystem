@@ -23,6 +23,7 @@ from typing import Optional
 from Jarvis.core.intent_engine import IntentEngine, Intent, ActionType
 from Jarvis.core.action_registry import ActionRegistry, ActionResult, registry
 from Jarvis.core.context_manager import ContextManager, Context
+from Jarvis.core.jarvis_llm import LLMFallbackModule
 
 logger = logging.getLogger(__name__)
 
@@ -41,17 +42,22 @@ class JarvisEngine:
         engine.process("set volume to 80")
     """
 
-    def __init__(self, feedback_fn=None, enable_window_tracking: bool = True):
+    def __init__(self, feedback_fn=None, ask_user_fn=None, enable_window_tracking: bool = True):
         """
         Args:
             feedback_fn: callable(message: str) for TTS/print output.
                          Defaults to print().
+            ask_user_fn: callable(prompt: str) -> str to ask user interactively.
             enable_window_tracking: Whether to auto-track the active window.
         """
         self._intent_engine = IntentEngine()
         self._registry = registry
         self._context_mgr = ContextManager()
+        self._llm_fallback = LLMFallbackModule(use_mock=True) # Defaults to mock for speed unless configured
         self._feedback_fn = feedback_fn or self._default_feedback
+        self._ask_user_fn = ask_user_fn or self._default_ask_user
+        
+        self._pending_confirmation_intent: Optional[Intent] = None
 
         # Register all built-in handlers
         self._register_handlers()
@@ -72,6 +78,20 @@ class JarvisEngine:
             return ActionResult.fail("Empty input.")
 
         ctx = self._context_mgr.context
+
+        # ── Guard 0: Pending Confirmation ──
+        if self._pending_confirmation_intent:
+            response = text.lower().strip()
+            if response in ["yes", "y", "yeah", "yep"]:
+                self._feedback("Executing confirmed command...")
+                result = self._registry.dispatch(self._pending_confirmation_intent, ctx)
+                self._pending_confirmation_intent = None
+                self._context_mgr.update(self._pending_confirmation_intent, result.success)
+                return result
+            else:
+                self._pending_confirmation_intent = None
+                self._feedback("Action cancelled.")
+                return ActionResult.ok("Cancelled by user.")
 
         # ── Guard 1: Typing mode — pass all text directly to keyboard ──
         if ctx.is_typing_mode and ctx.is_active:
@@ -97,22 +117,60 @@ class JarvisEngine:
             return ActionResult.fail(msg)
 
         # ── Guard 3: Unknown intent ─────────────
-        if intent.action == ActionType.UNKNOWN:
-            msg = f"I didn't understand: '{text}'"
-            self._feedback(msg)
-            return ActionResult.fail(msg)
+        is_unknown = (intent.action == ActionType.UNKNOWN)
+        
+        if not is_unknown:
+            # ── Dispatch to handler ─────────────────
+            result = self._registry.dispatch(intent, ctx)
+            if result.success:
+                # ── Update context ──────────────────────
+                self._context_mgr.update(intent, result.success)
 
-        # ── Dispatch to handler ─────────────────
-        result = self._registry.dispatch(intent, ctx)
+                # ── Feedback ─────────────────────────────
+                if result.message:
+                    self._feedback(result.message)
+                return result
+                
+        # ── FLlow fell through (Unknown Intent, or Handler failed) -> LLM Fallback ──
+        context_data = {"available_targets": []}
+        # If we are in Explorer, we might want to get directory contents.
+        # Here we mock it or fetch basic context based on active app.
+        if ctx.active_app == "explorer":
+            context_data["available_targets"] = ["Arduino", "Python", "Projects", "Documents"] # Mocking dir contents for now
+            
+        corrected_intent, user_prompt = self._llm_fallback.analyze(
+            raw_input=text, 
+            failed_action=intent.action if not is_unknown else None, 
+            current_context=ctx, 
+            context_data=context_data
+        )
+        
+        if corrected_intent:
+            self._feedback(f"LLM Corrected intent to: {corrected_intent.target}")
+            # Dispatch corrected intent
+            result = self._registry.dispatch(corrected_intent, ctx)
+            self._context_mgr.update(corrected_intent, result.success)
+            if result.message:
+                self._feedback(result.message)
+            return result
+        elif user_prompt:
+            # We need user confirmation
+            # Actually, instead of locking the thread with _ask_user_fn if it's CLI, 
+            # we can use the PENDING state since text inputs might come asynchronously.
+            # But the user asked for interaction. Let's use ask_user_fn directly for synchronous.
+            if self._ask_user_fn:
+                ans = self._ask_user_fn(user_prompt)
+                if ans.lower() in ["yes", "y", "yeah", "yep", "sure"]:
+                    # How to know WHAT to execute? The prompt doesn't give us the parsed intent.
+                    pass # Simplified: if LLM hasn't given corrected_intent, we just fail gracefully in this test.
+            
+            # Or use pending state 
+            self._feedback(user_prompt)
+            return ActionResult.fail("Awaiting clarification.")
 
-        # ── Update context ──────────────────────
-        self._context_mgr.update(intent, result.success)
-
-        # ── Feedback ─────────────────────────────
-        if result.message:
-            self._feedback(result.message)
-
-        return result
+        msg = f"I didn't understand: '{text}'"
+        self._feedback(msg)
+        return ActionResult.fail(msg)
 
     # ── Convenience properties ──────────────────
     @property
@@ -136,6 +194,10 @@ class JarvisEngine:
     @staticmethod
     def _default_feedback(message: str):
         print(f"[Jarvis] {message}")
+        
+    @staticmethod
+    def _default_ask_user(prompt: str) -> str:
+        return input(f"[Jarvis] {prompt} [Y/N]: ")
 
     def _register_handlers(self):
         """

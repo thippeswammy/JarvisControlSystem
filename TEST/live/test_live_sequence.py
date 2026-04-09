@@ -368,11 +368,36 @@ SCENARIOS: list[Scenario] = [
             Step("maximize window",              wait=1.0,  description="Maximize window", expect_visual_change=True),
             Step("go to documents",              wait=1.5,  description="Navigate to Documents", expect_visual_change=True),
             Step("scroll down",                  wait=1.0,  description="Scroll down to reveal files", expect_visual_change=True),
-            Step("open folder Arduino",          wait=1.5,  description="Open Arduino folder via address bar", expect_visual_change=True),
+            Step("open folder rduino",           wait=1.5,  description="Open Arduino folder (intentional typo to trigger LLM fallback)", expect_visual_change=True),
             Step("press win m",                  wait=0.8,  description="Minimize all windows (Win+M)", expect_visual_change=True),
             Step("close jarvis",                 wait=0.3,  description="Deactivate"),
         ],
         cleanup=["close explorer"],
+    ),
+
+    # ──────────────────────────────────────────
+    Scenario(
+        id=13,
+        name="Extensive Settings Coverage Test",
+        description="Open various Windows Settings pages sequentially to demonstrate capabilities",
+        steps=[
+            Step("hi jarvis",                    wait=0.5,  description="Activate"),
+            Step("open settings",                wait=2.0,  description="Open Settings home"),
+            Step("open settings system",         wait=1.0,  description="Go to System"),
+            Step("open settings bluetooth",      wait=1.0,  description="Go to Bluetooth"),
+            Step("open settings network",        wait=1.0,  description="Go to Network"),
+            Step("open settings personalization",wait=1.0,  description="Go to Personalization"),
+            Step("open settings apps",           wait=1.0,  description="Go to Apps"),
+            Step("open settings accounts",       wait=1.0,  description="Go to Accounts"),
+            Step("open settings time",           wait=1.0,  description="Go to Time & Language"),
+            Step("open settings gaming",         wait=1.0,  description="Go to Gaming"),
+            Step("open settings accessibility",  wait=1.0,  description="Go to Accessibility"),
+            Step("open settings privacy",        wait=1.0,  description="Go to Privacy"),
+            Step("open settings update",         wait=1.0,  description="Go to Windows Update"),
+            Step("close settings",               wait=1.0,  description="Close Settings"),
+            Step("close jarvis",                 wait=0.3,  description="Deactivate"),
+        ],
+        cleanup=["close settings"],
     ),
 ]
 
