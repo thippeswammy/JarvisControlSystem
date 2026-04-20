@@ -51,12 +51,6 @@ _PROJECT_ROOT = os.path.abspath(
 )
 MEMORY_DIR = os.path.join(_PROJECT_ROOT, "memory")
 
-MEMORY_FILES = {
-    "navigation": os.path.join(MEMORY_DIR, "navigation.md"),
-    "apps":       os.path.join(MEMORY_DIR, "apps.md"),
-    "folders":    os.path.join(MEMORY_DIR, "folders.md"),
-}
-
 
 # ─────────────────────────────────────────────
 #  Recipe Dataclass
@@ -192,10 +186,13 @@ class MemoryManager:
         If a recipe with the same command + precondition already exists,
         increment its success counter instead of duplicating.
         """
-        target_file = MEMORY_FILES.get(category, MEMORY_FILES["navigation"])
+        safe_cat = re.sub(r'[^a-z0-9_-]', '', category.lower().strip())
+        if not safe_cat:
+            safe_cat = "navigation"
+        target_file = os.path.join(MEMORY_DIR, f"{safe_cat}.md")
 
         # Load existing recipes to check for duplicates
-        existing = self._load_recipes_from_file(target_file)
+        existing = self._load_recipes_from_file(target_file, category=category)
         for r in existing:
             if (r.command.lower() == command.lower()
                     and r.precondition_app == (snapshot.active_app or "any")
@@ -248,12 +245,18 @@ class MemoryManager:
             # We want to catch semantic keywords. Simple SequenceMatcher ratio works nicely here,
             # but we can also use word intersection for robustness.
             recipe_cmd = recipe.command.lower()
-            words_a = set(cmd_lower.split())
-            words_b = set(recipe_cmd.split())
             
-            # Use longer of the two: exact string match ratio OR word overlap ratio
-            seq_sim = SequenceMatcher(None, cmd_lower, recipe_cmd).ratio()
-            word_sim = len(words_a.intersection(words_b)) / max(len(words_a), 1)
+            # Remove noise words so 'open X' and 'open Y' don't score highly just because of 'open'
+            noise = {"open", "go", "to", "click", "navigate", "press", "type", "search", "for", "the", "in", "a"}
+            words_a = set(cmd_lower.split()) - noise
+            words_b = set(recipe_cmd.split()) - noise
+            
+            clean_cmd = " ".join(words_a)
+            clean_recipe = " ".join(words_b)
+
+            # Use longer of the two: exact string match ratio OR word overlap ratio (ignoring noise)
+            word_sim = len(words_a.intersection(words_b)) / max(len(words_a), 1) if words_a else 0.0
+            seq_sim = SequenceMatcher(None, clean_cmd, clean_recipe).ratio() if clean_cmd else 0.0
             
             text_score = max(seq_sim, word_sim)
 
@@ -289,8 +292,14 @@ class MemoryManager:
     # ── Internal: Load ───────────────────────────
     def _load_all_recipes(self) -> list[MemoryRecipe]:
         recipes = []
-        for category, path in MEMORY_FILES.items():
-            recipes.extend(self._load_recipes_from_file(path, category=category))
+        if not os.path.exists(MEMORY_DIR):
+            return recipes
+            
+        for file in os.listdir(MEMORY_DIR):
+            if file.endswith(".md"):
+                cat = file[:-3]
+                path = os.path.join(MEMORY_DIR, file)
+                recipes.extend(self._load_recipes_from_file(path, category=cat))
         return recipes
 
     def _load_recipes_from_file(self, path: str, category: str = "navigation") -> list[MemoryRecipe]:
@@ -378,24 +387,12 @@ class MemoryManager:
         return f"# Jarvis Memory — {name.title()}\n\n"
 
     def _ensure_memory_files(self):
-        """Create empty memory files with headers if they don't exist."""
-        headers = {
-            MEMORY_FILES["navigation"]: (
-                "# Jarvis Memory — Navigation\n\n"
-                "<!-- Auto-generated. Each entry records how Jarvis navigated to something.\n"
-                "     Preconditions capture the exact state Jarvis was in when it learned this. -->\n"
-            ),
-            MEMORY_FILES["apps"]: (
-                "# Jarvis Memory — Apps\n\n"
-                "<!-- Auto-generated. Records how Jarvis opens unusual apps. -->\n"
-            ),
-            MEMORY_FILES["folders"]: (
-                "# Jarvis Memory — Folders\n\n"
-                "<!-- Auto-generated. Maps spoken folder names to real paths. -->\n"
-            ),
-        }
-        for path, header in headers.items():
+        """Create empty default memory files with headers if they don't exist."""
+        default_files = ["navigation", "apps", "folders"]
+        
+        for name in default_files:
+            path = os.path.join(MEMORY_DIR, f"{name}.md")
             if not os.path.exists(path):
                 with open(path, "w", encoding="utf-8") as f:
-                    f.write(header)
+                    f.write(f"# Jarvis Memory — {name.title()}\n\n<!-- Auto-generated. -->\n")
                 logger.info(f"[Memory] Created {path}")

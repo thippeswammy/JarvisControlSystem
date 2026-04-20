@@ -116,10 +116,13 @@ class LLMFallbackModule:
             "=== PRESENT CONDITION ===\n"
             f"{snapshot.as_text()}\n\n"
             "Based on the Present Condition and Learned Memory above, "
-            "output one of:\n"
-            '{"action": "NAVIGATE_LOCATION", "target": "CorrectedName", "confidence": 0.95}\n'
-            '{"action": "CLICK_ELEMENT",     "target": "ElementName",   "confidence": 0.90}\n'
-            '{"action": "OPEN_APP",          "target": "AppName",       "confidence": 0.92}\n'
+            "output a JSON object classifying the intent.\n"
+            "Include a 'category' key indicating where to store this memory.\n"
+            "(Use 'apps' for software, 'folders' for directories, 'settings' for Windows options, or 'navigation' for general UI flows).\n\n"
+            "Example valid outputs:\n"
+            '{"action": "NAVIGATE_LOCATION", "target": "CorrectedName", "confidence": 0.95, "category": "folders"}\n'
+            '{"action": "CLICK_ELEMENT",     "target": "ElementName",   "confidence": 0.90, "category": "navigation"}\n'
+            '{"action": "OPEN_APP",          "target": "AppName",       "confidence": 0.92, "category": "apps"}\n'
             '{"action": "ASK_USER",          "message": "Did you mean X?"}\n'
         )
 
@@ -152,17 +155,17 @@ class LLMFallbackModule:
 
         # Fuzzy folder name correction
         if "rduino" in lower and "arduino" in targets_lower:
-            return '{"action": "NAVIGATE_LOCATION", "target": "Arduino", "confidence": 0.98}'
+            return '{"action": "NAVIGATE_LOCATION", "target": "Arduino", "confidence": 0.98, "category": "folders"}'
 
         if "linkedln" in lower or "linkedin" in lower:
-            return '{"action": "OPEN_APP", "target": "linkedin", "confidence": 0.95}'
+            return '{"action": "OPEN_APP", "target": "linkedin", "confidence": 0.95, "category": "apps"}'
 
         if "clink" in lower or "click" in lower:
             # Extract the target after "clink/click"
             parts = lower.replace("clink", "click").split("click", 1)
             target = parts[1].strip() if len(parts) > 1 else ""
             if target:
-                return f'{{"action": "CLICK_ELEMENT", "target": "{target}", "confidence": 0.88}}'
+                return f'{{"action": "CLICK_ELEMENT", "target": "{target}", "confidence": 0.88, "category": "navigation"}}'
 
         return '{"action": "ASK_USER", "message": "I didn\'t quite catch that. Could you clarify?"}'
 
@@ -179,6 +182,7 @@ class LLMFallbackModule:
 
             confidence = float(data.get("confidence", 0.0))
             target = data.get("target", "").strip()
+            category = data.get("category", "navigation").strip()
 
             if confidence >= 0.85:
                 try:
@@ -192,8 +196,9 @@ class LLMFallbackModule:
                     target=target,
                     raw=raw_input,
                     confidence=confidence,
+                    category=category,
                 )
-                logger.info(f"LLM → {action_str}({target!r}) confidence={confidence:.2f}")
+                logger.info(f"LLM → {action_str}({target!r}) category={category!r} confidence={confidence:.2f}")
                 return corrected_intent, None
             else:
                 return None, f"Did you mean '{target}'?"

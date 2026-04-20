@@ -89,10 +89,11 @@ class Intent:
     params: dict = field(default_factory=dict)   # Numeric values, directions, flags
     confidence: float = 1.0        # Matching confidence 0.0 – 1.0
     raw: str = ""                  # Original unmodified input
+    category: str = "navigation"   # Memory category chosen by LLM (apps, folders, navigation)
 
     def __repr__(self):
         return (f"Intent(action={self.action.name}, target={self.target!r}, "
-                f"params={self.params}, confidence={self.confidence:.2f})")
+                f"category={self.category!r}, params={self.params}, confidence={self.confidence:.2f})")
 
 
 # ─────────────────────────────────────────────
