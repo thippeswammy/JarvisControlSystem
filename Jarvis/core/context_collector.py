@@ -225,24 +225,50 @@ class ContextCollector:
             if snap.active_app == "explorer":
                 # List items in the file list panel
                 try:
-                    # Windows 11 Explorer uses 'ItemsView' or 'DirectUIHWND'
-                    # We'll just look for any control_type="ListItem" in the whole window first
-                    # as it's more robust than finding the specific List container.
                     for item in win.descendants(control_type="ListItem"):
                         name = item.window_text().strip()
                         if name:
-                            targets.append(name)
+                            # Check if item is selected
+                            state = ""
+                            try:
+                                if item.is_selected():
+                                    state = " (selected)"
+                            except Exception:
+                                pass
+                            targets.append(f"{name}{state}")
+                except Exception:
+                    pass
+
+                # Find search box
+                try:
+                    search = win.child_window(control_type="Edit", title_re="Search.*")
+                    if search.exists():
+                        targets.append("Search Box")
                 except Exception:
                     pass
 
             elif snap.active_app == "settings":
                 # Collect visible button/hyperlink text (settings items)
                 try:
-                    for ctrl_type in ["Button", "Hyperlink", "ListItem", "Text"]:
+                    for ctrl_type in ["Button", "Hyperlink", "ListItem", "Text", "MenuItem"]:
                         for item in win.descendants(control_type=ctrl_type):
                             name = item.window_text().strip()
-                            if name and 2 < len(name) < 50:
+                            if name and 2 < len(name) < 60:
+                                # Check if it's a sidebar item or main content
+                                try:
+                                    if item.is_selected():
+                                        name = f"{name} [active]"
+                                except Exception:
+                                    pass
                                 targets.append(name)
+                except Exception:
+                    pass
+
+                # Search box in settings
+                try:
+                    search = win.child_window(control_type="Edit", auto_id="SearchBox")
+                    if search.exists():
+                        targets.append("Settings Search")
                 except Exception:
                     pass
             
