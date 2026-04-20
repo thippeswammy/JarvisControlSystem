@@ -95,6 +95,17 @@ class AppNavigator:
         if _HAS_PYWINAUTO:
             win = window or self._finder.get_active_window()
             if win:
+                # Ensure the window is maximized so responsive elements aren't hidden
+                try:
+                    if hasattr(win, 'is_maximized') and not win.is_maximized():
+                        win.maximize()
+                        time.sleep(0.3)
+                    elif hasattr(win, 'maximize'):
+                        win.maximize()
+                        time.sleep(0.3)
+                except Exception:
+                    pass
+
                 elem = self._finder.find_element(
                     target_lower, window=win,
                     preferred_types=list(_CLICKABLE_TYPES),
@@ -142,6 +153,17 @@ class AppNavigator:
         win = window or self._finder.get_active_window()
         if not win:
             return False
+
+        # Ensure the window is maximized so responsive elements aren't hidden
+        try:
+            if hasattr(win, 'is_maximized') and not win.is_maximized():
+                win.maximize()
+                time.sleep(0.3)
+            elif hasattr(win, 'maximize'):
+                win.maximize()
+                time.sleep(0.3)
+        except Exception:
+            pass
 
         # Find text field
         field = self._finder.find_element(

@@ -125,10 +125,14 @@ class JarvisEngine:
             self._feedback(msg)
             return ActionResult.fail(msg)
 
-        # ── Guard 3: Unknown intent / try normal dispatch ────────────
+        # ── Guard 3: Unknown intent ─────────────
         is_unknown = (intent.action == ActionType.UNKNOWN)
 
         if not is_unknown:
+            # ── Guard: Intercept Learn Action ────────────────
+            if intent.action == ActionType.LEARN:
+                return self._handle_learn_action(intent, text)
+
             result = self._registry.dispatch(intent, ctx)
             if result.success:
                 self._context_mgr.update(intent, result.success)
@@ -155,11 +159,22 @@ class JarvisEngine:
             logger.info(f"[Memory] Replaying recipe for: '{text}' → {memory_recipe.steps}")
             self._feedback(f"I remember how to do that — replaying {len(memory_recipe.steps)} steps.")
             last_result = ActionResult.ok("Replayed from memory.")
-            for step_cmd in memory_recipe.steps:
+            for i, step_cmd in enumerate(memory_recipe.steps):
+                logger.info(f"[Memory] Replaying step {i+1}: {step_cmd}")
                 step_intent = self._intent_engine.parse(step_cmd, ctx)
                 last_result = self._registry.dispatch(step_intent, ctx)
                 self._context_mgr.update(step_intent, last_result.success)
-                import time; time.sleep(0.8)  # small pause between replayed steps
+                if not last_result.success:
+                    logger.warning(f"[Memory] Step {i+1} failed: {last_result.message}")
+                    break
+                import time; time.sleep(0.4) 
+            
+            # Message summarizing replay
+            replay_msg = f"Replayed {len(memory_recipe.steps)} steps successfully."
+            if not last_result.success:
+                replay_msg = f"Replay stopped at step {len(memory_recipe.steps)}: {last_result.message}"
+            
+            self._feedback(replay_msg)
             self._memory.save(text, memory_recipe.steps, snapshot)  # increment success count
             return last_result
 
@@ -174,19 +189,7 @@ class JarvisEngine:
 
         if corrected_intent:
             if corrected_intent.action == ActionType.LEARN:
-                # User says "remember that as X"
-                goal = corrected_intent.target or self._fallback_original_command
-                if not self._fallback_steps_taken:
-                    self._feedback("I don't have any recent steps to remember.")
-                    return ActionResult.fail("No steps to learn.")
-                
-                # Use the snapshot from the START of the sequence if possible, 
-                # but for now we use current snapshot.
-                self._memory.save(goal, self._fallback_steps_taken, snapshot)
-                self._feedback(f"I've learned '{goal}' — it now takes {len(self._fallback_steps_taken)} steps.")
-                self._fallback_original_command = ""
-                self._fallback_steps_taken = []
-                return ActionResult.ok(f"Learned recipe for {goal}.")
+                return self._handle_learn_action(corrected_intent, text)
 
             self._feedback(f"LLM corrected: '{corrected_intent.target}'")
             result = self._registry.dispatch(corrected_intent, ctx)
@@ -209,6 +212,32 @@ class JarvisEngine:
         msg = f"I didn't understand: '{text}'"
         self._feedback(msg)
         return ActionResult.fail(msg)
+
+    def _handle_learn_action(self, intent: Intent, raw_text: str) -> ActionResult:
+        """Logic for recording a sequence of steps into memory."""
+        goal = intent.target or self._fallback_original_command
+        if not self._fallback_steps_taken:
+            self._feedback("I don't have any recent steps to remember.")
+            return ActionResult.fail("No steps to learn.")
+        
+        # Capture current snapshot for preconditions
+        snapshot = self._context_collector.collect(recent_commands=self._recent_commands)
+        
+        # Save to memory (category is dynamic from LLM if available)
+        self._memory.save(
+            command=goal,
+            steps=self._fallback_steps_taken,
+            snapshot=snapshot,
+            category=intent.category
+        )
+        
+        self._feedback(f"I've learned '{goal}' — it now takes {len(self._fallback_steps_taken)} steps.")
+        
+        # Reset tracking
+        self._fallback_original_command = ""
+        self._fallback_steps_taken = []
+        
+        return ActionResult.ok(f"Learned recipe for {goal}.")
 
     # ── Convenience properties ──────────────────
     @property

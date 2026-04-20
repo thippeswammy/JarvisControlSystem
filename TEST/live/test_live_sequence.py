@@ -403,24 +403,30 @@ SCENARIOS: list[Scenario] = [
     # ──────────────────────────────────────────
     Scenario(
         id=14,
-        name="Extensive Settings Coverage Test",
-        description="Open various Windows Settings pages sequentially to demonstrate capabilities",
+        name="Self-Learning Demo",
+        description="Demonstrates learning typos, navigating deep paths, and remembering sequences",
         steps=[
             Step("hi jarvis",                    wait=0.5,  description="Activate"),
-            Step("open linkedln",                wait=2.0,  description="Open Settings home"),
-            Step("clink thippeswammy ",         wait=1.0,  description="Go to System"),
-            # Step("open settings bluetooth",      wait=1.0,  description="Go to Bluetooth"),
-            # Step("open settings network",        wait=1.0,  description="Go to Network"),
-            # Step("open settings personalization",wait=1.0,  description="Go to Personalization"),
-            # Step("open settings apps",           wait=1.0,  description="Go to Apps"),
-            # Step("open settings accounts",       wait=1.0,  description="Go to Accounts"),
-            # Step("open settings time",           wait=1.0,  description="Go to Time & Language"),
-            # Step("open settings gaming",         wait=1.0,  description="Go to Gaming"),
-            # Step("open settings accessibility",  wait=1.0,  description="Go to Accessibility"),
-            # Step("open settings privacy",        wait=1.0,  description="Go to Privacy"),
-            # Step("open settings update",         wait=1.0,  description="Go to Windows Update"),
-            # Step("close settings",               wait=1.0,  description="Close Settings"),
-            # Step("close jarvis",                 wait=0.3,  description="Deactivate"),
+            
+            # Phase 1: Typo Learning (LLM correction)
+            # Jarvis will initially use LLM, then save it to apps.md
+            Step("open linkedln",                wait=2.0,  description="Typo correction (linkedln -> linkedin)"),
+            
+            # Phase 2: Sequence Learning (Multi-step)
+            # 1. Ask for something unknown
+            Step("open advanced display",         wait=1.0,  description="Ask for unknown high-level command"),
+            
+            # 2. Provide the steps manually
+            Step("open settings",                wait=2.0,  description="Step 1: Open Settings"),
+            Step("click system",                 wait=1.0,  description="Step 2: Go to System"),
+            Step("click display",                wait=1.0,  description="Step 3: Go to Display"),
+            
+            # 3. Commit the buffer to memory
+            Step("remember that as open advanced display", wait=1.0, description="Save recipe to memory"),
+            
+            # Phase 3: Verification (Recall)
+            # Now Jarvis should skip LLM and replay the 3 clicks instantly
+            Step("open advanced display",         wait=3.0,  description="Replaylearned deep path from memory"),
         ],
         cleanup=["close settings"],
     ),
@@ -433,10 +439,10 @@ SCENARIOS: list[Scenario] = [
 
 class LiveTestRunner:
 
-    PASS  = "✅ PASS"
-    FAIL  = "❌ FAIL"
-    SKIP  = "⏭  SKIP"
-    SEP   = "─" * 70
+    PASS  = "[PASS]"
+    FAIL  = "[FAIL]"
+    SKIP  = "[SKIP]"
+    SEP   = "-" * 70
 
     def __init__(self, dry_run: bool = False):
         self.dry_run = dry_run
@@ -553,11 +559,11 @@ class LiveTestRunner:
     def run_all(self, scenario_ids: list[int] = None) -> list[ScenarioResult]:
         targets = [s for s in SCENARIOS if (scenario_ids is None or s.id in scenario_ids)]
 
-        print("\n" + "═" * 70)
+        print("\n" + "=" * 70)
         print("  JARVIS LIVE TEST SUITE")
         print(f"  Mode: {'DRY RUN (parse only)' if self.dry_run else 'LIVE (real Windows interaction)'}")
         print(f"  Scenarios to run: {len(targets)}")
-        print("═" * 70)
+        print("=" * 70)
 
         all_results = []
         if not self.dry_run:
@@ -595,24 +601,24 @@ class LiveTestRunner:
 
     # ── Summary Report ───────────────────────
     def _print_summary(self, results: list[ScenarioResult]):
-        print("\n" + "═" * 70)
+        print("\n" + "=" * 70)
         print("  RESULTS SUMMARY")
-        print("═" * 70)
+        print("=" * 70)
 
         total_steps = 0
         total_passed = 0
         total_failed = 0
 
         for r in results:
-            icon = "✅" if r.passed else "❌"
+            icon = "[PASS]" if r.passed else "[FAIL]"
             print(f"  {icon} Scenario {r.scenario.id}: {r.scenario.name}")
             print(f"       Steps: {r.pass_count}/{len(r.step_results)} passed  |  Time: {r.total_time:.1f}s")
             if not r.passed:
                 # Show failed steps
                 for sr in r.step_results:
                     if sr.success != sr.step.expect_success:
-                        print(f"       ❌ FAILED: {sr.step.description or sr.step.command!r}")
-                        print(f"          → {sr.message}")
+                        print(f"       [FAIL] FAILED: {sr.step.description or sr.step.command!r}")
+                        print(f"         → {sr.message}")
             total_steps  += len(r.step_results)
             total_passed += r.pass_count
             total_failed += r.fail_count
@@ -622,12 +628,12 @@ class LiveTestRunner:
         print(f"  TOTAL: {total_passed}/{total_steps} steps passed ({pct:.0f}%)")
         scenarios_ok = sum(1 for r in results if r.passed)
         print(f"  SCENARIOS: {scenarios_ok}/{len(results)} passed")
-        print("═" * 70 + "\n")
+        print("=" * 70 + "\n")
 
 
-# ─────────────────────────────────────────────
+# ---------------------------------------------
 #  CLI Entry Point
-# ─────────────────────────────────────────────
+# ---------------------------------------------
 def main():
     parser = argparse.ArgumentParser(
         description="Jarvis Live Sequence Test Runner"
