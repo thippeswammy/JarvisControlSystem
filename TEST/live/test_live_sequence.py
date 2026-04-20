@@ -368,7 +368,7 @@ SCENARIOS: list[Scenario] = [
             Step("maximize window",              wait=1.0,  description="Maximize window", expect_visual_change=True),
             Step("go to documents",              wait=1.5,  description="Navigate to Documents", expect_visual_change=True),
             Step("scroll down",                  wait=1.0,  description="Scroll down to reveal files", expect_visual_change=True),
-            Step("open folder rduino",           wait=1.5,  description="Open Arduino folder (intentional typo to trigger LLM fallback)", expect_visual_change=True),
+            Step("open folder Arduino",           wait=1.5,  description="Open Arduino folder (intentional typo to trigger LLM fallback)", expect_visual_change=True),
             Step("press win m",                  wait=0.8,  description="Minimize all windows (Win+M)", expect_visual_change=True),
             Step("close jarvis",                 wait=0.3,  description="Deactivate"),
         ],
