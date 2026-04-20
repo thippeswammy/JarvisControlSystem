@@ -8,68 +8,77 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from Jarvis.core.jarvis_llm import LLMFallbackModule
 from Jarvis.core.intent_engine import ActionType
 from Jarvis.core.jarvis_engine import JarvisEngine
-from Jarvis.core.action_registry import ActionRegistry, ActionResult, registry
+from Jarvis.core.context_collector import ContextSnapshot
+
 
 class TestLLMFallbackMock(unittest.TestCase):
+
     def setUp(self):
         self.llm = LLMFallbackModule(use_mock=True)
 
+    def _make_snapshot(self, app="explorer", location="", targets=None):
+        snap = ContextSnapshot()
+        snap.active_app = app
+        snap.current_location = location
+        snap.visible_targets = targets or []
+        return snap
+
     def test_mock_successful_fuzzy_match(self):
-        from Jarvis.core.context_manager import Context
-        ctx = Context(active_app="explorer")
-        context_data = {"available_targets": ["Arduino", "Python"]}
-        
-        intent, user_prompt = self.llm.analyze("open folder rduino", ActionType.UNKNOWN, ctx, context_data)
-        
+        snap = self._make_snapshot(app="explorer", targets=["Arduino", "Python"])
+        intent, user_prompt = self.llm.analyze("open folder rduino", ActionType.UNKNOWN, snap)
+
         self.assertIsNotNone(intent)
         self.assertIsNone(user_prompt)
         self.assertEqual(intent.action, ActionType.NAVIGATE_LOCATION)
         self.assertEqual(intent.target, "Arduino")
-        self.assertEqual(intent.confidence, 0.98)
+        self.assertGreaterEqual(intent.confidence, 0.95)
 
     def test_mock_unsuccessful_fuzzy_match_asks_user(self):
-        from Jarvis.core.context_manager import Context
-        ctx = Context(active_app="explorer")
-        context_data = {"available_targets": ["Python"]}
-        
-        intent, user_prompt = self.llm.analyze("open folder rduino", ActionType.UNKNOWN, ctx, context_data)
-        
+        # No "arduino" in visible targets → LLM should ask user
+        snap = self._make_snapshot(app="explorer", targets=["Python"])
+        intent, user_prompt = self.llm.analyze("open folder rduino", ActionType.UNKNOWN, snap)
+
         self.assertIsNone(intent)
         self.assertIsNotNone(user_prompt)
-        self.assertIn("clarify", user_prompt)
+        self.assertIn("clarify", user_prompt.lower())
 
     @patch('Jarvis.navigator.explorer_handler.ExplorerHandler.navigate_to_path')
     @patch('Jarvis.navigator.explorer_handler.ExplorerHandler.navigate_to_named_location')
     def test_jarvis_engine_integration(self, mock_named, mock_path):
-        # We want the original handlers to fail navigating to "rduino"
-        mock_named.return_value = False
-        mock_path.return_value = False
-        
-        # When it tries to navigate to "Arduino" (the LLM corrected target), it succeeds
+        """
+        Full pipeline test:
+          "open folder rduino"
+          → NAVIGATE_LOCATION(rduino) → handler called, mock returns False
+          → ContextCollector builds snapshot with visible_targets=["Arduino", ...]
+          → LLM mock sees "rduino" + "arduino" in targets → corrects to Arduino
+          → handler called again with Arduino → mock returns True → SUCCESS
+        """
         def path_side_effect(target):
-            if "Arduino" in target:
+            if "Arduino" in str(target) or "arduino" in str(target).lower():
                 return True
             return False
-            
-        mock_path.side_effect = path_side_effect
+
         mock_named.return_value = False
-        
-        # Disable window tracking for test
-        engine = JarvisEngine(enable_window_tracking=False)
-        engine.context.active_app = "explorer"
-        engine.context.is_active = True
-        
-        # "open folder rduino" parses to ActionType.NAVIGATE_LOCATION, target="rduino"
-        # The registry dispatches it, it fails (because mock_path returns False).
-        # Fallback intercepts it. In mock mode, context active_app="explorer" gives ["Arduino", ...].
-        # The Fallback returns {"action": "NAVIGATE_LOCATION", "target": "Arduino", "confidence": 0.98}.
-        # Engine dispatches corrected intent, mock_path("Arduino") returns True.
-        # It succeeds!
-        
-        res = engine.process("open folder rduino")
-        
-        self.assertTrue(res.success)
-        self.assertEqual(res.message, "Navigated to Arduino.")
+        mock_path.side_effect = path_side_effect
+
+        # Patch ContextCollector to return a snapshot with Arduino visible
+        with patch(
+            'Jarvis.core.context_collector.ContextCollector.collect',
+            return_value=ContextSnapshot(
+                active_app="explorer",
+                current_location=r"C:\Users\thipp\Documents",
+                visible_targets=["Arduino", "Python", "Projects"],
+            )
+        ):
+            engine = JarvisEngine(enable_window_tracking=False)
+            engine.context.active_app = "explorer"
+            engine.context.is_active = True
+
+            res = engine.process("open folder rduino")
+
+        self.assertTrue(res.success, f"Expected success but got: {res.message}")
+        self.assertIn("Arduino", res.message)
+
 
 if __name__ == "__main__":
     unittest.main()

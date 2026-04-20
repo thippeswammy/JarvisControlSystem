@@ -71,6 +71,9 @@ class ActionType(Enum):
     # App scanner
     SCAN_APPS         = auto()   # "rescan apps"
 
+    # Self-learning
+    LEARN             = auto()   # "remember that as open advanced display"
+
     # Fallback
     UNKNOWN           = auto()
 
@@ -205,6 +208,10 @@ class _Vocab:
         ActionType.SCAN_APPS: [
             "rescan apps", "refresh apps", "scan for programs", "find new apps",
             "update app list", "refresh application list", "rescan applications",
+        ],
+        ActionType.LEARN: [
+            "remember that as", "save that as", "remember as", "save as recipe",
+            "learn this as", "save recipe as",
         ],
     }
 

@@ -24,6 +24,8 @@ from Jarvis.core.intent_engine import IntentEngine, Intent, ActionType
 from Jarvis.core.action_registry import ActionRegistry, ActionResult, registry
 from Jarvis.core.context_manager import ContextManager, Context
 from Jarvis.core.jarvis_llm import LLMFallbackModule
+from Jarvis.core.context_collector import ContextCollector
+from Jarvis.core.jarvis_memory import MemoryManager
 
 logger = logging.getLogger(__name__)
 
@@ -53,11 +55,18 @@ class JarvisEngine:
         self._intent_engine = IntentEngine()
         self._registry = registry
         self._context_mgr = ContextManager()
-        self._llm_fallback = LLMFallbackModule(use_mock=True) # Defaults to mock for speed unless configured
+        self._llm_fallback = LLMFallbackModule(use_mock=True)  # set use_mock=False + model_id to use real LLM
+        self._context_collector = ContextCollector()
+        self._memory = MemoryManager()
         self._feedback_fn = feedback_fn or self._default_feedback
         self._ask_user_fn = ask_user_fn or self._default_ask_user
-        
+
+        # Tracks recent successful commands for context history
+        self._recent_commands: list[str] = []
         self._pending_confirmation_intent: Optional[Intent] = None
+        # Steps tracked during a fallback sequence for memory saving
+        self._fallback_steps_taken: list[str] = []
+        self._fallback_original_command: str = ""
 
         # Register all built-in handlers
         self._register_handlers()
@@ -116,55 +125,84 @@ class JarvisEngine:
             self._feedback(msg)
             return ActionResult.fail(msg)
 
-        # ── Guard 3: Unknown intent ─────────────
+        # ── Guard 3: Unknown intent / try normal dispatch ────────────
         is_unknown = (intent.action == ActionType.UNKNOWN)
-        
+
         if not is_unknown:
-            # ── Dispatch to handler ─────────────────
             result = self._registry.dispatch(intent, ctx)
             if result.success:
-                # ── Update context ──────────────────────
                 self._context_mgr.update(intent, result.success)
+                self._recent_commands.append(text)
+                self._recent_commands = self._recent_commands[-20:]  # keep last 20
+                
+                # If we were tracking a fallback sequence, add this step
+                if self._fallback_original_command:
+                    self._fallback_steps_taken.append(text)
 
-                # ── Feedback ─────────────────────────────
                 if result.message:
                     self._feedback(result.message)
                 return result
-                
-        # ── FLlow fell through (Unknown Intent, or Handler failed) -> LLM Fallback ──
-        context_data = {"available_targets": []}
-        # If we are in Explorer, we might want to get directory contents.
-        # Here we mock it or fetch basic context based on active app.
-        if ctx.active_app == "explorer":
-            context_data["available_targets"] = ["Arduino", "Python", "Projects", "Documents"] # Mocking dir contents for now
-            
+            else:
+                # If a regular command fails, start tracking a new potential recipe
+                self._fallback_original_command = text
+                self._fallback_steps_taken = []
+
+        # ── Flow fell through → try Memory recall first ──────────────
+        snapshot = self._context_collector.collect(recent_commands=self._recent_commands)
+
+        memory_recipe = self._memory.recall(text, snapshot)
+        if memory_recipe:
+            logger.info(f"[Memory] Replaying recipe for: '{text}' → {memory_recipe.steps}")
+            self._feedback(f"I remember how to do that — replaying {len(memory_recipe.steps)} steps.")
+            last_result = ActionResult.ok("Replayed from memory.")
+            for step_cmd in memory_recipe.steps:
+                step_intent = self._intent_engine.parse(step_cmd, ctx)
+                last_result = self._registry.dispatch(step_intent, ctx)
+                self._context_mgr.update(step_intent, last_result.success)
+                import time; time.sleep(0.8)  # small pause between replayed steps
+            self._memory.save(text, memory_recipe.steps, snapshot)  # increment success count
+            return last_result
+
+        # ── Memory miss → LLM Fallback ───────────────────────────────
+        memory_context = self._memory.as_llm_context()
         corrected_intent, user_prompt = self._llm_fallback.analyze(
-            raw_input=text, 
-            failed_action=intent.action if not is_unknown else None, 
-            current_context=ctx, 
-            context_data=context_data
+            raw_input=text,
+            failed_action=intent.action if not is_unknown else None,
+            snapshot=snapshot,
+            memory_context=memory_context,
         )
-        
+
         if corrected_intent:
-            self._feedback(f"LLM Corrected intent to: {corrected_intent.target}")
-            # Dispatch corrected intent
+            if corrected_intent.action == ActionType.LEARN:
+                # User says "remember that as X"
+                goal = corrected_intent.target or self._fallback_original_command
+                if not self._fallback_steps_taken:
+                    self._feedback("I don't have any recent steps to remember.")
+                    return ActionResult.fail("No steps to learn.")
+                
+                # Use the snapshot from the START of the sequence if possible, 
+                # but for now we use current snapshot.
+                self._memory.save(goal, self._fallback_steps_taken, snapshot)
+                self._feedback(f"I've learned '{goal}' — it now takes {len(self._fallback_steps_taken)} steps.")
+                self._fallback_original_command = ""
+                self._fallback_steps_taken = []
+                return ActionResult.ok(f"Learned recipe for {goal}.")
+
+            self._feedback(f"LLM corrected: '{corrected_intent.target}'")
             result = self._registry.dispatch(corrected_intent, ctx)
             self._context_mgr.update(corrected_intent, result.success)
+            if result.success:
+                # Save to memory so next time we skip the LLM entirely
+                self._memory.save(
+                    command=text,
+                    steps=[corrected_intent.raw or text],  # single-step correction
+                    snapshot=snapshot,
+                )
             if result.message:
                 self._feedback(result.message)
             return result
+
         elif user_prompt:
-            # We need user confirmation
-            # Actually, instead of locking the thread with _ask_user_fn if it's CLI, 
-            # we can use the PENDING state since text inputs might come asynchronously.
-            # But the user asked for interaction. Let's use ask_user_fn directly for synchronous.
-            if self._ask_user_fn:
-                ans = self._ask_user_fn(user_prompt)
-                if ans.lower() in ["yes", "y", "yeah", "yep", "sure"]:
-                    # How to know WHAT to execute? The prompt doesn't give us the parsed intent.
-                    pass # Simplified: if LLM hasn't given corrected_intent, we just fail gracefully in this test.
-            
-            # Or use pending state 
             self._feedback(user_prompt)
             return ActionResult.fail("Awaiting clarification.")
 
