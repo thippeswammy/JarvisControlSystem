@@ -26,6 +26,8 @@ from Jarvis.core.context_manager import ContextManager, Context
 from Jarvis.core.jarvis_llm import LLMFallbackModule
 from Jarvis.core.context_collector import ContextCollector
 from Jarvis.core.jarvis_memory import MemoryManager
+from Jarvis.navigator.app_navigator import AppNavigator
+from Jarvis.core.ui_spider import UISpider
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +60,8 @@ class JarvisEngine:
         self._llm_fallback = LLMFallbackModule(use_mock=True)  # set use_mock=False + model_id to use real LLM
         self._context_collector = ContextCollector()
         self._memory = MemoryManager()
+        self._navigator = AppNavigator()
+        self._ui_spider = UISpider(memory_manager=self._memory, navigator=self._navigator)
         self._feedback_fn = feedback_fn or self._default_feedback
         self._ask_user_fn = ask_user_fn or self._default_ask_user
 
@@ -71,9 +75,10 @@ class JarvisEngine:
         # Register all built-in handlers
         self._register_handlers()
 
-        # Start window tracking
+        # Start tracking and spidering
         if enable_window_tracking:
             self._context_mgr.start()
+            self._ui_spider.start()
 
         logger.info("JarvisEngine initialized.")
 
@@ -145,6 +150,11 @@ class JarvisEngine:
 
                 if result.message:
                     self._feedback(result.message)
+                    
+                # Reactive Learning Strategy
+                if intent.action == ActionType.OPEN_APP:
+                    self._learn_app_path_async(intent.target)
+                    
                 return result
             else:
                 # If a regular command fails, start tracking a new potential recipe
@@ -256,9 +266,32 @@ class JarvisEngine:
     def shutdown(self):
         """Clean up background threads."""
         self._context_mgr.stop()
+        if hasattr(self, '_ui_spider'):
+            self._ui_spider.stop()
         logger.info("JarvisEngine shut down.")
 
     # ── Private ─────────────────────────────────
+    def _learn_app_path_async(self, target_name: str):
+        """Reactively learn the path of the app that just opened."""
+        import threading
+        def worker():
+            import time
+            time.sleep(2)  # Wait for app to open
+            try:
+                import psutil
+                from pywinauto import Desktop
+                win = Desktop(backend="uia").windows(visible_only=True)[0]
+                pid = win.process_id()
+                p = psutil.Process(pid)
+                exe_path = p.exe()
+                if exe_path and "explorer.exe" not in exe_path.lower():
+                    self._memory.batch_save_apps({target_name: exe_path})
+                    logger.info(f"[ReactiveMemory] Learned path for {target_name}: {exe_path}")
+            except Exception as e:
+                logger.debug(f"[ReactiveMemory] Could not resolve reactive path for {target_name}: {e}")
+        
+        threading.Thread(target=worker, daemon=True).start()
+
     def _feedback(self, message: str):
         if message:
             self._feedback_fn(message)
@@ -286,6 +319,7 @@ class JarvisEngine:
             "Jarvis.core.handlers.settings_handler",
             "Jarvis.core.handlers.navigator_handler",
             "Jarvis.core.handlers.search_handler",
+            "Jarvis.core.handlers.crawler_handler",
         ]
         for module_path in handler_modules:
             try:

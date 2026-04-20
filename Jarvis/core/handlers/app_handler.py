@@ -3,6 +3,8 @@ App Handler — Open and Close Applications
 Uses ApplicationManager.py as the action library.
 """
 import logging
+import os
+import subprocess
 from Jarvis.core.intent_engine import ActionType, Intent
 from Jarvis.core.action_registry import registry, ActionResult
 from Jarvis.ApplicationManager import open_application, close_application
@@ -71,3 +73,32 @@ def handle_scan_apps(intent: Intent, context) -> ActionResult:
     except Exception as e:
         logger.error(f"App scan failed: {e}", exc_info=True)
         return ActionResult.fail(f"App scan failed: {e}")
+
+@registry.register(
+    actions=[ActionType.EXECUTE_PROCESS],
+    priority=5,
+    description="Directly execute a path, script, or ms-settings URI."
+)
+def handle_execute_process(intent: Intent, context) -> ActionResult:
+    path = intent.params.get("path") or intent.target.strip()
+    if not path:
+        return ActionResult.fail("No execution path provided.")
+        
+    logger.info(f"Direct executing: {path!r}")
+    
+    try:
+        if path.startswith("ms-settings:"):
+            # Use os.startfile for URIs
+            os.startfile(path)
+        else:
+            # For .exe, .py, etc. just start them decoupled
+            if path.endswith(".py"):
+                subprocess.Popen(["python", path], shell=True)
+            else:
+                os.startfile(path)
+        
+        name = os.path.basename(path) if not path.startswith('ms-settings:') else path
+        return ActionResult.ok(f"Directly executed {name}.")
+    except Exception as e:
+        logger.error(f"Failed to execute {path!r}: {e}")
+        return ActionResult.fail(f"Execution failed: {e}")

@@ -217,6 +217,60 @@ class MemoryManager:
         self._append_recipe(target_file, recipe)
         logger.info(f"[Memory] Saved new recipe: '{command}' → {steps}")
 
+    # ── Public: Batch Save Apps ──────────────────
+    def batch_save_apps(self, apps_dict: dict[str, str]) -> None:
+        """
+        Batch save a dictionary mapping app_name -> exe_path into apps.md.
+        Will deduplicate and only write new entries.
+        """
+        target_file = os.path.join(MEMORY_DIR, "apps.md")
+        existing = self._load_recipes_from_file(target_file, category="apps")
+        
+        existing_cmds = {r.command.lower() for r in existing}
+        
+        new_recipes = []
+        for app_name, exe_path in apps_dict.items():
+            cmd = f"open {app_name.lower()}"
+            if cmd not in existing_cmds:
+                recipe = MemoryRecipe(
+                    command=cmd,
+                    steps=[f"execute_process {exe_path}"],
+                    learned_date=date.today().isoformat(),
+                    category="apps"
+                )
+                new_recipes.append(recipe)
+                
+        if new_recipes:
+            with open(target_file, "a", encoding="utf-8") as f:
+                for r in new_recipes:
+                    f.write(self._recipe_to_md(r))
+            logger.info(f"[Memory] Batch saved {len(new_recipes)} new apps from system scan.")
+
+    # ── Public: Save UI Map ──────────────────────
+    def save_ui_map(self, app: str, window: str, elements: list[str]) -> None:
+        """
+        Saves the scanned text elements of an app/window to ui_maps.md
+        so the LLM has vocabulary of clickable items.
+        """
+        target_file = os.path.join(MEMORY_DIR, "ui_maps.md")
+        existing = self._load_recipes_from_file(target_file, category="ui_maps")
+        
+        cmd_name = f"ui_map {app} - {window}"
+        
+        updated = [r for r in existing if r.command.lower() != cmd_name.lower()]
+        
+        recipe = MemoryRecipe(
+            command=cmd_name,
+            steps=elements,
+            precondition_app=app,
+            precondition_window=window,
+            learned_date=date.today().isoformat(),
+            category="ui_maps"
+        )
+        updated.append(recipe)
+        self._rewrite_file(target_file, updated)
+        logger.debug(f"[Memory] Saved UI Map for '{app} - {window}' with {len(elements)} elements.")
+
     # ── Public: Relevant memory as LLM context ───
     def get_relevant_context(
         self,
@@ -388,7 +442,7 @@ class MemoryManager:
 
     def _ensure_memory_files(self):
         """Create empty default memory files with headers if they don't exist."""
-        default_files = ["navigation", "apps", "folders"]
+        default_files = ["navigation", "apps", "folders", "ui_maps"]
         
         for name in default_files:
             path = os.path.join(MEMORY_DIR, f"{name}.md")

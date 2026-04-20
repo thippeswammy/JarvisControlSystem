@@ -73,6 +73,8 @@ class ActionType(Enum):
 
     # Self-learning
     LEARN             = auto()   # "remember that as open advanced display"
+    SYSTEM_SCAN       = auto()   # "scan my system"
+    EXECUTE_PROCESS   = auto()   # "execute_process C:\"
 
     # Fallback
     UNKNOWN           = auto()
@@ -213,6 +215,12 @@ class _Vocab:
         ActionType.LEARN: [
             "remember that as", "save that as", "remember as", "save as recipe",
             "learn this as", "save recipe as",
+        ],
+        ActionType.SYSTEM_SCAN: [
+            "scan my system", "scan for apps", "refresh system memory", "learn all apps", "scan projects",
+        ],
+        ActionType.EXECUTE_PROCESS: [
+            "execute_process", "direct_execute",
         ],
     }
 
@@ -387,6 +395,9 @@ class IntentEngine:
             # "file then save as" → ["file", "save as"]
             menu_parts = re.split(r"\bthen\b|\band\b|>|→|/", target)
             params["menu_path"] = [p.strip() for p in menu_parts if p.strip()]
+
+        elif matched_action == ActionType.EXECUTE_PROCESS:
+            params["path"] = target.strip()
 
         # ── 4. Build confidence ──
         confidence = 1.0 if text.startswith(matched_phrase) else 0.8
