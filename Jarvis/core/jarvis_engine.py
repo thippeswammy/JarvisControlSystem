@@ -201,6 +201,11 @@ class JarvisEngine:
                     steps=[corrected_intent.raw or text],  # single-step correction
                     snapshot=snapshot,
                 )
+            else:
+                # The LLM correction failed too, start tracking manual steps
+                self._fallback_original_command = text
+                self._fallback_steps_taken = []
+                
             if result.message:
                 self._feedback(result.message)
             return result

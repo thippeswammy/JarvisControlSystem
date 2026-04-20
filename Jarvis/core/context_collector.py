@@ -126,10 +126,13 @@ class ContextCollector:
         if not _HAS_PYWINAUTO:
             return
 
-        desktop = Desktop(backend="uia")
-        win = desktop.get_active()
-        if not win:
+        import win32gui
+        handle = win32gui.GetForegroundWindow()
+        if not handle:
             return
+
+        desktop = Desktop(backend="uia")
+        win = desktop.window(handle=handle).wrapper_object()
 
         title = ""
         try:
@@ -215,10 +218,13 @@ class ContextCollector:
             return
 
         try:
-            desktop = Desktop(backend="uia")
-            win = desktop.get_active()
-            if not win:
+            import win32gui
+            handle = win32gui.GetForegroundWindow()
+            if not handle:
                 return
+
+            desktop = Desktop(backend="uia")
+            win = desktop.window(handle=handle).wrapper_object()
 
             targets = []
 

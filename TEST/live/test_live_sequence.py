@@ -15,6 +15,14 @@ Usage:
 """
 
 import sys
+import io
+
+# Force utf-8 stdout so we don't crash on emojis in Windows terminals
+if sys.stdout.encoding.lower() != 'utf-8':
+    try:
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    except Exception:
+        pass
 import os
 import time
 import argparse

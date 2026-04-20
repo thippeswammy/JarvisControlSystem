@@ -1,6 +1,6 @@
 
 ## open secret page
-- Preconditions: app=any | location=any | window=any
+- Preconditions: app=test_live_sequence.p | location=JarvisControlSystem - Antigravity - test_live_sequence.py | window=JarvisControlSystem - Antigravity - test_live_sequence.py
 - Learned: 2026-04-20
 - Success: 1
 ### Steps

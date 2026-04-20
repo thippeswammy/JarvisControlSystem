@@ -70,9 +70,12 @@ class UIFinder:
         if not _HAS_PYWINAUTO:
             return None
         try:
-            desktop = Desktop(backend="uia")
-            win = desktop.get_active()
-            return win
+            import win32gui
+            handle = win32gui.GetForegroundWindow()
+            if handle:
+                desktop = Desktop(backend="uia")
+                return desktop.window(handle=handle).wrapper_object()
+            return None
         except Exception as e:
             logger.debug(f"get_active_window failed: {e}")
             return None
