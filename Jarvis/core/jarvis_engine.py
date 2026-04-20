@@ -164,7 +164,7 @@ class JarvisEngine:
             return last_result
 
         # ── Memory miss → LLM Fallback ───────────────────────────────
-        memory_context = self._memory.as_llm_context()
+        memory_context = self._memory.get_relevant_context(text, snapshot)
         corrected_intent, user_prompt = self._llm_fallback.analyze(
             raw_input=text,
             failed_action=intent.action if not is_unknown else None,

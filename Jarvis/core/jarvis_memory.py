@@ -220,21 +220,71 @@ class MemoryManager:
         self._append_recipe(target_file, recipe)
         logger.info(f"[Memory] Saved new recipe: '{command}' → {steps}")
 
-    # ── Public: All memory as LLM context ────────
-    def as_llm_context(self) -> str:
+    # ── Public: Relevant memory as LLM context ───
+    def get_relevant_context(
+        self,
+        command: str,
+        snapshot: ContextSnapshot,
+        top_n: int = 4,
+    ) -> str:
         """
-        Returns the full concatenated content of all memory .md files
-        to inject into the LLM system prompt.
-        This allows the LLM to reason about all past learning.
+        Retrieval-Augmented Generation (RAG) approach:
+        Extracts only the top N most relevant recipes from memory to keep the
+        LLM context fast and laser-focused.
+
+        Scores recipes based on:
+        1. Text similarity (how close is the command to the recipe's title)
+        2. Context similarity (is the user in the same app/location as the recipe)
         """
+        all_recipes = self._load_all_recipes()
+        if not all_recipes:
+            return "(no memory yet)"
+
+        scored_recipes = []
+        cmd_lower = command.lower().strip()
+
+        for recipe in all_recipes:
+            # 1. Text Similarity
+            # We want to catch semantic keywords. Simple SequenceMatcher ratio works nicely here,
+            # but we can also use word intersection for robustness.
+            recipe_cmd = recipe.command.lower()
+            words_a = set(cmd_lower.split())
+            words_b = set(recipe_cmd.split())
+            
+            # Use longer of the two: exact string match ratio OR word overlap ratio
+            seq_sim = SequenceMatcher(None, cmd_lower, recipe_cmd).ratio()
+            word_sim = len(words_a.intersection(words_b)) / max(len(words_a), 1)
+            
+            text_score = max(seq_sim, word_sim)
+
+            # --- CRITICAL RULE ---
+            # As requested by the user: "Matches that are contextually similar but not actually the same entity"
+            # We must absolutely drop recipes that share NO semantic text similarity, 
+            # even if the user is in the exact same app. This prevents confusing the LLM with completely
+            # unrelated actions just because they both happen to be in 'Settings'.
+            if text_score < 0.15:
+                continue
+
+            # 2. Context Similarity
+            context_score = recipe.matches_context(snapshot)
+
+            # Combined Score (Text is king, Context validates)
+            final_score = (text_score * 0.6) + (context_score * 0.4)
+            scored_recipes.append((final_score, recipe))
+
+        # Sort highest score first
+        scored_recipes.sort(key=lambda x: x[0], reverse=True)
+
+        # Build output string of only the top N
         parts = []
-        for name, path in MEMORY_FILES.items():
-            if os.path.exists(path):
-                with open(path, encoding="utf-8") as f:
-                    content = f.read().strip()
-                if content:
-                    parts.append(f"### Memory: {name}\n{content}")
-        return "\n\n".join(parts) if parts else "(no memory yet)"
+        for score, recipe in scored_recipes[:top_n]:
+            parts.append(self._recipe_to_md(recipe).strip())
+
+        if not parts:
+            return "(no highly relevant memories found for this context)"
+
+        logger.info(f"[Memory] Fetched {len(parts)} highly relevant recipes for '{command}'.")
+        return "\n\n".join(parts)
 
     # ── Internal: Load ───────────────────────────
     def _load_all_recipes(self) -> list[MemoryRecipe]:
