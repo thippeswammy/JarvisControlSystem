@@ -49,12 +49,18 @@ def handle_open_app(intent: Intent, context) -> ActionResult:
             if hwnd:
                 _, exe_path = _get_process_info(hwnd)
                 if exe_path and os.path.exists(exe_path):
-                    from Jarvis.core.jarvis_memory import MemoryManager
-                    mem = MemoryManager()
-                    # By batch saving it, the NEXT time they type this, RAG memory will 
-                    # instantly recall 'execute_process <path>' and skip the long search!
-                    mem.batch_save_apps({app_name: exe_path})
-                    logger.info(f"Learned missing app path from Windows Search: {exe_path}")
+                    # Windows UWP apps and PWAs inside WindowsApps cannot be executed via os.startfile() 
+                    # by a standard user due to strict sandbox permissions (WinError 5 Access is Denied).
+                    # We must NOT cache these paths natively!
+                    if "WindowsApps" in exe_path or "ApplicationFrameHost" in exe_path:
+                        logger.info(f"App is a UWP/PWA container ({exe_path}). Skipping memory cache to avoid WinError 5.")
+                    else:
+                        from Jarvis.core.jarvis_memory import MemoryManager
+                        mem = MemoryManager()
+                        # By batch saving it, the NEXT time they type this, RAG memory will 
+                        # instantly recall 'execute_process <path>' and skip the long search!
+                        mem.batch_save_apps({app_name: exe_path})
+                        logger.info(f"Learned missing app path from Windows Search: {exe_path}")
         except Exception as e:
             logger.debug(f"Failed to cache app path after search: {e}")
             

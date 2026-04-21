@@ -130,13 +130,45 @@ class JarvisEngine:
             self._feedback(msg)
             return ActionResult.fail(msg)
 
-        # ── Guard 3: Unknown intent ─────────────
+        # ── Guard 3: Intercept Learn Action ─────────────
+        if not (intent.action == ActionType.UNKNOWN):
+            if intent.action == ActionType.LEARN:
+                return self._handle_learn_action(intent, text)
+                
+        # ── Guard 4: Memory Recall Intercept ────────────
+        # Before falling back to potentially slow hardcoded handlers (like Windows Search),
+        # check if we've learned a faster cached path, sequence, or typo-fix in Memory!
+        snapshot = self._context_collector.collect(recent_commands=self._recent_commands)
+        memory_recipe = self._memory.recall(text, snapshot)
+        
+        if memory_recipe:
+            logger.info(f"[Memory] Replaying recipe for: '{text}' → {memory_recipe.steps}")
+            self._feedback(f"I remember how to do that — replaying {len(memory_recipe.steps)} steps.")
+            last_result = ActionResult.ok("Replayed from memory.")
+            for i, step_cmd in enumerate(memory_recipe.steps):
+                logger.info(f"[Memory] Replaying step {i+1}: {step_cmd}")
+                step_intent = self._intent_engine.parse(step_cmd, ctx)
+                last_result = self._registry.dispatch(step_intent, ctx)
+                self._context_mgr.update(step_intent, last_result.success)
+                if not last_result.success:
+                    logger.warning(f"[Memory] Step {i+1} failed: {last_result.message}")
+                    break
+                import time; time.sleep(0.4) 
+            
+            # Message summarizing replay
+            replay_msg = f"Replayed {len(memory_recipe.steps)} steps successfully."
+            if not last_result.success:
+                replay_msg = f"Replay stopped at step {len(memory_recipe.steps)}: {last_result.message}"
+            
+            self._feedback(replay_msg)
+            self._memory.save(text, memory_recipe.steps, snapshot)
+            self._recent_commands.append(text)
+            self._recent_commands = self._recent_commands[-20:]
+            return last_result
+
         is_unknown = (intent.action == ActionType.UNKNOWN)
 
         if not is_unknown:
-            # ── Guard: Intercept Learn Action ────────────────
-            if intent.action == ActionType.LEARN:
-                return self._handle_learn_action(intent, text)
 
             result = self._registry.dispatch(intent, ctx)
             if result.success:
@@ -160,33 +192,6 @@ class JarvisEngine:
                 # If a regular command fails, start tracking a new potential recipe
                 self._fallback_original_command = text
                 self._fallback_steps_taken = []
-
-        # ── Flow fell through → try Memory recall first ──────────────
-        snapshot = self._context_collector.collect(recent_commands=self._recent_commands)
-
-        memory_recipe = self._memory.recall(text, snapshot)
-        if memory_recipe:
-            logger.info(f"[Memory] Replaying recipe for: '{text}' → {memory_recipe.steps}")
-            self._feedback(f"I remember how to do that — replaying {len(memory_recipe.steps)} steps.")
-            last_result = ActionResult.ok("Replayed from memory.")
-            for i, step_cmd in enumerate(memory_recipe.steps):
-                logger.info(f"[Memory] Replaying step {i+1}: {step_cmd}")
-                step_intent = self._intent_engine.parse(step_cmd, ctx)
-                last_result = self._registry.dispatch(step_intent, ctx)
-                self._context_mgr.update(step_intent, last_result.success)
-                if not last_result.success:
-                    logger.warning(f"[Memory] Step {i+1} failed: {last_result.message}")
-                    break
-                import time; time.sleep(0.4) 
-            
-            # Message summarizing replay
-            replay_msg = f"Replayed {len(memory_recipe.steps)} steps successfully."
-            if not last_result.success:
-                replay_msg = f"Replay stopped at step {len(memory_recipe.steps)}: {last_result.message}"
-            
-            self._feedback(replay_msg)
-            self._memory.save(text, memory_recipe.steps, snapshot)  # increment success count
-            return last_result
 
         # ── Memory miss → LLM Fallback ───────────────────────────────
         memory_context = self._memory.get_relevant_context(text, snapshot)
