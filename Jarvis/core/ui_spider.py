@@ -64,38 +64,42 @@ class UISpider:
 
     def _scan_active_window(self, window_title: str = None):
         try:
-            info = self._navigator.get_active_window_info()
-            if not info:
-                return
+            from Jarvis.core.ui_extractor import extract_window_elements
             
-            title = window_title or info.get("title", "")
+            # Use the shared extractor logic
+            snap = extract_window_elements()
+            if not snap or snap.is_empty():
+                return
+                
+            title = snap.window_title
             if not title:
                 return
                 
-            app_name = title.split("-")[-1].strip() if "-" in title else "Unknown"
+            # Convert structured format back to a list of strings for MemoryManager
+            # so the LLM can read it concisely
+            structured_lines = []
+            if snap.panels:
+                structured_lines.append(f"Panels: {', '.join(snap.panels)}")
+            if snap.buttons:
+                structured_lines.append(f"Buttons: {', '.join(snap.buttons)}")
+            if snap.inputs:
+                structured_lines.append(f"Inputs: {', '.join(snap.inputs)}")
+            if snap.links:
+                structured_lines.append(f"Links: {', '.join(snap.links)}")
+            if snap.list_items:
+                structured_lines.append(f"List Items: {', '.join(snap.list_items)}")
+            if snap.menu_items:
+                structured_lines.append(f"Menu Items: {', '.join(snap.menu_items)}")
             
-            elements = self._navigator.list_elements()
-            
-            # Extract unique valid names
-            valid_names = []
-            seen = set()
-            for el in elements:
-                name = el.get("name", "")
-                if isinstance(name, str):
-                    name = name.strip()
-                    if name and len(name) > 1 and name not in seen: # Filter empty or 1-char junk
-                        valid_names.append(name)
-                        seen.add(name)
-            
-            if valid_names:
+            if structured_lines:
                 self._memory.save_ui_map(
-                    app=app_name, 
+                    app=snap.app_name, 
                     window=title, 
-                    elements=valid_names
+                    elements=structured_lines
                 )
                 self._last_window_title = title
             else:
-                logger.debug(f"[UISpider] No readable elements found for '{title}'")
+                logger.debug(f"[UISpider] No meaningful categorized elements found for '{title}'")
                 
         except Exception as e:
             logger.debug(f"[UISpider] Failed to scan window: {e}")

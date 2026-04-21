@@ -231,7 +231,25 @@ class JarvisEngine:
     def _handle_learn_action(self, intent: Intent, raw_text: str) -> ActionResult:
         """Logic for recording a sequence of steps into memory."""
         goal = intent.target or self._fallback_original_command
-        if not self._fallback_steps_taken:
+        
+        steps_to_learn = self._fallback_steps_taken
+        if not steps_to_learn and goal:
+            # If tracking was swallowed by a false success (like Windows search), 
+            # retroactively extract the sequence from recent commands.
+            try:
+                safe_goal = goal.lower()
+                # Find the LAST occurrence of the goal in the history
+                idx = -1
+                for i, cmd in enumerate(self._recent_commands):
+                    if cmd.lower() == safe_goal:
+                        idx = i
+                
+                if idx != -1:
+                    steps_to_learn = self._recent_commands[idx+1:]
+            except Exception:
+                pass
+
+        if not steps_to_learn:
             self._feedback("I don't have any recent steps to remember.")
             return ActionResult.fail("No steps to learn.")
         
@@ -241,12 +259,12 @@ class JarvisEngine:
         # Save to memory (category is dynamic from LLM if available)
         self._memory.save(
             command=goal,
-            steps=self._fallback_steps_taken,
+            steps=steps_to_learn,
             snapshot=snapshot,
             category=intent.category
         )
         
-        self._feedback(f"I've learned '{goal}' — it now takes {len(self._fallback_steps_taken)} steps.")
+        self._feedback(f"I've learned '{goal}' — it now takes {len(steps_to_learn)} steps.")
         
         # Reset tracking
         self._fallback_original_command = ""

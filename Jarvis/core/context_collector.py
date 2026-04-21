@@ -210,85 +210,37 @@ class ContextCollector:
     # ── Visible targets ──────────────────────────
     def _collect_visible_targets(self, snap: ContextSnapshot):
         """
-        Gather names of things visible in the active window.
-        For Explorer: file/folder names.
-        For Settings: visible setting labels.
+        Gather categorized names of things visible in the active window.
+        Uses the shared ui_extractor logic to ensure it matches ui_maps structure.
         """
-        if not _HAS_PYWINAUTO:
-            return
-
         try:
-            import win32gui
-            handle = win32gui.GetForegroundWindow()
-            if not handle:
-                return
-
-            desktop = Desktop(backend="uia")
-            win = desktop.window(handle=handle).wrapper_object()
-
-            targets = []
-
-            if snap.active_app == "explorer":
-                # List items in the file list panel
-                try:
-                    for item in win.descendants(control_type="ListItem"):
-                        name = item.window_text().strip()
-                        if name:
-                            # Check if item is selected
-                            state = ""
-                            try:
-                                if item.is_selected():
-                                    state = " (selected)"
-                            except Exception:
-                                pass
-                            targets.append(f"{name}{state}")
-                except Exception:
-                    pass
-
-                # Find search box
-                try:
-                    search = win.child_window(control_type="Edit", title_re="Search.*")
-                    if search.exists():
-                        targets.append("Search Box")
-                except Exception:
-                    pass
-
-            elif snap.active_app == "settings":
-                # Collect visible button/hyperlink text (settings items)
-                try:
-                    for ctrl_type in ["Button", "Hyperlink", "ListItem", "Text", "MenuItem"]:
-                        for item in win.descendants(control_type=ctrl_type):
-                            name = item.window_text().strip()
-                            if name and 2 < len(name) < 60:
-                                # Check if it's a sidebar item or main content
-                                try:
-                                    if item.is_selected():
-                                        name = f"{name} [active]"
-                                except Exception:
-                                    pass
-                                targets.append(name)
-                except Exception:
-                    pass
-
-                # Search box in settings
-                try:
-                    search = win.child_window(control_type="Edit", auto_id="SearchBox")
-                    if search.exists():
-                        targets.append("Settings Search")
-                except Exception:
-                    pass
+            from Jarvis.core.ui_extractor import extract_window_elements
             
-            else:
-                # Generic app — just grab buttons and menu items
-                try:
-                    for ctrl_type in ["Button", "MenuItem", "Hyperlink"]:
-                        for item in win.descendants(control_type=ctrl_type):
-                            name = item.window_text().strip()
-                            if name and 2 < len(name) < 40:
-                                targets.append(name)
-                except Exception:
-                    pass
+            ui_snap = extract_window_elements()
+            if not ui_snap or ui_snap.is_empty():
+                return
+                
+            # Replace random extraction with categorized targets
+            targets = []
+            if ui_snap.panels:
+                targets.append(f"Panels: {', '.join(ui_snap.panels)}")
+            if ui_snap.buttons:
+                targets.append(f"Buttons: {', '.join(ui_snap.buttons[:10])}")
+            if ui_snap.inputs:
+                targets.append(f"Inputs: {', '.join(ui_snap.inputs)}")
+            if ui_snap.links:
+                targets.append(f"Links: {', '.join(ui_snap.links[:10])}")
+            if ui_snap.list_items:
+                targets.append(f"List Items: {', '.join(ui_snap.list_items[:10])}")
+            if ui_snap.menu_items:
+                targets.append(f"Menu Items: {', '.join(ui_snap.menu_items[:10])}")
+                
+            snap.visible_targets = targets
+            
+            # Since ui_extractor is very accurate at finding the true app name, 
+            # let's update snap.active_app if we haven't resolved it
+            if not snap.active_app or snap.active_app == "unknown":
+                snap.active_app = ui_snap.app_name
 
-            snap.visible_targets = list(dict.fromkeys(targets))[:30]  # dedupe, cap at 30
         except Exception as e:
-            logger.debug(f"_collect_visible_targets failed: {e}")
+            logger.debug(f"Failed to use ui_extractor in ContextCollector: {e}")

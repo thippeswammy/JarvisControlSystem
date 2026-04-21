@@ -30,12 +30,34 @@ def handle_open_app(intent: Intent, context) -> ActionResult:
     if success:
         return ActionResult.ok(f"Opening {app_name}.")
 
-    # Fallback: Windows Search
+    # Fallback: Windows Search (Slow, but necessary for UWP/PWAs)
     logger.info(f"Direct open failed for {app_name!r}, trying Windows Search")
     search_success = DesktopSystemController.open_apps_by_windows_search(
         f"open {app_name}", addr="AppHandler.search_fallback ->"
     )
+    
     if search_success:
+        # User complained about repeated slow searches. Try to cache the discovered app executable!
+        try:
+            import time
+            import win32gui
+            from Jarvis.core.ui_extractor import _get_process_info
+            
+            # Wait a moment for the app to fully appear in foreground after search
+            time.sleep(1.0)
+            hwnd = win32gui.GetForegroundWindow()
+            if hwnd:
+                _, exe_path = _get_process_info(hwnd)
+                if exe_path and os.path.exists(exe_path):
+                    from Jarvis.core.jarvis_memory import MemoryManager
+                    mem = MemoryManager()
+                    # By batch saving it, the NEXT time they type this, RAG memory will 
+                    # instantly recall 'execute_process <path>' and skip the long search!
+                    mem.batch_save_apps({app_name: exe_path})
+                    logger.info(f"Learned missing app path from Windows Search: {exe_path}")
+        except Exception as e:
+            logger.debug(f"Failed to cache app path after search: {e}")
+            
         return ActionResult.ok(f"Opening {app_name} via Windows Search.")
 
     return ActionResult.fail(f"Could not find or open '{app_name}'.")

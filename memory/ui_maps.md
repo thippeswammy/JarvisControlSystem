@@ -1,178 +1,35 @@
 # Jarvis Memory — Ui_Maps
 
 
-## ui_map Notepad - pallet_points_3d.txt - Notepad
-- Preconditions: app=Notepad | location=any | window=pallet_points_3d.txt - Notepad
-- Learned: 2026-04-20
+## ui_map Antigravity - JarvisControlSystem - Antigravity - ui_spider.py
+- Preconditions: app=Antigravity | location=any | window=JarvisControlSystem - Antigravity - ui_spider.py
+- Learned: 2026-04-21
 - Success: 1
 ### Steps
-1. 0.010000 0.180000 1.190000
-2. 220000 0.180000 1.190000
-3. 440000 0.180000 1.190000
-4. 560000 0.180000 1.190000
-5. 780000 0.180000 1.190000
-6. 990000 0.180000 1.190000
-7. 010000 0.006000 1.190000
-8. 220000 0.006000 1.190000
-9. 440000 0.006000 1.190000
-10. 560000 0.006000 1.190000
-11. 780000 0.006000 1.190000
-12. 990000 0.006000 1.190000
-13. 500000 0.120000 1.190000
-14. Week 1. Modified.
-15. - compression - (4 method vslam). Modified.
-16. obsidian graph - readme files, grap. Modified.
-17. python augment_dataset.py --data_di. Modified.
-18. SCENARIO 11 Special Settings UI Nav. Modified.
-19. Visualization.py. Unmodified.
-20. pallet_points_3d.txt. Unmodified.
-21. Close Tab
-22. pallet_bb8_3d.txt. Unmodified.
-23. Add New Tab
-24. File
-25. Edit
-26. View
-27. Headings
-28. Lists
-29. Bold (Ctrl+B)
-30. Italic (Ctrl+I)
-31. Strikethrough (Ctrl+Shift+X)
-32. Link (Ctrl+K)
-33. Table
-34. Clear formatting (Ctrl+Space)
-35. Copilot (Preview)
-36. What's new
-37. User avatar
-38. Settings
-39. System
-40. Minimize
-41. Maximize
-42. Close
+1. Panels: JarvisControlSystem - Antigravity - ui_spider.py, Profile, Active View Switcher, Explorer (Ctrl+Shift+E), Code Search (Ctrl+Shift+F), Run and Debug (Ctrl+Shift+D), Remote Explorer, Extensions (Ctrl+Shift+X), Testing, Mermaid Chart, Source Control (Ctrl+Shift+G) - 5 pending changes, GitHub, F:\RunningProjects\JarvisControlSystem\.idea, F:\RunningProjects\JarvisControlSystem\.pytest_cache, F:\RunningProjects\JarvisControlSystem\BardAccess, F:\RunningProjects\JarvisControlSystem\CamearTest, F:\RunningProjects\JarvisControlSystem\das, F:\RunningProjects\JarvisControlSystem\desktop_automation_service, F:\RunningProjects\JarvisControlSystem\Jarvis • Contains emphasized items, F:\RunningProjects\JarvisControlSystem\Jarvis\__pycache__
+2. Buttons: Customize Layout..., Quick Open, Open Browser (Preview), Editor-Specific Settings, Profile, Views and More Actions..., Explorer Section: JarvisControlSystem, Outline Section, Timeline Section, Close (Ctrl+F4), Run Python File, Run or Debug..., Open Changes, Split Editor Right (Ctrl+\) [Alt] Split Editor Down, Go Back (Alt+LeftArrow), Go Forward (Alt+RightArrow), More Actions...,  Alt+H context_collector.py, View 3 edited files, app_handler.py Alt+L 
+3. Inputs: JarvisControlSystem - Antigravity - ui_spider.py, The editor is not accessible at this time. To enable screen reader optimized mode, use Shift+Alt+F1, Terminal 1, pwsh Run the command: Toggle Screen Reader Accessibility Mode for an optimized screen reader experience Use Alt+F1 for terminal accessibility help, Terminal input, Message input, Terminal 2, Antigravity Agent Run the command: Toggle Screen Reader Accessibility Mode for an optimized screen reader experience Use Alt+F1 for terminal accessibility help
+4. Links: Open Agent Manager
+5. List Items: .idea, .pytest_cache, BardAccess, CamearTest, das, desktop_automation_service, Jarvis, __pycache__, CameraFeatures, core, handlers, __init__.py, action_registry.py, context_collector.py, context_manager.py, intent_engine.py, jarvis_engine.py, jarvis_llm.py, jarvis_memory.py, system_crawler.py
+6. Menu Items: File, Edit, Selection, View, Go, Run, Terminal, Help
 
-## ui_map test_continuous_learning.py - JarvisControlSystem - Antigravity - test_continuous_learning.py
-- Preconditions: app=test_continuous_learning.py | location=any | window=JarvisControlSystem - Antigravity - test_continuous_learning.py
-- Learned: 2026-04-20
+## ui_map SearchHost - Search
+- Preconditions: app=SearchHost | location=any | window=Search
+- Learned: 2026-04-21
 - Success: 1
 ### Steps
-1. System
-2. Minimize
-3. Maximize
-4. Close
+1. Panels: "Search", CoreInput, Search, Search - Web content
+2. Buttons: Back to home, All, Apps, Documents, Web, Settings, People, Folders, Photos, Scroll to right, thippeswammy@vizworld.ai, Options, advanced display - See more search results, advanced display⁠ settings, advance ⁠display, advanced display⁠ options, advanced display⁠ settings windows 11, HDR settings, Display settings
+3. Inputs: advanced display, Search
+4. List Items: Find the most relevant results on this PC and the webAll, Find results in AppsApps, Find results in DocumentsDocuments, Find results in WebWeb, Find results in SettingsSettings, Find results in PeoplePeople, Find results in FoldersFolders, Find results in PhotosPhotos, View advanced display info, System settings, Press right to view options [active], Find results in search the web, click enter to see more, Search the web Group,advanced display, See more search results, Press right to switch preview, advanced display settings, See more search results, Press right to switch preview, advance display, See more search results, Press right to switch preview, advanced display options, See more search results, Press right to switch preview, advanced display settings windows 11, See more search results, Press right to switch preview, Find results in settings, click enter to see more, Settings Group,HDR settings, System settings, Press right to view options, Display settings, System settings, Press right to view options, Open, Adjusting display brightness settings easily
 
-## ui_map Paint 3D - Untitled ‎- Paint 3D
-- Preconditions: app=Paint 3D | location=any | window=Untitled ‎- Paint 3D
-- Learned: 2026-04-20
+## ui_map ApplicationFrameHost - Settings
+- Preconditions: app=ApplicationFrameHost | location=any | window=Settings
+- Learned: 2026-04-21
 - Success: 1
 ### Steps
-1. System
-2. Minimize Untitled ‎- Paint 3D
-3. Restore Untitled ‎- Paint 3D
-4. Close Untitled ‎- Paint 3D
-5. Horizontal Large Decrease
-6. Horizontal Large Increase
-7. Vertical Large Decrease
-8. Vertical Large Increase
-9. Expand menu
-10. Brushes
-11. 2D shapes
-12. 3D shapes
-13. Stickers
-14. Text
-15. Effects
-16. Canvas
-17. 3D library
-18. Paste
-19. Undo
-20. History
-21. Redo
-22. Hide description
-23. Select
-24. Crop
-25. Magic select
-26. View in mixed reality
-27. 3D view
-28. Zoom out
-29. Zoom in
-30. 100
-31. View more options
-32. Marker
-33. Calligraphy pen
-34. Oil brush
-35. Watercolor
-36. Pixel pen
-37. Pencil
-38. Eraser
-39. Crayon
-40. Spray can
-41. Fill
-42. Choose a material
-43. Customised
-44. Current colour:
-45. Eyedropper
-46. White
-47. Light grey
-48. Dark grey
-49. Black
-50. Dark red
-51. Red
-52. Orange
-53. Gold
-54. Light yellow
-55. Yellow
-56. Lime
-57. Green
-58. Aqua
-59. Turquoise
-60. Indigo
-61. Pink
-62. Rose
-63. Brown
-64. #7d7d7d
-65. #808080
-66. #3c3c3c
-67. #3e3e3e
-68. #2f2f2f
-69. Add colour
-
-## ui_map Unknown - Settings
-- Preconditions: app=Unknown | location=any | window=Settings
-- Learned: 2026-04-20
-- Success: 1
-### Steps
-1. System
-2. Minimize Settings
-3. Restore Settings
-4. Close Settings
-5. Back
-6. Thippeswammy k.s thippeswamy636408@gmail.com
-7. Home
-8. Bluetooth & devices
-9. Network & internet
-10. Personalization
-11. Apps
-12. Accounts
-13. Time & language
-14. Gaming
-15. Accessibility
-16. Privacy & security
-17. Windows Update
-18. Rename
-19. Galaxy A14 5G 68A0 Connected, secured
-20. Windows Update Attention needed
-21. Display
-22. Wi-Fi
-23. Camera
-24. Bluetooth
-25. Add device
-26. View all devices
-27. Glow, 4 images
-28. Captured Motion, 4 images
-29. Sunrise, 4 images
-30. Windows (light), 1 images
-31. Windows spotlight, dynamic images
-32. Windows (dark), 1 images
-33. Color mode
-34. Dark
-35. Browse more backgrounds, colors, and themes
-36. Get help
-37. Give feedback
+1. Panels: Brightness & color, Brightness, Brightness, Brightness, Night light, Color profile, HDR, Scale & layout, Scale, Multiple displays, Related settings, Advanced display, Graphics, Position of on-screen indicators, Related support, Help with Display, Get help, Give feedback
+2. Buttons: Minimize Settings, Restore Settings, Close Settings, Back, Thippeswammy k.s thippeswamy636408@gmail.com, Display, Show more settings, Night light, Color profile, HDR, Scale, Advanced display, Graphics, Position of on-screen indicators, Vertical Small Decrease, Vertical Large Decrease, Vertical Large Increase, Vertical Small Increase
+3. Inputs: Color profile, Scale, Display resolution, Display orientation
+4. Links: More about HDR, Adjusting display brightness settings easily, Syncing refresh rates for smooth playback, Setting up dual monitors easily, Setting up multiple monitors, Get help, Give feedback
+5. List Items: Home, Bluetooth & devices, Network & internet, Personalization, Apps, Accounts, Time & language, Gaming, Accessibility, Privacy & security, Windows Update, sRGB display profile with display hardware configuration data derived from calibration [active], 125% (Recommended) [active], 1920 × 1080 (Recommended) [active], Landscape [active]
