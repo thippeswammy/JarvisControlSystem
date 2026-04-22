@@ -183,10 +183,11 @@ class JarvisEngine:
                 if result.message:
                     self._feedback(result.message)
                     
-                # Reactive Learning Strategy
-                if intent.action == ActionType.OPEN_APP:
-                    self._learn_app_path_async(intent.target)
-                    
+                # ── Generic Reactive Learning ──────────────────────────────
+                # Every successful action is a learning opportunity.
+                # No special-casing needed — _reactive_learn() handles all intent types.
+                self._reactive_learn(intent, text, snapshot)
+
                 return result
             else:
                 # If a regular command fails, start tracking a new potential recipe
@@ -294,26 +295,170 @@ class JarvisEngine:
         logger.info("JarvisEngine shut down.")
 
     # ── Private ─────────────────────────────────
-    def _learn_app_path_async(self, target_name: str):
-        """Reactively learn the path of the app that just opened."""
+
+    # Intent types that open a new app/process — triggers path learning
+    _OPEN_INTENT_TYPES = {
+        ActionType.OPEN_APP,
+        ActionType.OPEN_SETTINGS,
+    }
+
+    # Intent types that represent multi-step navigation — triggers sequence learning
+    _NAV_INTENT_TYPES = {
+        ActionType.CLICK_ELEMENT,
+        ActionType.NAVIGATE_LOCATION,
+    }
+
+    def _reactive_learn(self, intent: "Intent", raw_text: str, snapshot) -> None:
+        """
+        Generic reactive learning hook called after EVERY successful action.
+
+        Rules (no special-casing):
+        - Open-type intents  → background thread resolves & saves the real exe/URI.
+        - Nav-type intents   → save the recent command sequence as a navigation recipe.
+        - Any other intent   → save a single-step recipe so the LLM can recall it later.
+
+        The category is derived automatically from the intent type — no hardcoding.
+        """
+        action = intent.action
+        target = intent.target or ""
+
+        if action in self._OPEN_INTENT_TYPES:
+            # For any app-opening event, resolve the actual launch path in the background.
+            # The worker is completely generic — it detects exe vs UWP automatically.
+            self._learn_app_path_async(target)
+            return
+
+        if action in self._NAV_INTENT_TYPES and snapshot.current_location:
+            # Record the navigation sequence that led to this click/navigate.
+            goal = target if target.lower().startswith("open") else f"open {target}"
+            steps = self._recent_commands[-5:] + [raw_text]
+            self._memory.save(
+                command=goal,
+                steps=steps,
+                snapshot=snapshot,
+                category="navigation",
+            )
+            logger.info(f"[ReactiveLearn] Nav sequence saved for '{goal}'")
+            return
+
+        # All other action types: save a minimal single-step recipe.
+        # This builds an ever-growing vocabulary the LLM can recall for novel commands.
+        if target:
+            category = self._intent_to_category(action)
+            self._memory.save(
+                command=raw_text,
+                steps=[raw_text],
+                snapshot=snapshot,
+                category=category,
+            )
+            logger.debug(f"[ReactiveLearn] Single-step recipe saved: '{raw_text}' → {category}")
+
+    @staticmethod
+    def _intent_to_category(action: "ActionType") -> str:
+        """Map an ActionType to a memory category without any hardcoding."""
+        _MAP = {
+            ActionType.OPEN_APP:           "apps",
+            ActionType.OPEN_SETTINGS:      "settings",
+            ActionType.NAVIGATE_LOCATION:  "navigation",
+            ActionType.CLICK_ELEMENT:      "navigation",
+            ActionType.SEARCH:             "navigation",
+            ActionType.PRESS_KEY:          "shortcuts",
+            ActionType.TYPE_TEXT:          "shortcuts",
+            ActionType.SET_VOLUME:         "system",
+            ActionType.SET_BRIGHTNESS:     "system",
+            ActionType.MINIMIZE_WINDOW:    "system",
+            ActionType.MAXIMIZE_WINDOW:    "system",
+            ActionType.CLOSE_APP:          "apps",
+        }
+        return _MAP.get(action, "navigation")
+
+    def _learn_app_path_async(self, target_name: str) -> None:
+        """
+        Reactively learn the launch path of any app that just opened.
+
+        Fully generic — no special-casing for any particular app:
+        - Regular Win32 exe  → stores the absolute exe path.
+        - UWP / Store apps   → tries to get the AppUserModelID (AUMID) via shell;
+                               falls back to the process executable name.
+        The resulting recipe uses `execute_process <path/AUMID>` as its single step,
+        which the app_handler already knows how to execute.
+        """
         import threading
         def worker():
             import time
-            time.sleep(2)  # Wait for app to open
+            time.sleep(2)  # Give the app time to appear in the foreground
             try:
                 import psutil
-                from pywinauto import Desktop
-                win = Desktop(backend="uia").windows(visible_only=True)[0]
-                pid = win.process_id()
-                p = psutil.Process(pid)
-                exe_path = p.exe()
-                if exe_path and "explorer.exe" not in exe_path.lower():
-                    self._memory.batch_save_apps({target_name: exe_path})
-                    logger.info(f"[ReactiveMemory] Learned path for {target_name}: {exe_path}")
+                import win32gui
+                import win32process
+
+                hwnd = win32gui.GetForegroundWindow()
+                if not hwnd:
+                    return
+
+                _, pid = win32process.GetWindowThreadProcessId(hwnd)
+                proc = psutil.Process(pid)
+                exe_path = proc.exe()
+
+                # Skip shell/explorer — not a real app process
+                if not exe_path or "explorer.exe" in exe_path.lower():
+                    return
+
+                # Detect UWP / ApplicationFrameHost-hosted apps generically.
+                # These cannot be re-launched by exe path; we need the AUMID or shell URI.
+                _UWP_HOSTS = {"applicationframehost.exe", "wwahost.exe", "systemsettings.exe"}
+                exe_name = os.path.basename(exe_path).lower()
+                is_uwp = exe_name in _UWP_HOSTS
+
+                if is_uwp:
+                    launch_key = self._get_uwp_launch_key(hwnd, proc, target_name)
+                else:
+                    launch_key = exe_path
+
+                self._memory.batch_save_apps({target_name: launch_key})
+                logger.info(f"[ReactiveLearn] Saved app path: '{target_name}' → '{launch_key}'")
+                self._feedback(f"Learned how to open '{target_name}'")
+
             except Exception as e:
-                logger.debug(f"[ReactiveMemory] Could not resolve reactive path for {target_name}: {e}")
-        
+                logger.debug(f"[ReactiveLearn] Could not resolve path for '{target_name}': {e}")
+
         threading.Thread(target=worker, daemon=True).start()
+
+    @staticmethod
+    def _get_uwp_launch_key(hwnd: int, proc, target_name: str) -> str:
+        """
+        For UWP / store apps, attempt to retrieve the AppUserModelID (AUMID).
+        The AUMID is the unique identifier Windows uses to launch packaged apps
+        (e.g. 'windows.immersivecontrolpanel_...' for Settings).
+
+        Falls back gracefully:
+          1. Try IPropertyStore / PKEY_AppUserModel_ID via pywin32
+          2. Try querying the running package via psutil cmdline
+          3. Last resort: use the process name as the identifier
+        """
+        try:
+            import win32com.shell.shell as shell
+            import win32com.shell.shellcon as shellcon
+            import pywintypes
+            # Get the IPropertyStore for the window
+            store = shell.SHGetPropertyStoreForWindow(hwnd, shell.IID_IPropertyStore)
+            # PKEY_AppUserModel_ID = {9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3}, 5
+            PKEY_AUMID = pywintypes.IID("{9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3}")
+            aumid = store.GetValue((PKEY_AUMID, 5))
+            if aumid:
+                return str(aumid)
+        except Exception:
+            pass  # pywin32 shell API not available or window doesn't expose AUMID
+
+        # Fallback: try to derive a usable shell:appsfolder URI from the process name
+        try:
+            proc_name = os.path.splitext(os.path.basename(proc.exe()))[0]
+            return f"shell:appsfolder\\{proc_name}"
+        except Exception:
+            pass
+
+        # Last resort: use whatever target name the user said (let the handler sort it out)
+        return target_name
 
     def _feedback(self, message: str):
         if message:
