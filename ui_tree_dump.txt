@@ -1,0 +1,24 @@
+Control Identifiers:
+
+Dialog - 'JarvisControlSystem - Antigravity - test_live_sequence.py'    (L-9, T-9, R1929, B1029)
+['JarvisControlSystem - Antigravity - test_live_sequence.pyDialog', 'Dialog', 'JarvisControlSystem - Antigravity - test_live_sequence.py', 'JarvisControlSystem - Antigravity - test_live_sequence.py0', 'JarvisControlSystem - Antigravity - test_live_sequence.py1']
+child_window(title="JarvisControlSystem - Antigravity - test_live_sequence.py", control_type="Window")
+   | 
+   | Pane - ''    (L0, T0, R1920, B1020)
+   | ['Pane', 'Pane0', 'Pane1']
+   | 
+   | Pane - 'JarvisControlSystem - Antigravity - test_live_sequence.py'    (L0, T0, R1920, B1020)
+   | ['JarvisControlSystem - Antigravity - test_live_sequence.py2', 'Pane2', 'JarvisControlSystem - Antigravity - test_live_sequence.pyPane']
+   | child_window(title="JarvisControlSystem - Antigravity - test_live_sequence.py", control_type="Pane")
+   |    | 
+   |    | Pane - ''    (L0, T0, R1920, B1020)
+   |    | ['Pane3']
+   |    |    | 
+   |    |    | Pane - ''    (L0, T0, R1920, B1020)
+   |    |    | ['Pane4']
+   |    |    |    | 
+   |    |    |    | Pane - ''    (L1748, T0, R1920, B43)
+   |    |    |    | ['Pane5', '1Pane']
+   |    |    |    | 
+   |    |    |    | Pane - ''    (L0, T0, R1920, B1020)
+   |    |    |    | ['Pane6']

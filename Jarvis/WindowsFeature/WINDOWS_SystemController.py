@@ -143,6 +143,40 @@ class DesktopSystemController(SystemCommandHandler):
     }
 
     @staticmethod
+    def open_apps_by_windows_search(query: str, addr: str = "") -> bool:
+        """Fallback: uses Windows Start Menu search to open an app"""
+        try:
+            logger.info(f"{addr} Opening Windows Search for: {query}")
+            pyautogui.press('win')
+            time.sleep(0.5)
+            # Extract just the app name if query has 'open ' prefix
+            app_name = query[5:] if query.startswith("open ") else query
+            pyautogui.write(app_name, interval=0.02)
+            time.sleep(1.0)
+            pyautogui.press('enter')
+            return True
+        except Exception as e:
+            logger.error(f"Windows search failed: {e}")
+            return False
+
+    @staticmethod
+    def search_windows_for_term(query_parts: list, addr: str = "") -> bool:
+        """Search Windows using Start Menu search using list of words"""
+        try:
+            query = " ".join(query_parts)
+            logger.info(f"{addr} Opening Windows Search for term: {query}")
+            import pyautogui
+            import time
+            pyautogui.press('win')
+            time.sleep(0.5)
+            pyautogui.write(query, interval=0.02)
+            time.sleep(0.5)
+            return True
+        except Exception as e:
+            logger.error(f"Windows term search failed: {e}")
+            return False
+
+    @staticmethod
     def set_brightness(level: int) -> bool:
         """Set screen brightness (0-100)"""
         try:
@@ -172,9 +206,11 @@ class DesktopSystemController(SystemCommandHandler):
         try:
             level = max(0, min(100, level)) / 100.0
             devices = AudioUtilities.GetSpeakers()
-            interface = devices.Activate(
-                IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-            volume = cast(interface, POINTER(IAudioEndpointVolume))
+            if hasattr(devices, 'EndpointVolume'):
+                volume = devices.EndpointVolume
+            else:
+                interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+                volume = cast(interface, POINTER(IAudioEndpointVolume))
             volume.SetMasterVolumeLevelScalar(level, None)
             logger.info(f"Volume set to {int(level * 100)}%")
             return True
@@ -187,9 +223,11 @@ class DesktopSystemController(SystemCommandHandler):
         """Get current volume level (0-100)"""
         try:
             devices = AudioUtilities.GetSpeakers()
-            interface = devices.Activate(
-                IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-            volume = cast(interface, POINTER(IAudioEndpointVolume))
+            if hasattr(devices, 'EndpointVolume'):
+                volume = devices.EndpointVolume
+            else:
+                interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+                volume = cast(interface, POINTER(IAudioEndpointVolume))
             return int(volume.GetMasterVolumeLevelScalar() * 100)
         except Exception as e:
             logger.error(f"Volume get failed: {e}")
