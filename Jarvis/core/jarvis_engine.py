@@ -408,16 +408,17 @@ class JarvisEngine:
                 # These cannot be re-launched by exe path; we need the AUMID or shell URI.
                 _UWP_HOSTS = {"applicationframehost.exe", "wwahost.exe", "systemsettings.exe"}
                 exe_name = os.path.basename(exe_path).lower()
-                is_uwp = exe_name in _UWP_HOSTS
+                is_uwp = exe_name in _UWP_HOSTS or "windowsapps" in exe_path.lower()
 
                 if is_uwp:
                     launch_key = self._get_uwp_launch_key(hwnd, proc, target_name)
                 else:
                     launch_key = exe_path
 
-                self._memory.batch_save_apps({target_name: launch_key})
-                logger.info(f"[ReactiveLearn] Saved app path: '{target_name}' → '{launch_key}'")
-                self._feedback(f"Learned how to open '{target_name}'")
+                if launch_key:
+                    self._memory.batch_save_apps({target_name: launch_key})
+                    logger.info(f"[ReactiveLearn] Saved app path: '{target_name}' → '{launch_key}'")
+                    self._feedback(f"Learned how to open '{target_name}'")
 
             except Exception as e:
                 logger.debug(f"[ReactiveLearn] Could not resolve path for '{target_name}': {e}")
@@ -425,7 +426,7 @@ class JarvisEngine:
         threading.Thread(target=worker, daemon=True).start()
 
     @staticmethod
-    def _get_uwp_launch_key(hwnd: int, proc, target_name: str) -> str:
+    def _get_uwp_launch_key(hwnd: int, proc, target_name: str) -> Optional[str]:
         """
         For UWP / store apps, attempt to retrieve the AppUserModelID (AUMID).
         The AUMID is the unique identifier Windows uses to launch packaged apps
@@ -434,7 +435,7 @@ class JarvisEngine:
         Falls back gracefully:
           1. Try IPropertyStore / PKEY_AppUserModel_ID via pywin32
           2. Try querying the running package via psutil cmdline
-          3. Last resort: use the process name as the identifier
+          3. Last resort: use the process name as the identifier if not a known generic host
         """
         try:
             import win32com.shell.shell as shell
@@ -446,19 +447,12 @@ class JarvisEngine:
             PKEY_AUMID = pywintypes.IID("{9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3}")
             aumid = store.GetValue((PKEY_AUMID, 5))
             if aumid:
-                return str(aumid)
+                return f"shell:appsfolder\\{str(aumid)}"
         except Exception:
             pass  # pywin32 shell API not available or window doesn't expose AUMID
 
-        # Fallback: try to derive a usable shell:appsfolder URI from the process name
-        try:
-            proc_name = os.path.splitext(os.path.basename(proc.exe()))[0]
-            return f"shell:appsfolder\\{proc_name}"
-        except Exception:
-            pass
-
-        # Last resort: use whatever target name the user said (let the handler sort it out)
-        return target_name
+        # Last resort: return None since target_name might not be an executable
+        return None
 
     def _feedback(self, message: str):
         if message:

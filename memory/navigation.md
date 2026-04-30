@@ -1,28 +1,35 @@
 # Jarvis Memory — Navigation
 
 
-## open settings display
+## open system
 - Preconditions: app=settings | location=home | window=Settings
-- Learned: 2026-04-22
-- Success: 2
-### Steps
-1. execute_process ms-settings:home
-
-## open settings system
-- Preconditions: app=jarvis_engine.py | location=JarvisControlSystem - Antigravity - jarvis_engine.py | window=JarvisControlSystem - Antigravity - jarvis_engine.py
-- Learned: 2026-04-22
-- Success: 1
-### Steps
-1. execute_process ms-settings:home
-
-## open advanced display
-- Preconditions: app=settings | location=home | window=Settings
-- Learned: 2026-04-22
+- Learned: 2026-04-30
 - Success: 1
 ### Steps
 1. hi jarvis
-2. open settings system
-3. open settings display
-4. scroll down
-5. click advanced display
-6. click advanced display
+2. open linkedln
+3. open advanced display
+4. open settings
+5. click system
+6. click system
+
+## open display
+- Preconditions: app=settings | location=home | window=Settings
+- Learned: 2026-04-30
+- Success: 1
+### Steps
+1. open linkedln
+2. open advanced display
+3. open settings
+4. click system
+5. click display
+6. click display
+
+## open advanced display
+- Preconditions: app=settings | location=home | window=Settings
+- Learned: 2026-04-30
+- Success: 2
+### Steps
+1. open settings
+2. click system
+3. click display

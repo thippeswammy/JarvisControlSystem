@@ -438,6 +438,18 @@ SCENARIOS: list[Scenario] = [
         ],
         cleanup=["close settings"],
     ),
+
+    # ──────────────────────────────────────────
+    Scenario(
+        id=15,
+        name="Learned testing",
+        description="Demonstrates learned commands",
+        steps=[
+            Step("hi jarvis",                    wait=0.5),
+            Step("open linkedln",                wait=2.0),
+            Step("open advanced display",         wait=1.0),
+        ],
+    ),
 ]
 
 
