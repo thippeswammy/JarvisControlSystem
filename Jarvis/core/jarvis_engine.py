@@ -71,6 +71,7 @@ class JarvisEngine:
         # Steps tracked during a fallback sequence for memory saving
         self._fallback_steps_taken: list[str] = []
         self._fallback_original_command: str = ""
+        self._fallback_snapshot: Optional[ContextSnapshot] = None
 
         # Register all built-in handlers
         self._register_handlers()
@@ -164,6 +165,11 @@ class JarvisEngine:
             self._memory.save(text, memory_recipe.steps, snapshot)
             self._recent_commands.append(text)
             self._recent_commands = self._recent_commands[-20:]
+
+            # If we were tracking a fallback sequence, add this replayed command to the buffer
+            if self._fallback_original_command:
+                self._fallback_steps_taken.append(text)
+
             return last_result
 
         is_unknown = (intent.action == ActionType.UNKNOWN)
@@ -193,6 +199,7 @@ class JarvisEngine:
                 # If a regular command fails, start tracking a new potential recipe
                 self._fallback_original_command = text
                 self._fallback_steps_taken = []
+                self._fallback_snapshot = snapshot
 
         # ── Memory miss → LLM Fallback ───────────────────────────────
         memory_context = self._memory.get_relevant_context(text, snapshot)
@@ -221,16 +228,23 @@ class JarvisEngine:
                 # The LLM correction failed too, start tracking manual steps
                 self._fallback_original_command = text
                 self._fallback_steps_taken = []
+                self._fallback_snapshot = snapshot
                 
             if result.message:
                 self._feedback(result.message)
             return result
 
         elif user_prompt:
+            self._fallback_original_command = text
+            self._fallback_steps_taken = []
+            self._fallback_snapshot = snapshot
             self._feedback(user_prompt)
             return ActionResult.fail("Awaiting clarification.")
 
         msg = f"I didn't understand: '{text}'"
+        self._fallback_original_command = text
+        self._fallback_steps_taken = []
+        self._fallback_snapshot = snapshot
         self._feedback(msg)
         return ActionResult.fail(msg)
 
@@ -259,8 +273,11 @@ class JarvisEngine:
             self._feedback("I don't have any recent steps to remember.")
             return ActionResult.fail("No steps to learn.")
         
-        # Capture current snapshot for preconditions
-        snapshot = self._context_collector.collect(recent_commands=self._recent_commands)
+        # Capture snapshot from when the sequence started if available,
+        # otherwise capture current snapshot.
+        snapshot = self._fallback_snapshot
+        if snapshot is None:
+            snapshot = self._context_collector.collect(recent_commands=self._recent_commands)
         
         # Save to memory (category is dynamic from LLM if available)
         self._memory.save(
@@ -275,6 +292,7 @@ class JarvisEngine:
         # Reset tracking
         self._fallback_original_command = ""
         self._fallback_steps_taken = []
+        self._fallback_snapshot = None
         
         return ActionResult.ok(f"Learned recipe for {goal}.")
 
@@ -343,7 +361,13 @@ class JarvisEngine:
 
         # All other action types: save a minimal single-step recipe.
         # This builds an ever-growing vocabulary the LLM can recall for novel commands.
-        if target:
+        _ATOMIC_ACTIONS = {
+            ActionType.PRESS_KEY, ActionType.HOLD_KEY, ActionType.RELEASE_KEY,
+            ActionType.TYPE_TEXT, ActionType.TYPE_IN_FIELD, ActionType.SET_VALUE,
+            ActionType.INCREASE, ActionType.DECREASE
+        }
+
+        if target and action not in _ATOMIC_ACTIONS:
             category = self._intent_to_category(action)
             self._memory.save(
                 command=raw_text,
@@ -364,10 +388,11 @@ class JarvisEngine:
             ActionType.SEARCH:             "navigation",
             ActionType.PRESS_KEY:          "shortcuts",
             ActionType.TYPE_TEXT:          "shortcuts",
-            ActionType.SET_VOLUME:         "system",
-            ActionType.SET_BRIGHTNESS:     "system",
-            ActionType.MINIMIZE_WINDOW:    "system",
-            ActionType.MAXIMIZE_WINDOW:    "system",
+            ActionType.SET_VALUE:          "system",
+            ActionType.INCREASE:           "system",
+            ActionType.DECREASE:           "system",
+            ActionType.MINIMIZE:           "system",
+            ActionType.MAXIMIZE:           "system",
             ActionType.CLOSE_APP:          "apps",
         }
         return _MAP.get(action, "navigation")

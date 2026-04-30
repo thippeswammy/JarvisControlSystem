@@ -27,6 +27,12 @@ def clean_app_name(name: str) -> str:
     # Map common alias
     if name_lower.strip() == "file explorer":
         name_lower = "explorer"
+    elif name_lower.strip() == "word":
+        name_lower = "winword"
+    elif name_lower.strip() == "excel":
+        name_lower = "excel"
+    elif name_lower.strip() == "powerpoint":
+        name_lower = "powerpnt"
         
     return name_lower.strip()
 

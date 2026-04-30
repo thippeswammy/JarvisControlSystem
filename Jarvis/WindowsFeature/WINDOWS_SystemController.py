@@ -147,8 +147,9 @@ class DesktopSystemController(SystemCommandHandler):
         """Fallback: uses Windows Start Menu search to open an app"""
         try:
             logger.info(f"{addr} Opening Windows Search for: {query}")
-            pyautogui.press('win')
-            time.sleep(0.5)
+            # Use Win+S for reliable search menu opening in Windows 11
+            pyautogui.hotkey('win', 's')
+            time.sleep(1.0) # Wait longer for search UI to appear
             # Extract just the app name if query has 'open ' prefix
             app_name = query[5:] if query.startswith("open ") else query
             pyautogui.write(app_name, interval=0.02)
@@ -167,8 +168,8 @@ class DesktopSystemController(SystemCommandHandler):
             logger.info(f"{addr} Opening Windows Search for term: {query}")
             import pyautogui
             import time
-            pyautogui.press('win')
-            time.sleep(0.5)
+            pyautogui.hotkey('win', 's')
+            time.sleep(1.0)
             pyautogui.write(query, interval=0.02)
             time.sleep(0.5)
             return True

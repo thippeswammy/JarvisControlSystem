@@ -450,6 +450,45 @@ SCENARIOS: list[Scenario] = [
             Step("open advanced display",         wait=1.0),
         ],
     ),
+
+    # ──────────────────────────────────────────
+    Scenario(
+        id=16,
+        name="Self-Learning: Word Formatting",
+        description="Demonstrates teaching Jarvis to open Word, format text, and save the sequence",
+        steps=[
+            Step("hi jarvis",                    wait=0.5,  description="Activate"),
+            
+            # 1. Ask for something unknown
+            Step("create a fancy docx",          wait=1.0,  description="Ask for unknown command"),
+            
+            # 2. Provide the steps manually
+            Step("open word",                 wait=5.0,  description="Open Word"),
+            Step("start typing",                 wait=0.5,  description="Start typing mode"),
+            Step("Hello world! This is a Jarvis tutorial on creating a formatted docx file.", wait=2.0,  description="Type the text"),
+            Step("stop typing",                  wait=0.5,  description="Stop typing mode"),
+            Step("press ctrl a",                 wait=0.5,  description="Select all text"),
+            Step("press ctrl b",                 wait=0.5,  description="Make text bold"),
+            Step("press ctrl i",                 wait=0.5,  description="Make text italic"),
+            Step("press ctrl u",                 wait=0.5,  description="Make text underlined"),
+            
+            # 3. Commit the sequence to memory
+            Step("remember that as create a fancy docx", wait=1.5, description="Save recipe to memory"),
+        ],
+        cleanup=[],
+    ),
+
+    # ──────────────────────────────────────────
+    Scenario(
+        id=17,
+        name="Learned testing: Word Formatting",
+        description="Execute the newly learned docx creation sequence",
+        steps=[
+            Step("hi jarvis",                    wait=0.5),
+            Step("create a fancy docx",          wait=6.0,  description="Replay the learned document creation sequence"),
+        ],
+        # Attempt to close Word without saving
+    ),
 ]
 
 

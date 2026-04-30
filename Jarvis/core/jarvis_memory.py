@@ -204,12 +204,25 @@ class MemoryManager:
                 return
 
         # New recipe
+        app_precond = snapshot.active_app or "any"
+        loc_precond = snapshot.current_location or "any"
+        win_precond = snapshot.active_window_title or "any"
+
+        # Generalization: If the first step is an "entry point" command (opens an app),
+        # then the starting context doesn't matter — this recipe is universal.
+        if steps:
+            first_step = steps[0].lower()
+            if first_step.startswith("open ") or first_step.startswith("execute_process "):
+                app_precond = "any"
+                loc_precond = "any"
+                win_precond = "any"
+
         recipe = MemoryRecipe(
             command=command,
             steps=steps,
-            precondition_app=snapshot.active_app or "any",
-            precondition_location=snapshot.current_location or "any",
-            precondition_window=snapshot.active_window_title or "any",
+            precondition_app=app_precond,
+            precondition_location=loc_precond,
+            precondition_window=win_precond,
             learned_date=date.today().isoformat(),
             success_count=1,
             category=category,

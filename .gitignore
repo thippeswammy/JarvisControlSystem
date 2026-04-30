@@ -18,3 +18,4 @@ __pycache__/
 *.log
 
 .idea/workspace.xml
+reports/
