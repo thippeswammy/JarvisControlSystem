@@ -19,3 +19,14 @@ __pycache__/
 
 .idea/workspace.xml
 reports/
+# Added by code-review-graph
+.code-review-graph/
+.claude/
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+.kiro/
+.windsurfrules
+.opencode.json
+.mcp.json
+.cursorrules
