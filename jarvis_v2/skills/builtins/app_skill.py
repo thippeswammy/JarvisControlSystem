@@ -7,6 +7,23 @@ from jarvis_v2.skills.skill_bus import SkillResult
 
 logger = logging.getLogger(__name__)
 
+KNOWN_APPS = {
+    "notepad": "notepad.exe",
+    "calculator": "calc.exe",
+    "paint": "mspaint.exe",
+    "wordpad": "wordpad.exe",
+    "cmd": "cmd.exe",
+    "powershell": "powershell.exe",
+    "explorer": "explorer.exe",
+    "file explorer": "explorer.exe",
+    "settings": "SystemSettings.exe",
+    "control panel": "control.exe",
+    "task manager": "taskmgr.exe",
+    "registry editor": "regedit.exe",
+    "device manager": "devmgmt.msc",
+    "snipping tool": "SnippingTool.exe",
+    "magnifier": "magnify.exe",
+}
 
 @skill(triggers=["open app", "launch app", "start app", "run app"], name="open_app", category="app")
 def open_app(params: dict) -> SkillResult:
@@ -14,29 +31,13 @@ def open_app(params: dict) -> SkillResult:
     if not target:
         return SkillResult(success=False, message="No target app specified")
 
-    # Try known exe paths from v1 system
-    known = {
-        "notepad": "notepad.exe",
-        "calculator": "calc.exe",
-        "paint": "mspaint.exe",
-        "wordpad": "wordpad.exe",
-        "cmd": "cmd.exe",
-        "powershell": "powershell.exe",
-        "explorer": "explorer.exe",
-        "settings": "ms-settings:",
-        "control panel": "control.exe",
-        "task manager": "taskmgr.exe",
-        "registry editor": "regedit.exe",
-        "device manager": "devmgmt.msc",
-        "snipping tool": "SnippingTool.exe",
-        "magnifier": "magnify.exe",
-    }
-
-    exe = known.get(target.lower())
+    exe = KNOWN_APPS.get(target.lower())
 
     if exe:
         try:
-            if exe.startswith("ms-"):
+            if target.lower() == "settings":
+                os.startfile("ms-settings:")
+            elif exe.endswith(".msc"):
                 os.startfile(exe)
             else:
                 subprocess.Popen(exe, shell=True)
@@ -66,7 +67,18 @@ def close_app(params: dict) -> SkillResult:
         if target == "active":
             pyautogui.hotkey("alt", "F4")
         else:
-            os.system(f"taskkill /IM {target}.exe /F")
+            exe = KNOWN_APPS.get(target.lower(), f"{target}.exe")
+            
+            if exe.lower() == "explorer.exe":
+                try:
+                    import win32com.client
+                    shell = win32com.client.Dispatch("Shell.Application")
+                    for window in shell.Windows():
+                        window.Quit()
+                except Exception as ex:
+                    logger.error(f"[app_skill] Failed to gracefully close Explorer: {ex}")
+            else:
+                os.system(f'taskkill /IM "{exe}" /F')
         return SkillResult(success=True, action_taken=f"Closed: {target}")
     except Exception as e:
         return SkillResult(success=False, message=str(e))
