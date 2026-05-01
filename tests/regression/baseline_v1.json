@@ -1,0 +1,137 @@
+{
+  "timestamp": "2026-05-01T12:00:00Z",
+  "version": "v1.0",
+  "scenarios": {
+    "01 — System Controls and Session": {
+      "passed": true,
+      "steps": {
+        "session_activate": true,
+        "set_volume_50": true,
+        "mute_volume": true,
+        "unmute_volume": true,
+        "set_volume_70": true,
+        "set_brightness_80": true,
+        "power_shutdown_SKIPPED": true,
+        "session_deactivate": true
+      }
+    },
+    "02 — Notepad Full Lifecycle": {
+      "passed": true,
+      "steps": {
+        "open_notepad": true,
+        "wait_for_notepad": true,
+        "type_hello_world": true,
+        "select_all": true,
+        "copy": true,
+        "move_to_end": true,
+        "type_second_line": true,
+        "save_ctrl_s": true,
+        "close_notepad": true
+      }
+    },
+    "03 — Multi-App Window Management": {
+      "passed": true,
+      "steps": {
+        "open_notepad": true,
+        "wait_1": true,
+        "open_calculator": true,
+        "wait_2": true,
+        "snap_left": true,
+        "alt_tab": true,
+        "snap_right": true,
+        "minimize_all": true,
+        "maximize_notepad": true,
+        "close_calculator": true,
+        "close_notepad": true
+      }
+    },
+    "04 — File Explorer Navigation": {
+      "passed": true,
+      "steps": {
+        "open_explorer": true,
+        "wait_1": true,
+        "go_to_documents": true,
+        "scroll_down": true,
+        "go_back": true,
+        "close_explorer": true
+      }
+    },
+    "05 — Edge Browsing and Search": {
+      "passed": true,
+      "steps": {
+        "open_edge": true,
+        "wait_1": true,
+        "type_search": true,
+        "press_enter": true,
+        "wait_2": true,
+        "close_edge": true
+      }
+    },
+    "06 — Settings: Display and Sound": {
+      "passed": true,
+      "steps": {
+        "open_display": true,
+        "wait_1": true,
+        "open_sound": true,
+        "wait_2": true,
+        "close_settings": true
+      }
+    },
+    "07 — Settings: Bluetooth and Wi-Fi": {
+      "passed": true,
+      "steps": {
+        "open_bluetooth": true,
+        "wait_1": true,
+        "open_wifi": true,
+        "wait_2": true,
+        "close_settings": true
+      }
+    },
+    "08 — Settings: Personalization": {
+      "passed": true,
+      "steps": {
+        "open_personalization": true,
+        "wait_1": true,
+        "open_background": true,
+        "wait_2": true,
+        "close_settings": true
+      }
+    },
+    "09 — Self-Learning Demo": {
+      "passed": true,
+      "steps": {
+        "open_unknown_settings": true,
+        "close_settings": true,
+        "open_known_settings": true,
+        "close_settings_again": true
+      }
+    },
+    "10 — Episodic Memory Query": {
+      "passed": true,
+      "steps": {
+        "open_notepad": true,
+        "wait_1": true,
+        "ask_memory": true,
+        "close_notepad": true
+      }
+    },
+    "11 — Task Memory Resume": {
+      "passed": true,
+      "steps": {
+        "open_notepad": true,
+        "wait_1": true,
+        "advance_task": true,
+        "resume_task": true,
+        "close_notepad": true
+      }
+    },
+    "12 — Compound Commands": {
+      "passed": true,
+      "steps": {
+        "compound_command": true,
+        "wait_1": true,
+        "close_notepad": true
+      }
+    }
+  }
+}
