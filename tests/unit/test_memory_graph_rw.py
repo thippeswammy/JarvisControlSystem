@@ -20,11 +20,11 @@ import os
 import tempfile
 import unittest
 
-from jarvis_v2.memory.graph_db import GraphDB, GraphNode, GraphEdge
-from jarvis_v2.memory.memory_manager import MemoryManager
-from jarvis_v2.memory.state_comparator import StateComparator
-from jarvis_v2.memory.layers.semantic import SemanticMemory
-from jarvis_v2.memory.layers.task import TaskMemory
+from jarvis.memory.graph_db import GraphDB, GraphNode, GraphEdge
+from jarvis.memory.memory_manager import MemoryManager
+from jarvis.memory.state_comparator import StateComparator
+from jarvis.memory.layers.semantic import SemanticMemory
+from jarvis.memory.layers.task import TaskMemory
 
 
 def _make_db() -> GraphDB:

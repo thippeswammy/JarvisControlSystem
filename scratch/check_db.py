@@ -1,7 +1,7 @@
 import sqlite3
 import os
 
-db_path = "memory/jarvis_v2.db"
+db_path = "memory/jarvis.db"
 if not os.path.exists(db_path):
     print(f"DB not found: {db_path}")
     exit(1)

@@ -15,9 +15,9 @@ Test cases:
 import unittest
 from unittest.mock import MagicMock, patch
 
-from jarvis_v2.llm.llm_interface import SkillCallSpec
-from jarvis_v2.llm.backends.mock_llm import MockLLM
-from jarvis_v2.llm.llm_router import LLMRouter
+from jarvis.llm.llm_interface import SkillCallSpec
+from jarvis.llm.backends.mock_llm import MockLLM
+from jarvis.llm.llm_router import LLMRouter
 
 
 def _make_backend(name: str, healthy: bool, plan_result):

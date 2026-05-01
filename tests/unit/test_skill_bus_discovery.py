@@ -19,8 +19,8 @@ Test cases:
 import unittest
 from unittest.mock import patch, MagicMock
 
-from jarvis_v2.skills.skill_decorator import skill
-from jarvis_v2.skills.skill_bus import SkillBus, SkillCall, SkillResult
+from jarvis.skills.skill_decorator import skill
+from jarvis.skills.skill_bus import SkillBus, SkillCall, SkillResult
 
 
 # ── Test skills (inline) ─────────────────────────────────────

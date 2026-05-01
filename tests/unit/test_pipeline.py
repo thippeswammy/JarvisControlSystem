@@ -31,11 +31,11 @@ Test cases:
 import unittest
 from unittest.mock import MagicMock, patch, PropertyMock
 
-from jarvis_v2.perception.nlu import NLU
-from jarvis_v2.perception.perception_packet import Utterance, PerceptionPacket
-from jarvis_v2.skills.skill_bus import SkillBus, SkillCall, SkillResult
-from jarvis_v2.skills.skill_decorator import skill
-from jarvis_v2.brain.verification_loop import VerificationLoop, SKIP_VERIFY_SKILLS
+from jarvis.perception.nlu import NLU
+from jarvis.perception.perception_packet import Utterance, PerceptionPacket
+from jarvis.skills.skill_bus import SkillBus, SkillCall, SkillResult
+from jarvis.skills.skill_decorator import skill
+from jarvis.brain.verification_loop import VerificationLoop, SKIP_VERIFY_SKILLS
 
 
 # ── NLU Tests ─────────────────────────────────────────────────
@@ -141,7 +141,7 @@ class TestNLU(unittest.TestCase):
 class TestPlanner(unittest.TestCase):
 
     def setUp(self):
-        from jarvis_v2.brain.planner import Planner, _DIRECT_MAP
+        from jarvis.brain.planner import Planner, _DIRECT_MAP
         self._map = _DIRECT_MAP
         # Mock memory and router
         self.memory = MagicMock()
@@ -255,7 +255,7 @@ class TestOrchestratorPipeline(unittest.TestCase):
         return bus
 
     def _make_orch(self, success=True):
-        from jarvis_v2.brain.orchestrator import Orchestrator
+        from jarvis.brain.orchestrator import Orchestrator
         memory = MagicMock()
         memory.recall.return_value = None
         memory.get_relevant_context.return_value = ""

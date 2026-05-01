@@ -21,10 +21,10 @@ Test cases:
 """
 import unittest
 
-from jarvis_v2.memory.graph_db import GraphDB, GraphEdge
-from jarvis_v2.memory.memory_manager import MemoryManager
-from jarvis_v2.skills.skill_bus import SkillResult
-from jarvis_v2.brain.reactive_learner import ReactiveLearner
+from jarvis.memory.graph_db import GraphDB, GraphEdge
+from jarvis.memory.memory_manager import MemoryManager
+from jarvis.skills.skill_bus import SkillResult
+from jarvis.brain.reactive_learner import ReactiveLearner
 
 
 def _make_learner(db_path=":memory:"):

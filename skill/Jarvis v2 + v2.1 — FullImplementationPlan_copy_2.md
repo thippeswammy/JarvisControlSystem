@@ -135,7 +135,7 @@ JarvisControlSystem/
 │       ├── verification_loop.py    ← Execute → Scan → Verify
 │       └── recovery.py             ← retry, alt path, rollback, ask
 ├── memory/
-│   ├── jarvis_v2.db                ← SQLite graph database
+│   ├── jarvis.db                ← SQLite graph database
 │   ├── procedural/apps/settings/
 │   ├── episodic/sessions/
 │   ├── semantic/apps/
@@ -193,7 +193,7 @@ llm:
 
 memory:
   root_dir: ./memory
-  db_path: ./memory/jarvis_v2.db
+  db_path: ./memory/jarvis.db
   confidence_decay_per_fail: 0.05
   confidence_boost_per_success: 0.02
   min_confidence_threshold: 0.30

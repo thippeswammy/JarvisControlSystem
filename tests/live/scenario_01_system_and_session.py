@@ -18,10 +18,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 
 from tests.live.base_scenario import LiveScenario, StepDef
-from jarvis_v2.brain.orchestrator import Orchestrator
-from jarvis_v2.llm.llm_router import LLMRouter
-from jarvis_v2.memory.memory_manager import MemoryManager
-from jarvis_v2.skills.skill_bus import SkillBus
+from jarvis.brain.orchestrator import Orchestrator
+from jarvis.llm.llm_router import LLMRouter
+from jarvis.memory.memory_manager import MemoryManager
+from jarvis.skills.skill_bus import SkillBus
 
 
 class Scenario01(LiveScenario):

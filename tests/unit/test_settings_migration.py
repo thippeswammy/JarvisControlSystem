@@ -12,10 +12,10 @@ Verifies that:
 """
 import unittest
 
-from jarvis_v2.memory.graph_db import GraphDB
-from jarvis_v2.memory.memory_manager import MemoryManager
-from jarvis_v2.memory.layers.procedural import ProceduralMemory
-from jarvis_v2.pathfinding.graph_pathfinder import GraphPathfinder
+from jarvis.memory.graph_db import GraphDB
+from jarvis.memory.memory_manager import MemoryManager
+from jarvis.memory.layers.procedural import ProceduralMemory
+from jarvis.pathfinding.graph_pathfinder import GraphPathfinder
 
 
 class TestSettingsSeed(unittest.TestCase):

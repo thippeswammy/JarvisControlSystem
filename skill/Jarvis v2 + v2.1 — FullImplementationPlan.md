@@ -85,7 +85,7 @@ JarvisControlSystem/
 │       ├── verification_loop.py    ← NEW: Execute → Scan → Verify → Learn/Rollback
 │       └── recovery.py             ← NEW: retry, alternative path, undo, ask user
 ├── memory/                         ← Extended structure (v2 layers)
-│   ├── jarvis_v2.db                ← NEW: SQLite graph database
+│   ├── jarvis.db                ← NEW: SQLite graph database
 │   ├── procedural/
 │   │   └── apps/
 │   │       ├── settings/

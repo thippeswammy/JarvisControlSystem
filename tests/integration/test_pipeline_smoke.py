@@ -20,12 +20,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 def _build_test_orchestrator(db_path: str):
     """Wire a full orchestrator with mock LLM + temp DB."""
-    from jarvis_v2.memory.memory_manager import MemoryManager
-    from jarvis_v2.memory.layers.procedural import ProceduralMemory
-    from jarvis_v2.llm.backends.mock_llm import MockLLM
-    from jarvis_v2.llm.llm_router import LLMRouter
-    from jarvis_v2.skills.skill_bus import SkillBus
-    from jarvis_v2.brain.orchestrator import Orchestrator
+    from jarvis.memory.memory_manager import MemoryManager
+    from jarvis.memory.layers.procedural import ProceduralMemory
+    from jarvis.llm.backends.mock_llm import MockLLM
+    from jarvis.llm.llm_router import LLMRouter
+    from jarvis.skills.skill_bus import SkillBus
+    from jarvis.brain.orchestrator import Orchestrator
 
     memory = MemoryManager(db_path=db_path)
 
@@ -42,7 +42,7 @@ def _build_test_orchestrator(db_path: str):
 
     orch = Orchestrator(memory=memory, router=router, bus=bus)
     # Wire pathfinder manually (no boot() to avoid DB path issues)
-    from jarvis_v2.pathfinding.graph_pathfinder import GraphPathfinder
+    from jarvis.pathfinding.graph_pathfinder import GraphPathfinder
     orch._pathfinder = GraphPathfinder(memory.get_db())
     memory.set_pathfinder(orch._pathfinder)
 
@@ -110,7 +110,7 @@ class TestIntegrationPipeline(unittest.TestCase):
 
     def test_08_settings_wifi_fast_path(self):
         """Recall wi-fi settings from seeded graph."""
-        from jarvis_v2.memory.memory_manager import MemoryPath
+        from jarvis.memory.memory_manager import MemoryPath
         path = self.memory.recall("wifi settings", app_id="settings")
         self.assertIsNotNone(path, "Should recall wi-fi from seeded graph")
         self.assertGreater(path.confidence, 0.5)
@@ -140,7 +140,7 @@ class TestIntegrationPipeline(unittest.TestCase):
 
     def test_13_volume_mute(self):
         """Volume mute via dispatch-level mock (pycaw/pyautogui needs a display)."""
-        from jarvis_v2.skills.skill_bus import SkillResult as SR
+        from jarvis.skills.skill_bus import SkillResult as SR
         orig = self.orch._bus.dispatch
 
         def _patched(call):

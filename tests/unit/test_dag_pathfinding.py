@@ -14,8 +14,8 @@ Test cases:
 
 import unittest
 
-from jarvis_v2.memory.graph_db import GraphDB, GraphNode, GraphEdge
-from jarvis_v2.pathfinding.graph_pathfinder import GraphPathfinder
+from jarvis.memory.graph_db import GraphDB, GraphNode, GraphEdge
+from jarvis.pathfinding.graph_pathfinder import GraphPathfinder
 
 
 def _build_settings_graph() -> GraphDB:

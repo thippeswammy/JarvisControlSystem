@@ -18,21 +18,21 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(name)s: %(message)s')
 
 from tests.live.base_scenario import LiveScenario, StepDef
-from jarvis_v2.brain.orchestrator import Orchestrator
-from jarvis_v2.llm.llm_router import LLMRouter
-from jarvis_v2.memory.memory_manager import MemoryManager
-from jarvis_v2.skills.skill_bus import SkillBus
-from jarvis_v2.brain.verification_loop import VerificationLoop
+from jarvis.brain.orchestrator import Orchestrator
+from jarvis.llm.llm_router import LLMRouter
+from jarvis.memory.memory_manager import MemoryManager
+from jarvis.skills.skill_bus import SkillBus
+from jarvis.brain.verification_loop import VerificationLoop
 
 
 class Scenario09(LiveScenario):
     scenario_name = "09 — Self-Learning Demo"
 
     def setup(self):
-        from jarvis_v2.memory.state_harvester import StateHarvester
-        from jarvis_v2.memory.state_comparator import StateComparator
-        from jarvis_v2.brain.recovery import RecoveryStrategies
-        from jarvis_v2.skills.skill_bus import SkillBus
+        from jarvis.memory.state_harvester import StateHarvester
+        from jarvis.memory.state_comparator import StateComparator
+        from jarvis.brain.recovery import RecoveryStrategies
+        from jarvis.skills.skill_bus import SkillBus
 
         mem = MemoryManager(db_path=":memory:") # fresh DB for this test
         bus = SkillBus()

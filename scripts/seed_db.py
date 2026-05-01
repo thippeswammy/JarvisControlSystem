@@ -3,10 +3,10 @@ import sys, os
 sys.path.insert(0, ".")
 os.makedirs("memory", exist_ok=True)
 
-from jarvis_v2.memory.graph_db import GraphDB
-from jarvis_v2.memory.layers.procedural import ProceduralMemory
+from jarvis.memory.graph_db import GraphDB
+from jarvis.memory.layers.procedural import ProceduralMemory
 
-db = GraphDB("memory/jarvis_v2.db")
+db = GraphDB("memory/jarvis.db")
 proc = ProceduralMemory(db)
 seeded = proc.seed_settings_graph()
 
