@@ -44,13 +44,19 @@ class Scenario02(LiveScenario):
         self.steps = [
             StepDef("open_notepad",       lambda: self._run("open notepad"), timeout_s=20),
             StepDef("wait_for_notepad",   lambda: time.sleep(1.5),          timeout_s=5),
-            StepDef("type_hello_world",   lambda: self._run("type Hello, Jarvis v2 is live!"), timeout_s=10),
+            StepDef("type_intro",         lambda: self._run("type Hello, Jarvis v2 is live!"), timeout_s=10),
+            StepDef("type_newline",       lambda: self._run("press enter"), timeout_s=5),
+            StepDef("type_multi_line",    lambda: self._run("type Jarvis is an advanced AI assistant designed to handle complex tasks with ease."), timeout_s=15),
             StepDef("select_all",         lambda: self._run("press ctrl+a"), timeout_s=5),
             StepDef("copy",               lambda: self._run("press ctrl+c"), timeout_s=5),
             StepDef("move_to_end",        lambda: self._run("press ctrl+end"), timeout_s=5),
-            StepDef("type_second_line",   lambda: self._run("type\\nSecond line here."), timeout_s=10),
+            StepDef("type_footer",        lambda: self._run("type\\nThis is the end of the test document."), timeout_s=10),
+            StepDef("undo_last",          lambda: self._run("press ctrl+z"), timeout_s=5),
+            StepDef("search_jarvis",      lambda: self._run("press ctrl+f"), timeout_s=5),
+            StepDef("type_search",        lambda: self._run("type Jarvis"), timeout_s=5),
+            StepDef("close_find",         lambda: self._run("press escape"), timeout_s=5),
             StepDef("save_ctrl_s",        lambda: self._run("press ctrl+s"), timeout_s=10),
-            StepDef("close_notepad",      lambda: self._run("close notepad"), timeout_s=15),
+            # StepDef("close_notepad",      lambda: self._run("close notepad"), timeout_s=15),
         ]
 
 

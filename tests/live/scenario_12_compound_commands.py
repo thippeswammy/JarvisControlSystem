@@ -35,9 +35,12 @@ class Scenario12(LiveScenario):
         super().__init__()
         self.orch = None
         self.steps = [
-            StepDef("compound_command", lambda: self._run("open notepad and type compound test"), timeout_s=30),
-            StepDef("wait_1", lambda: time.sleep(1.5), timeout_s=5),
-            StepDef("close_notepad", lambda: self._run("close notepad"), timeout_s=15),
+            StepDef("triple_command",    lambda: self._run("open notepad, type 'Compound depth 3', and set volume to 55"), timeout_s=40),
+            StepDef("wait_1",           lambda: time.sleep(2.0), timeout_s=5),
+            StepDef("quadruple_command", lambda: self._run("open calculator, minimize it, then open edge and navigate to bing.com"), timeout_s=50),
+            StepDef("wait_2",           lambda: time.sleep(2.0), timeout_s=5),
+            StepDef("penta_command",     lambda: self._run("open notepad, type 'Jarvis is evolving', press ctrl+a, press ctrl+c, and then mute volume"), timeout_s=60),
+            # StepDef("close_notepad",   lambda: self._run("close notepad"), timeout_s=15),
         ]
 
 

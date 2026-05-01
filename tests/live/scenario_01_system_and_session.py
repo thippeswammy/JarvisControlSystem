@@ -48,8 +48,8 @@ class Scenario01(LiveScenario):
                 timeout_s=10,
             ),
             StepDef(
-                name="set_volume_50",
-                fn=lambda: self._run("set volume 50"),
+                name="set_volume_20",
+                fn=lambda: self._run("set volume 20"),
                 timeout_s=15,
             ),
             StepDef(
@@ -63,13 +63,23 @@ class Scenario01(LiveScenario):
                 timeout_s=15,
             ),
             StepDef(
-                name="set_volume_70",
-                fn=lambda: self._run("set volume 70"),
+                name="set_volume_plus_10",
+                fn=lambda: self._run("increase volume by 10"),
                 timeout_s=15,
             ),
             StepDef(
-                name="set_brightness_80",
-                fn=lambda: self._run("set brightness 80"),
+                name="set_volume_minus_5",
+                fn=lambda: self._run("decrease volume by 5"),
+                timeout_s=15,
+            ),
+            StepDef(
+                name="set_brightness_30",
+                fn=lambda: self._run("set brightness 30"),
+                timeout_s=15,
+            ),
+            StepDef(
+                name="set_brightness_90",
+                fn=lambda: self._run("set brightness 90"),
                 timeout_s=15,
             ),
             StepDef(
@@ -78,11 +88,11 @@ class Scenario01(LiveScenario):
                 skip_if=lambda: True,
                 skip_reason="destructive — would shut down machine",
             ),
-            StepDef(
-                name="session_deactivate",
-                fn=lambda: self._run("deactivate jarvis"),
-                timeout_s=10,
-            ),
+            # StepDef(
+            #     name="session_deactivate",
+            #     fn=lambda: self._run("deactivate jarvis"),
+            #     timeout_s=10,
+            # ),
         ]
 
 

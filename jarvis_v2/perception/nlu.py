@@ -68,9 +68,9 @@ _INTENT_PATTERNS = [
     (r"\bscroll\s+(down|up)\b",                                "scroll_page",   {"direction": 1}),
 ]
 
-# Words that signal compound commands
+# Words and symbols that signal compound commands
 _COMPOUND_SEPARATORS = re.compile(
-    r"\s+(?:and\s+(?:then\s+)?|then\s+|after\s+that\s+|also\s+)\s*",
+    r"\s*(?:and\s+(?:then\s+)?|then\s+|after\s+that\s+|also\s+|,)\s*",
     re.IGNORECASE,
 )
 

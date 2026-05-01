@@ -41,16 +41,17 @@ class Scenario03(LiveScenario):
         self.orch = None
         self.steps = [
             StepDef("open_notepad",      lambda: self._run("open notepad"),     timeout_s=20),
-            StepDef("wait_1",            lambda: time.sleep(1.0),               timeout_s=5),
             StepDef("open_calculator",   lambda: self._run("open calculator"),  timeout_s=20),
-            StepDef("wait_2",            lambda: time.sleep(1.0),               timeout_s=5),
-            StepDef("snap_left",         lambda: self._run("snap left"),        timeout_s=10),
+            StepDef("open_explorer",     lambda: self._run("open file explorer"), timeout_s=20),
+            StepDef("wait_apps",         lambda: time.sleep(2.0),               timeout_s=5),
+            StepDef("snap_notepad_left", lambda: self._run("snap notepad left"), timeout_s=15),
+            StepDef("snap_calc_right",   lambda: self._run("snap calculator right"), timeout_s=15),
+            StepDef("minimize_explorer", lambda: self._run("minimize window"),   timeout_s=10),
             StepDef("alt_tab",           lambda: self._run("switch window"),    timeout_s=5),
-            StepDef("snap_right",        lambda: self._run("snap right"),       timeout_s=10),
-            StepDef("minimize_all",      lambda: self._run("minimize window"),  timeout_s=10),
-            StepDef("maximize_notepad",  lambda: self._run("maximize window"),  timeout_s=10),
-            StepDef("close_calculator",  lambda: self._run("close calculator"), timeout_s=15),
-            StepDef("close_notepad",     lambda: self._run("close notepad"),    timeout_s=15),
+            StepDef("maximize_active",   lambda: self._run("maximize window"),  timeout_s=10),
+            StepDef("snap_active_right", lambda: self._run("snap window right"), timeout_s=10),
+            # StepDef("close_calculator",  lambda: self._run("close calculator"), timeout_s=15),
+            # StepDef("close_notepad",     lambda: self._run("close notepad"),    timeout_s=15),
         ]
 
 

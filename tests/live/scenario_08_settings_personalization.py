@@ -39,10 +39,14 @@ class Scenario08(LiveScenario):
         self.orch = None
         self.steps = [
             StepDef("open_personalization", lambda: self._run("open personalization settings"), timeout_s=20),
-            StepDef("wait_1", lambda: time.sleep(1.5), timeout_s=5),
-            StepDef("open_background", lambda: self._run("open background settings"), timeout_s=20),
-            StepDef("wait_2", lambda: time.sleep(1.5), timeout_s=5),
-            StepDef("close_settings", lambda: self._run("close settings"), timeout_s=15),
+            StepDef("go_to_colors",         lambda: self._run("click Colors"), timeout_s=15),
+            StepDef("toggle_mode",          lambda: self._run("change system mode to dark"), timeout_s=20),
+            StepDef("wait_1",               lambda: time.sleep(2.0), timeout_s=5),
+            StepDef("toggle_mode_light",    lambda: self._run("change system mode to light"), timeout_s=20),
+            StepDef("go_to_themes",         lambda: self._run("click Themes"), timeout_s=15),
+            StepDef("scroll_themes",        lambda: self._run("scroll down"), timeout_s=10),
+            StepDef("wait_2",               lambda: time.sleep(1.5), timeout_s=5),
+            # StepDef("close_settings",     lambda: self._run("close settings"), timeout_s=15),
         ]
 
 

@@ -29,27 +29,38 @@ class Scenario11(LiveScenario):
         self.orch = Orchestrator(memory=MemoryManager(), router=LLMRouter.from_config(), bus=SkillBus())
         self.orch._task_memory = TaskMemory()
         # Create a mock task
-        task = self.orch._task_memory.create_task("Test task", steps=["open notepad", "type hello", "close notepad"])
+        # Create a much longer task
+        steps = [
+            "open notepad", 
+            "type Step 1 done", 
+            "set volume to 20",
+            "open calculator", 
+            "minimize window", 
+            "maximize window",
+            "type Step 7 is here",
+            "open file explorer",
+            "snap window left",
+            "unmute"
+        ]
+        task = self.orch._task_memory.create_task("Complex Multi-Step Task", steps=steps)
         self.task_id = task.id
         self.orch.boot()
 
     def _run(self, cmd: str):
         result = self.orch.process(cmd)
         assert result.success, f"Failed: {cmd!r} → {result.message}"
-        if cmd in ["continue", "resume"]:
-            # Normally orchestrator handles this by querying task memory, 
-            # here we verify the system doesn't crash on the command.
-            pass
 
     def __init__(self):
         super().__init__()
         self.orch = None
         self.steps = [
-            StepDef("open_notepad", lambda: self._run("open notepad"), timeout_s=20),
-            StepDef("wait_1", lambda: time.sleep(1.0), timeout_s=5),
-            StepDef("advance_task", lambda: self.orch._task_memory.advance(self.task_id), timeout_s=5),
-            StepDef("resume_task", lambda: self._run("continue task"), timeout_s=20),
-            StepDef("close_notepad", lambda: self._run("close notepad"), timeout_s=15),
+            StepDef("start_task",    lambda: self._run("start task"), timeout_s=30),
+            StepDef("wait_mid",      lambda: time.sleep(1.0), timeout_s=5),
+            StepDef("resume_1",      lambda: self._run("continue task"), timeout_s=25),
+            StepDef("resume_2",      lambda: self._run("resume my task"), timeout_s=25),
+            StepDef("resume_3",      lambda: self._run("next step please"), timeout_s=25),
+            StepDef("resume_4",      lambda: self._run("continue"), timeout_s=25),
+            # StepDef("close_notepad", lambda: self._run("close notepad"), timeout_s=15),
         ]
 
 

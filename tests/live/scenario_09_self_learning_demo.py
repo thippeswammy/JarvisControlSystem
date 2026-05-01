@@ -57,9 +57,12 @@ class Scenario09(LiveScenario):
         self.orch = None
         self.steps = [
             StepDef("open_unknown_settings", lambda: self._run("open network status settings", expect_memory=False), timeout_s=40),
-            StepDef("close_settings", lambda: self._run("close settings"), timeout_s=15),
-            StepDef("open_known_settings", lambda: self._run("open network status settings", expect_memory=True), timeout_s=15),
-            StepDef("close_settings_again", lambda: self._run("close settings"), timeout_s=15),
+            StepDef("open_known_settings",   lambda: self._run("open network status settings", expect_memory=True), timeout_s=15),
+            StepDef("teach_preference",      lambda: self._run("remember that my favorite color is blue"), timeout_s=15),
+            StepDef("ask_preference",        lambda: self._run("what is my favorite color?"), timeout_s=15),
+            StepDef("teach_behavior",        lambda: self._run("whenever I open notepad, type 'Jarvis ready'"), timeout_s=20),
+            StepDef("trigger_behavior",      lambda: self._run("open notepad"), timeout_s=20),
+            # StepDef("close_settings",      lambda: self._run("close settings"), timeout_s=15),
         ]
 
 

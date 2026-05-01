@@ -36,12 +36,16 @@ class Scenario05(LiveScenario):
         super().__init__()
         self.orch = None
         self.steps = [
-            StepDef("open_edge", lambda: self._run("open edge"), timeout_s=20),
-            StepDef("wait_1", lambda: time.sleep(2.0), timeout_s=5),
-            StepDef("type_search", lambda: self._run("type weather today"), timeout_s=15),
-            StepDef("press_enter", lambda: self._run("press enter"), timeout_s=10),
-            StepDef("wait_2", lambda: time.sleep(2.0), timeout_s=5),
-            StepDef("close_edge", lambda: self._run("close edge"), timeout_s=15),
+            StepDef("open_edge",        lambda: self._run("open edge"), timeout_s=20),
+            StepDef("wait_1",           lambda: time.sleep(3.0), timeout_s=5),
+            StepDef("go_to_google",     lambda: self._run("navigate to google.com"), timeout_s=20),
+            StepDef("search_python",    lambda: self._run("search for python programming"), timeout_s=15),
+            StepDef("scroll_down",      lambda: self._run("scroll down"), timeout_s=10),
+            StepDef("scroll_up",        lambda: self._run("scroll up"), timeout_s=10),
+            StepDef("go_to_github",     lambda: self._run("navigate to github.com"), timeout_s=20),
+            StepDef("type_search_gh",   lambda: self._run("type JarvisControlSystem"), timeout_s=15),
+            StepDef("press_enter",      lambda: self._run("press enter"), timeout_s=10),
+            # StepDef("close_edge",     lambda: self._run("close edge"), timeout_s=15),
         ]
 
 

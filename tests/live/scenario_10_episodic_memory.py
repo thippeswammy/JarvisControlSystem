@@ -36,10 +36,14 @@ class Scenario10(LiveScenario):
         super().__init__()
         self.orch = None
         self.steps = [
-            StepDef("open_notepad", lambda: self._run("open notepad"), timeout_s=20),
-            StepDef("wait_1", lambda: time.sleep(1.0), timeout_s=5),
-            StepDef("ask_memory", lambda: self._run("what did i just open?"), timeout_s=20),
-            StepDef("close_notepad", lambda: self._run("close notepad"), timeout_s=15),
+            StepDef("open_notepad",     lambda: self._run("open notepad"), timeout_s=20),
+            StepDef("set_volume",       lambda: self._run("set volume to 33"), timeout_s=15),
+            StepDef("open_calculator",  lambda: self._run("open calculator"), timeout_s=20),
+            StepDef("type_in_notepad",  lambda: self._run("type Memory Test 123"), timeout_s=15),
+            StepDef("ask_last_app",     lambda: self._run("what was the last app I opened?"), timeout_s=20),
+            StepDef("ask_volume",       lambda: self._run("what did I set the volume to?"), timeout_s=20),
+            StepDef("ask_all_actions",  lambda: self._run("summarize everything I did in the last 5 minutes"), timeout_s=30),
+            # StepDef("close_notepad",   lambda: self._run("close notepad"), timeout_s=15),
         ]
 
 

@@ -39,11 +39,15 @@ class Scenario06(LiveScenario):
         super().__init__()
         self.orch = None
         self.steps = [
-            StepDef("open_display", lambda: self._run("open display settings"), timeout_s=20),
-            StepDef("wait_1", lambda: time.sleep(1.5), timeout_s=5),
-            StepDef("open_sound", lambda: self._run("open sound settings"), timeout_s=20),
-            StepDef("wait_2", lambda: time.sleep(1.5), timeout_s=5),
-            StepDef("close_settings", lambda: self._run("close settings"), timeout_s=15),
+            StepDef("open_display",     lambda: self._run("open display settings"), timeout_s=20),
+            StepDef("scroll_display",   lambda: self._run("scroll down"), timeout_s=10),
+            StepDef("go_to_night_light", lambda: self._run("click Night light"), timeout_s=15),
+            StepDef("go_back",          lambda: self._run("go back"), timeout_s=10),
+            StepDef("open_sound",       lambda: self._run("open sound settings"), timeout_s=20),
+            StepDef("set_volume_UI",    lambda: self._run("set volume to 45"), timeout_s=15),
+            StepDef("check_output",     lambda: self._run("click Choose where to play sound"), timeout_s=15),
+            StepDef("wait_2",           lambda: time.sleep(1.5), timeout_s=5),
+            # StepDef("close_settings", lambda: self._run("close settings"), timeout_s=15),
         ]
 
 

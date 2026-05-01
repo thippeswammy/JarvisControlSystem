@@ -37,12 +37,18 @@ class Scenario04(LiveScenario):
         super().__init__()
         self.orch = None
         self.steps = [
-            StepDef("open_explorer", lambda: self._run("open file explorer"), timeout_s=20),
-            StepDef("wait_1", lambda: time.sleep(1.0), timeout_s=5),
-            StepDef("go_to_documents", lambda: self._run("click documents"), timeout_s=15),
-            StepDef("scroll_down", lambda: self._run("scroll down"), timeout_s=10),
-            StepDef("go_back", lambda: self._run("go back"), timeout_s=10),
-            StepDef("close_explorer", lambda: self._run("close file explorer"), timeout_s=15),
+            StepDef("open_explorer",    lambda: self._run("open file explorer"), timeout_s=20),
+            StepDef("wait_1",           lambda: time.sleep(1.5), timeout_s=5),
+            StepDef("go_to_pc",         lambda: self._run("click This PC"), timeout_s=15),
+            StepDef("go_to_c_drive",    lambda: self._run("double click Local Disk (C:)"), timeout_s=15),
+            StepDef("go_to_users",      lambda: self._run("double click Users"), timeout_s=15),
+            StepDef("go_to_documents",  lambda: self._run("navigate to my documents"), timeout_s=15),
+            StepDef("create_folder",    lambda: self._run("create a new folder named JarvisTest"), timeout_s=20),
+            StepDef("enter_folder",     lambda: self._run("double click JarvisTest"), timeout_s=15),
+            StepDef("rename_folder",    lambda: self._run("rename this folder to JarvisDevel"), timeout_s=20),
+            StepDef("go_back",          lambda: self._run("go back"), timeout_s=10),
+            StepDef("go_back_again",    lambda: self._run("go back"), timeout_s=10),
+            # StepDef("close_explorer", lambda: self._run("close file explorer"), timeout_s=15),
         ]
 
 

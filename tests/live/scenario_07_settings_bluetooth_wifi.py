@@ -38,11 +38,14 @@ class Scenario07(LiveScenario):
         super().__init__()
         self.orch = None
         self.steps = [
-            StepDef("open_bluetooth", lambda: self._run("open bluetooth settings"), timeout_s=20),
-            StepDef("wait_1", lambda: time.sleep(1.5), timeout_s=5),
-            StepDef("open_wifi", lambda: self._run("open wifi settings"), timeout_s=20),
-            StepDef("wait_2", lambda: time.sleep(1.5), timeout_s=5),
-            StepDef("close_settings", lambda: self._run("close settings"), timeout_s=15),
+            StepDef("open_bluetooth",   lambda: self._run("open bluetooth settings"), timeout_s=20),
+            StepDef("add_device",       lambda: self._run("click Add device"), timeout_s=15),
+            StepDef("cancel_add",       lambda: self._run("press escape"), timeout_s=10),
+            StepDef("open_wifi",        lambda: self._run("open wifi settings"), timeout_s=20),
+            StepDef("show_networks",    lambda: self._run("click Show available networks"), timeout_s=15),
+            StepDef("scroll_networks",  lambda: self._run("scroll down"), timeout_s=10),
+            StepDef("wait_2",           lambda: time.sleep(1.5), timeout_s=5),
+            # StepDef("close_settings", lambda: self._run("close settings"), timeout_s=15),
         ]
 
 
