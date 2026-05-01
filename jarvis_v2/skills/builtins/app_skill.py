@@ -16,6 +16,9 @@ KNOWN_APPS = {
     "powershell": "powershell.exe",
     "explorer": "explorer.exe",
     "file explorer": "explorer.exe",
+    "edge": "msedge.exe",
+    "chrome": "chrome.exe",
+    "firefox": "firefox.exe",
     "settings": "SystemSettings.exe",
     "control panel": "control.exe",
     "task manager": "taskmgr.exe",
@@ -37,10 +40,8 @@ def open_app(params: dict) -> SkillResult:
         try:
             if target.lower() == "settings":
                 os.startfile("ms-settings:")
-            elif exe.endswith(".msc"):
-                os.startfile(exe)
             else:
-                subprocess.Popen(exe, shell=True)
+                os.startfile(exe)
             logger.info(f"[app_skill] Launched: {exe}")
             return SkillResult(success=True, action_taken=f"Launched {target}", data={"exe": exe})
         except Exception as e:
