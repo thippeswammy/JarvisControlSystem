@@ -27,7 +27,7 @@ class Scenario09(LiveScenario):
 
     def setup(self):
         mem = MemoryManager(db_path=":memory:") # fresh DB for this test
-        self.orch = Orchestrator(memory=mem, router=LLMRouter(), bus=SkillBus(), verification_loop=VerificationLoop())
+        self.orch = Orchestrator(memory=mem, router=LLMRouter.from_config(), bus=SkillBus(), verification_loop=VerificationLoop())
         self.orch.boot()
 
     def _run(self, cmd: str, expect_memory: bool = False):

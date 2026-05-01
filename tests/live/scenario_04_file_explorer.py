@@ -26,7 +26,7 @@ class Scenario04(LiveScenario):
     scenario_name = "04 — File Explorer Navigation"
 
     def setup(self):
-        self.orch = Orchestrator(memory=MemoryManager(), router=LLMRouter(), bus=SkillBus())
+        self.orch = Orchestrator(memory=MemoryManager(), router=LLMRouter.from_config(), bus=SkillBus())
         self.orch.boot()
 
     def _run(self, cmd: str):

@@ -20,6 +20,12 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Optional
+import sys
+
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8')
 
 logger = logging.getLogger(__name__)
 
@@ -158,15 +164,15 @@ class LiveScenario:
             logger.info(f"  ▶ STEP  [{step_def.name}]")
             t0 = time.perf_counter()
 
-            step_result = CrashDetector.run_step(
+            detector = CrashDetector(step_timeout=step_def.timeout_s)
+            step_result_obj = detector._run_step(
                 name=step_def.name,
                 fn=step_def.fn,
-                timeout_s=step_def.timeout_s,
             )
 
             duration = time.perf_counter() - t0
-            passed = step_result.get("passed", False)
-            error = step_result.get("error", "")
+            passed = getattr(step_result_obj, "passed", False)
+            error = getattr(step_result_obj, "error", "")
 
             icon = "  ✅ PASS" if passed else "  ❌ FAIL"
             logger.info(f"{icon} [{step_def.name}] ({duration:.2f}s)")

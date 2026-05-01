@@ -26,7 +26,7 @@ class Scenario11(LiveScenario):
     scenario_name = "11 — Task Memory Resume"
 
     def setup(self):
-        self.orch = Orchestrator(memory=MemoryManager(), router=LLMRouter(), bus=SkillBus())
+        self.orch = Orchestrator(memory=MemoryManager(), router=LLMRouter.from_config(), bus=SkillBus())
         self.orch._task_memory = TaskMemory()
         # Create a mock task
         task = self.orch._task_memory.create_task("Test task", steps=["open notepad", "type hello", "close notepad"])

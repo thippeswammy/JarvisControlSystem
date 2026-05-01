@@ -34,6 +34,10 @@ from typing import Optional
 
 from tests.regression.crash_detector import CrashDetector, ScenarioResult
 
+import sys
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+
 logger = logging.getLogger(__name__)
 
 BASELINE_PATH = Path(__file__).parent / "baseline_v1.json"
@@ -62,12 +66,25 @@ class RegressionRunner:
             module_name = f"tests.live.{f.stem}"
             try:
                 mod = importlib.import_module(module_name)
-                if hasattr(mod, "run") and callable(mod.run):
+                
+                # Check for a LiveScenario subclass first
+                from tests.live.base_scenario import LiveScenario
+                scenario_class = None
+                for name, obj in vars(mod).items():
+                    if isinstance(obj, type) and issubclass(obj, LiveScenario) and obj is not LiveScenario:
+                        scenario_class = obj
+                        break
+                
+                if scenario_class:
+                    result = scenario_class().run()
+                    self._results.append(result)
+                    print(result.summary())
+                elif hasattr(mod, "run") and callable(mod.run):
                     result = mod.run(self.detector)
                     self._results.append(result)
                     print(result.summary())
                 else:
-                    logger.warning(f"Module {module_name} has no run(detector) function.")
+                    logger.warning(f"Module {module_name} has no run(detector) function or LiveScenario subclass.")
             except Exception as e:
                 logger.error(f"Failed to run {module_name}: {e}")
 

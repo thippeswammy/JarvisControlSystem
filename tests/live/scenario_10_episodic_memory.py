@@ -25,7 +25,7 @@ class Scenario10(LiveScenario):
     scenario_name = "10 — Episodic Memory Query"
 
     def setup(self):
-        self.orch = Orchestrator(memory=MemoryManager(), router=LLMRouter(), bus=SkillBus())
+        self.orch = Orchestrator(memory=MemoryManager(), router=LLMRouter.from_config(), bus=SkillBus())
         # We need an episodic memory instance
         self.orch._episodic = EpisodicMemory()
         self.orch.boot()

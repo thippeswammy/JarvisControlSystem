@@ -29,7 +29,7 @@ class Scenario03(LiveScenario):
 
     def setup(self):
         mem = MemoryManager()
-        self.orch = Orchestrator(memory=mem, router=LLMRouter(), bus=SkillBus())
+        self.orch = Orchestrator(memory=mem, router=LLMRouter.from_config(), bus=SkillBus())
         self.orch.boot()
 
     def _run(self, cmd: str):

@@ -25,7 +25,7 @@ class Scenario05(LiveScenario):
     scenario_name = "05 — Edge Browsing and Search"
 
     def setup(self):
-        self.orch = Orchestrator(memory=MemoryManager(), router=LLMRouter(), bus=SkillBus())
+        self.orch = Orchestrator(memory=MemoryManager(), router=LLMRouter.from_config(), bus=SkillBus())
         self.orch.boot()
 
     def _run(self, cmd: str):
