@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 KNOWN_APPS = {
     "notepad": "notepad.exe",
-    "calculator": "calc.exe",
+    "calculator": "CalculatorApp.exe",
     "paint": "mspaint.exe",
     "wordpad": "wordpad.exe",
     "cmd": "cmd.exe",
@@ -89,6 +89,12 @@ def close_app(params: dict) -> SkillResult:
     try:
         if target == "active":
             pyautogui.hotkey("alt", "F4")
+        elif target.lower() == "all":
+            # Use PowerShell to close all windows with a title, excluding dev tools and the runner itself
+            exclude = "'code','terminal','powershell','cmd','pycharm','conhost','antigravity'"
+            cmd = f'powershell "Get-Process | Where-Object {{$_.MainWindowTitle -ne \'\' -and $_.Name -notin ({exclude})}} | Stop-Process -Force"'
+            os.system(cmd)
+            return SkillResult(success=True, action_taken="Closed all visible applications (excluding dev tools)")
         else:
             exe = KNOWN_APPS.get(target.lower(), f"{target}.exe")
             

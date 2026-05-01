@@ -40,7 +40,7 @@ class Scenario12(LiveScenario):
             StepDef("quadruple_command", lambda: self._run("open calculator, minimize it, then open edge and navigate to bing.com"), timeout_s=50),
             StepDef("wait_2",           lambda: time.sleep(2.0), timeout_s=5),
             StepDef("penta_command",     lambda: self._run("open notepad, type 'Jarvis is evolving', press ctrl+a, press ctrl+c, and then mute volume"), timeout_s=60),
-            # StepDef("close_notepad",   lambda: self._run("close notepad"), timeout_s=15),
+            StepDef("close_all",   lambda: self._run("close all"), timeout_s=15),
         ]
 
 
