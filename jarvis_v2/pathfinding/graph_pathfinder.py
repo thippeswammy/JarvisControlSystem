@@ -175,17 +175,42 @@ class GraphPathfinder:
             if not edge:
                 continue
             for trigger in edge.triggers:
-                score = SequenceMatcher(None, cmd_lower, trigger.lower()).ratio()
+                score = self._score_command(cmd_lower, trigger.lower())
                 if score > best_score:
                     best_score = score
                     best_target = v
 
-        if best_score < 0.55 or not best_target:
+        if best_score < 0.50 or not best_target:
             return None
 
         logger.debug(f"[Pathfinder] Command match: {best_score:.2f} → {best_target}")
         result = self.find(app_id=app_id, target_node_id=best_target)
         return result.path
+
+    def _score_command(self, command: str, trigger: str) -> float:
+        """
+        Score a command against a trigger using word-based coverage.
+        More robust than raw SequenceMatcher for short triggers.
+        """
+        from difflib import SequenceMatcher
+        cmd_words = set(command.split())
+        trig_words = set(trigger.split())
+
+        if not cmd_words or not trig_words:
+            return 0.0
+
+        intersection = cmd_words.intersection(trig_words)
+        if not intersection:
+            # Fallback to ratio if no word overlap (handles typos)
+            return SequenceMatcher(None, command, trigger).ratio() * 0.4
+
+        # Coverage: how many words of the trigger are in the command?
+        coverage = len(intersection) / len(trig_words)
+        
+        # Bonus for ratio to break ties and handle sequence
+        ratio = SequenceMatcher(None, command, trigger).ratio()
+        
+        return coverage * 0.7 + ratio * 0.3
 
     # ── Private ──────────────────────────────────────
 
