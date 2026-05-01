@@ -1,0 +1,529 @@
+# Settings seed data for Jarvis v2 procedural memory
+# 130 ms-settings: URIs → seeded as PAGE nodes in the Settings app graph
+# Format: id, label, uri, triggers[]
+
+settings:
+  - id: settings.home
+    label: Settings Home
+    uri: ms-settings:home
+    triggers: ["settings", "open settings", "settings home"]
+
+  - id: settings.display
+    label: Display Settings
+    uri: ms-settings:display
+    triggers: ["display", "display settings", "screen settings", "monitor settings", "resolution"]
+
+  - id: settings.display.advanced
+    label: Advanced Display Settings
+    uri: ms-settings:display-advancedgraphics
+    triggers: ["advanced display", "advanced graphics", "gpu settings display"]
+
+  - id: settings.display.nightlight
+    label: Night Light
+    uri: ms-settings:nightlight
+    triggers: ["night light", "night mode display", "blue light filter"]
+
+  - id: settings.sound
+    label: Sound Settings
+    uri: ms-settings:sound
+    triggers: ["sound", "audio settings", "volume settings", "speaker settings"]
+
+  - id: settings.sound.devices
+    label: Sound Device Settings
+    uri: ms-settings:sound-devices
+    triggers: ["sound devices", "audio devices", "microphone settings", "speaker devices"]
+
+  - id: settings.notifications
+    label: Notifications & Actions
+    uri: ms-settings:notifications
+    triggers: ["notifications", "notification settings", "action center settings"]
+
+  - id: settings.focusassist
+    label: Focus Assist
+    uri: ms-settings:quiethours
+    triggers: ["focus assist", "quiet hours", "do not disturb", "dnd"]
+
+  - id: settings.power
+    label: Power & Sleep
+    uri: ms-settings:powersleep
+    triggers: ["power", "sleep settings", "battery settings", "power sleep"]
+
+  - id: settings.battery
+    label: Battery Saver
+    uri: ms-settings:batterysaver
+    triggers: ["battery saver", "battery", "power saver"]
+
+  - id: settings.storage
+    label: Storage Settings
+    uri: ms-settings:storagesense
+    triggers: ["storage", "disk space", "storage sense", "storage settings"]
+
+  - id: settings.tablet
+    label: Tablet Mode
+    uri: ms-settings:tabletmode
+    triggers: ["tablet mode", "tablet settings"]
+
+  - id: settings.multitasking
+    label: Multitasking
+    uri: ms-settings:multitasking
+    triggers: ["multitasking", "snap windows", "virtual desktops", "task switching"]
+
+  - id: settings.display.projecting
+    label: Projecting to this PC
+    uri: ms-settings:project
+    triggers: ["project", "projecting", "wireless display", "miracast"]
+
+  - id: settings.shared_experiences
+    label: Shared Experiences
+    uri: ms-settings:crossdevice
+    triggers: ["shared experiences", "cross device", "nearby sharing"]
+
+  - id: settings.clipboard
+    label: Clipboard Settings
+    uri: ms-settings:clipboard
+    triggers: ["clipboard", "clipboard history", "copy paste settings"]
+
+  - id: settings.remote_desktop
+    label: Remote Desktop
+    uri: ms-settings:remotedesktop
+    triggers: ["remote desktop", "rdp", "remote access"]
+
+  - id: settings.bluetooth
+    label: Bluetooth & Devices
+    uri: ms-settings:bluetooth
+    triggers: ["bluetooth", "bluetooth settings", "pair device", "bluetooth devices"]
+
+  - id: settings.devices.printers
+    label: Printers & Scanners
+    uri: ms-settings:printers
+    triggers: ["printer", "printers", "scanner", "printers and scanners"]
+
+  - id: settings.devices.mouse
+    label: Mouse Settings
+    uri: ms-settings:mousetouchpad
+    triggers: ["mouse", "mouse settings", "pointer settings"]
+
+  - id: settings.devices.touchpad
+    label: Touchpad Settings
+    uri: ms-settings:devices-touchpad
+    triggers: ["touchpad", "trackpad", "touchpad settings"]
+
+  - id: settings.devices.typing
+    label: Typing Settings
+    uri: ms-settings:typing
+    triggers: ["typing", "autocorrect", "keyboard settings", "text suggestions"]
+
+  - id: settings.devices.pen
+    label: Pen & Windows Ink
+    uri: ms-settings:pen
+    triggers: ["pen", "stylus", "windows ink", "pen settings"]
+
+  - id: settings.devices.autoplay
+    label: AutoPlay Settings
+    uri: ms-settings:autoplay
+    triggers: ["autoplay", "auto play", "usb autoplay"]
+
+  - id: settings.devices.usb
+    label: USB Settings
+    uri: ms-settings:usb
+    triggers: ["usb", "usb settings", "usb notifications"]
+
+  - id: settings.phone
+    label: Phone Link
+    uri: ms-settings:mobile-devices
+    triggers: ["phone", "phone link", "your phone", "mobile device"]
+
+  - id: settings.network.status
+    label: Network Status
+    uri: ms-settings:network-status
+    triggers: ["network status", "internet status", "connection status"]
+
+  - id: settings.network.wifi
+    label: Wi-Fi Settings
+    uri: ms-settings:network-wifi
+    triggers: ["wifi", "wi-fi", "wireless", "wifi settings", "connect wifi"]
+
+  - id: settings.network.ethernet
+    label: Ethernet Settings
+    uri: ms-settings:network-ethernet
+    triggers: ["ethernet", "wired network", "ethernet settings"]
+
+  - id: settings.network.vpn
+    label: VPN Settings
+    uri: ms-settings:network-vpn
+    triggers: ["vpn", "vpn settings", "virtual private network"]
+
+  - id: settings.network.airplane
+    label: Airplane Mode
+    uri: ms-settings:network-airplanemode
+    triggers: ["airplane mode", "flight mode", "airplane"]
+
+  - id: settings.network.hotspot
+    label: Mobile Hotspot
+    uri: ms-settings:network-mobilehotspot
+    triggers: ["hotspot", "mobile hotspot", "wifi hotspot", "tethering"]
+
+  - id: settings.network.proxy
+    label: Proxy Settings
+    uri: ms-settings:network-proxy
+    triggers: ["proxy", "proxy settings", "network proxy"]
+
+  - id: settings.personalization
+    label: Personalization
+    uri: ms-settings:personalization
+    triggers: ["personalization", "personalize", "themes", "appearance settings"]
+
+  - id: settings.personalization.background
+    label: Background Settings
+    uri: ms-settings:personalization-background
+    triggers: ["background", "wallpaper", "desktop background", "change background"]
+
+  - id: settings.personalization.colors
+    label: Colors Settings
+    uri: ms-settings:personalization-colors
+    triggers: ["colors", "accent color", "dark mode", "light mode", "color theme"]
+
+  - id: settings.personalization.lockscreen
+    label: Lock Screen Settings
+    uri: ms-settings:lockscreen
+    triggers: ["lock screen", "lockscreen", "lock screen settings"]
+
+  - id: settings.personalization.themes
+    label: Themes Settings
+    uri: ms-settings:themes
+    triggers: ["themes", "windows theme", "theme settings"]
+
+  - id: settings.personalization.fonts
+    label: Fonts Settings
+    uri: ms-settings:fonts
+    triggers: ["fonts", "font settings", "install fonts"]
+
+  - id: settings.personalization.start
+    label: Start Menu Settings
+    uri: ms-settings:personalization-start
+    triggers: ["start menu", "start settings", "start menu settings"]
+
+  - id: settings.personalization.taskbar
+    label: Taskbar Settings
+    uri: ms-settings:taskbar
+    triggers: ["taskbar", "taskbar settings", "toolbar settings"]
+
+  - id: settings.apps.default
+    label: Default Apps
+    uri: ms-settings:defaultapps
+    triggers: ["default apps", "default browser", "default programs", "set default apps"]
+
+  - id: settings.apps.features
+    label: Apps & Features
+    uri: ms-settings:appsfeatures
+    triggers: ["apps", "installed apps", "uninstall app", "apps and features", "manage apps"]
+
+  - id: settings.apps.startup
+    label: Startup Apps
+    uri: ms-settings:startupapps
+    triggers: ["startup apps", "startup programs", "autostart", "startup applications"]
+
+  - id: settings.apps.maps
+    label: Offline Maps
+    uri: ms-settings:maps
+    triggers: ["offline maps", "maps settings", "download maps"]
+
+  - id: settings.apps.optionalfeatures
+    label: Optional Features
+    uri: ms-settings:optionalfeatures
+    triggers: ["optional features", "windows features", "windows optional features"]
+
+  - id: settings.accounts.yourinfo
+    label: Your Account Info
+    uri: ms-settings:yourinfo
+    triggers: ["your info", "account info", "user account info"]
+
+  - id: settings.accounts.email
+    label: Email & Accounts
+    uri: ms-settings:emailandaccounts
+    triggers: ["email accounts", "email settings", "add account", "accounts"]
+
+  - id: settings.accounts.signin
+    label: Sign-in Options
+    uri: ms-settings:signinoptions
+    triggers: ["sign in", "sign-in options", "login options", "pin settings", "password settings", "windows hello"]
+
+  - id: settings.accounts.workplace
+    label: Workplace Access
+    uri: ms-settings:workplace
+    triggers: ["workplace", "work account", "school account", "organization account"]
+
+  - id: settings.accounts.family
+    label: Family & Other Users
+    uri: ms-settings:otherusers
+    triggers: ["family", "other users", "add user", "family settings"]
+
+  - id: settings.accounts.sync
+    label: Sync Your Settings
+    uri: ms-settings:sync
+    triggers: ["sync settings", "synchronize settings", "backup settings"]
+
+  - id: settings.time.datetime
+    label: Date & Time
+    uri: ms-settings:dateandtime
+    triggers: ["date and time", "time settings", "date settings", "set time", "timezone"]
+
+  - id: settings.time.language
+    label: Language Settings
+    uri: ms-settings:regionlanguage
+    triggers: ["language", "region", "language settings", "add language", "region settings"]
+
+  - id: settings.time.speech
+    label: Speech Settings
+    uri: ms-settings:speech
+    triggers: ["speech", "speech settings", "voice settings", "cortana speech"]
+
+  - id: settings.gaming.gamebar
+    label: Xbox Game Bar
+    uri: ms-settings:gaming-gamebar
+    triggers: ["game bar", "xbox game bar", "gaming overlay", "win+g settings"]
+
+  - id: settings.gaming.captures
+    label: Captures Settings
+    uri: ms-settings:gaming-gamedvr
+    triggers: ["captures", "game dvr", "game clips", "screen recording gaming"]
+
+  - id: settings.gaming.gamemode
+    label: Game Mode
+    uri: ms-settings:gaming-gamemode
+    triggers: ["game mode", "gaming mode", "optimize gaming"]
+
+  - id: settings.gaming.xboxnetwork
+    label: Xbox Networking
+    uri: ms-settings:gaming-xboxnetworking
+    triggers: ["xbox networking", "gaming network", "xbox network"]
+
+  - id: settings.ease.narrator
+    label: Narrator
+    uri: ms-settings:easeofaccess-narrator
+    triggers: ["narrator", "screen reader", "narrator settings"]
+
+  - id: settings.ease.magnifier
+    label: Magnifier
+    uri: ms-settings:easeofaccess-magnifier
+    triggers: ["magnifier", "zoom", "magnify screen", "magnifier settings"]
+
+  - id: settings.ease.colorfilters
+    label: Color Filters
+    uri: ms-settings:easeofaccess-colorfilter
+    triggers: ["color filters", "colorblind", "color accessibility"]
+
+  - id: settings.ease.highcontrast
+    label: High Contrast
+    uri: ms-settings:easeofaccess-highcontrast
+    triggers: ["high contrast", "contrast settings", "accessibility contrast"]
+
+  - id: settings.ease.closedcaptions
+    label: Closed Captions
+    uri: ms-settings:easeofaccess-closedcaptioning
+    triggers: ["closed captions", "subtitles", "captions settings"]
+
+  - id: settings.ease.audio
+    label: Accessibility Audio
+    uri: ms-settings:easeofaccess-audio
+    triggers: ["accessibility audio", "mono audio", "audio accessibility"]
+
+  - id: settings.ease.keyboard
+    label: Accessibility Keyboard
+    uri: ms-settings:easeofaccess-keyboard
+    triggers: ["sticky keys", "filter keys", "on-screen keyboard", "accessibility keyboard"]
+
+  - id: settings.ease.mouse
+    label: Accessibility Mouse
+    uri: ms-settings:easeofaccess-mouse
+    triggers: ["mouse keys", "accessibility mouse", "mouse pointer accessibility"]
+
+  - id: settings.ease.eyecontrol
+    label: Eye Control
+    uri: ms-settings:easeofaccess-eyecontrol
+    triggers: ["eye control", "eye tracking", "gaze control"]
+
+  - id: settings.ease.textsize
+    label: Text Size
+    uri: ms-settings:easeofaccess-textsize
+    triggers: ["text size", "font size", "increase text size", "accessibility text"]
+
+  - id: settings.privacy.general
+    label: Privacy General
+    uri: ms-settings:privacy
+    triggers: ["privacy", "privacy settings", "privacy general"]
+
+  - id: settings.privacy.speech
+    label: Speech Privacy
+    uri: ms-settings:privacy-speech
+    triggers: ["speech privacy", "microphone privacy", "voice privacy"]
+
+  - id: settings.privacy.location
+    label: Location Privacy
+    uri: ms-settings:privacy-location
+    triggers: ["location", "location settings", "gps settings", "location privacy"]
+
+  - id: settings.privacy.camera
+    label: Camera Privacy
+    uri: ms-settings:privacy-webcam
+    triggers: ["camera", "webcam", "camera privacy", "camera permissions"]
+
+  - id: settings.privacy.microphone
+    label: Microphone Privacy
+    uri: ms-settings:privacy-microphone
+    triggers: ["microphone", "microphone privacy", "microphone permissions", "mic settings"]
+
+  - id: settings.privacy.notifications
+    label: Notifications Privacy
+    uri: ms-settings:privacy-notifications
+    triggers: ["notifications privacy", "app notifications privacy"]
+
+  - id: settings.privacy.accountinfo
+    label: Account Info Privacy
+    uri: ms-settings:privacy-accountinfo
+    triggers: ["account info privacy", "account access"]
+
+  - id: settings.privacy.contacts
+    label: Contacts Privacy
+    uri: ms-settings:privacy-contacts
+    triggers: ["contacts privacy", "contacts access"]
+
+  - id: settings.privacy.calendar
+    label: Calendar Privacy
+    uri: ms-settings:privacy-appointments
+    triggers: ["calendar privacy", "calendar access"]
+
+  - id: settings.privacy.callhistory
+    label: Call History Privacy
+    uri: ms-settings:privacy-callhistory
+    triggers: ["call history privacy", "call history access"]
+
+  - id: settings.privacy.email
+    label: Email Privacy
+    uri: ms-settings:privacy-email
+    triggers: ["email privacy", "email access"]
+
+  - id: settings.privacy.tasks
+    label: Tasks Privacy
+    uri: ms-settings:privacy-tasks
+    triggers: ["tasks privacy", "tasks access"]
+
+  - id: settings.privacy.messaging
+    label: Messaging Privacy
+    uri: ms-settings:privacy-messaging
+    triggers: ["messaging privacy", "sms privacy", "messaging access"]
+
+  - id: settings.privacy.radios
+    label: Radios Privacy
+    uri: ms-settings:privacy-radios
+    triggers: ["radios privacy", "radio access", "bluetooth privacy"]
+
+  - id: settings.privacy.otherdevices
+    label: Other Devices Privacy
+    uri: ms-settings:privacy-customdevices
+    triggers: ["other devices privacy", "device access privacy"]
+
+  - id: settings.privacy.backgroundapps
+    label: Background Apps
+    uri: ms-settings:privacy-backgroundapps
+    triggers: ["background apps", "apps running in background", "background app permissions"]
+
+  - id: settings.privacy.appdiagnostics
+    label: App Diagnostics
+    uri: ms-settings:privacy-appdiagnostics
+    triggers: ["app diagnostics", "app diagnostic access"]
+
+  - id: settings.privacy.automaticfiledownloads
+    label: Automatic File Downloads
+    uri: ms-settings:privacy-automaticfiledownloads
+    triggers: ["automatic downloads", "file download permissions"]
+
+  - id: settings.privacy.documents
+    label: Documents Privacy
+    uri: ms-settings:privacy-documents
+    triggers: ["documents privacy", "documents access"]
+
+  - id: settings.privacy.pictures
+    label: Pictures Privacy
+    uri: ms-settings:privacy-pictures
+    triggers: ["pictures privacy", "photos privacy", "pictures access"]
+
+  - id: settings.privacy.videos
+    label: Videos Privacy
+    uri: ms-settings:privacy-videos
+    triggers: ["videos privacy", "videos access"]
+
+  - id: settings.privacy.filesystem
+    label: File System Privacy
+    uri: ms-settings:privacy-broadfilesystemaccess
+    triggers: ["file system privacy", "file access", "broad file system access"]
+
+  - id: settings.update.windowsupdate
+    label: Windows Update
+    uri: ms-settings:windowsupdate
+    triggers: ["windows update", "update windows", "check for updates", "windows updates"]
+
+  - id: settings.update.advanced
+    label: Advanced Update Options
+    uri: ms-settings:windowsupdate-options
+    triggers: ["advanced update", "update options", "update settings advanced"]
+
+  - id: settings.update.history
+    label: Update History
+    uri: ms-settings:windowsupdate-history
+    triggers: ["update history", "installed updates", "past updates"]
+
+  - id: settings.update.restart
+    label: Update & Restart
+    uri: ms-settings:windowsupdate-restartoptions
+    triggers: ["restart options", "update restart", "active hours"]
+
+  - id: settings.update.delivery
+    label: Delivery Optimization
+    uri: ms-settings:delivery-optimization
+    triggers: ["delivery optimization", "update bandwidth", "update delivery"]
+
+  - id: settings.security.windowssecurity
+    label: Windows Security
+    uri: ms-settings:windowsdefender
+    triggers: ["windows security", "defender", "antivirus", "windows defender", "security settings"]
+
+  - id: settings.security.deviceencryption
+    label: Device Encryption
+    uri: ms-settings:deviceencryption
+    triggers: ["encryption", "device encryption", "bitlocker", "encrypt drive"]
+
+  - id: settings.security.findmydevice
+    label: Find My Device
+    uri: ms-settings:findmydevice
+    triggers: ["find my device", "device location", "track device"]
+
+  - id: settings.security.devmode
+    label: Developer Mode
+    uri: ms-settings:developers
+    triggers: ["developer mode", "dev mode", "developer settings", "sideload apps"]
+
+  - id: settings.about
+    label: About This PC
+    uri: ms-settings:about
+    triggers: ["about", "about this pc", "system info", "computer info", "windows version"]
+
+  - id: settings.system.activation
+    label: Windows Activation
+    uri: ms-settings:activation
+    triggers: ["activation", "windows activation", "activate windows", "product key"]
+
+  - id: settings.backup
+    label: Backup Settings
+    uri: ms-settings:backup
+    triggers: ["backup", "windows backup", "file history backup"]
+
+  - id: settings.troubleshoot
+    label: Troubleshoot Settings
+    uri: ms-settings:troubleshoot
+    triggers: ["troubleshoot", "troubleshooting", "fix problems", "diagnostic tools"]
+
+  - id: settings.recovery
+    label: Recovery Options
+    uri: ms-settings:recovery
+    triggers: ["recovery", "reset pc", "restore pc", "recovery options"]

@@ -1,0 +1,72 @@
+# ============================================================
+# Jarvis v2 — Master Configuration
+# ============================================================
+
+jarvis:
+  input_mode: text                   # text | voice | api
+  voice_confidence_threshold: 0.70   # below this → ask to confirm
+
+# ── LLM Router ──────────────────────────────────────────────
+llm:
+  primary: local                     # try Ollama first (always running locally)
+  fallback: tunneled                 # if Ollama is down
+  emergency_fallback: mock           # always works — never disabled
+
+  backends:
+
+    # Local: Ollama running on localhost
+    # Model: qwen2.5:1.5b-instruct  (<2B, ~900MB VRAM, fits 4GB GPU)
+    # Pull:  ollama pull qwen2.5:1.5b-instruct
+    local:
+      engine: ollama
+      api_url: "http://localhost:11434/v1"
+      model: "qwen2.5:1.5b-instruct"
+      fallback_model: "qwen2.5:0.5b-instruct"   # ultra-light if GPU busy
+      max_tokens: 300
+      temperature: 0.1               # deterministic — no hallucination on action names
+      timeout_seconds: 15
+      auto_pull: true                # pull model on first use if not present
+
+    # Cloud: OpenAI or Anthropic
+    openai:
+      provider: openai               # openai | anthropic | azure
+      api_key: "${OPENAI_API_KEY}"
+      model: gpt-4o-mini
+      max_tokens: 300
+      temperature: 0.1
+      timeout_seconds: 20
+
+    # Tunneled: self-hosted model via ngrok / cloudflared / bore.pub
+    tunneled:
+      api_url: "${JARVIS_TUNNEL_URL}"
+      api_key: "${JARVIS_TUNNEL_KEY}"
+      model: "${JARVIS_TUNNEL_MODEL}"
+      timeout_seconds: 10
+
+    # Mock: heuristic fallback — always available
+    mock:
+      enabled: true
+
+# ── Memory ──────────────────────────────────────────────────
+memory:
+  root_dir: ./memory
+  db_path: ./memory/jarvis_v2.db
+  confidence_decay_per_fail: 0.05
+  confidence_boost_per_success: 0.02
+  min_confidence_threshold: 0.30    # edges below this weight are pruned in pathfinding
+
+# ── Navigator ───────────────────────────────────────────────
+navigator:
+  ocr_fallback: true
+  strategy_detection: auto           # auto | uri | path | search | graph_traversal
+
+# ── Voice ───────────────────────────────────────────────────
+voice:
+  # faster-whisper model size: tiny.en | base.en | small.en
+  # base.en: 142MB download, ~100ms transcription on GPU — good for 4GB VRAM
+  model_size: base.en
+  device: cuda                       # cuda | cpu
+  compute_type: float16              # float16 for GPU, int8 for CPU
+  wake_word: jarvis
+  # CUDA note: faster-whisper uses CTranslate2 which bundles its own CUDA libs.
+  # No manual cuBLAS/cuDNN install needed. Just: pip install faster-whisper
