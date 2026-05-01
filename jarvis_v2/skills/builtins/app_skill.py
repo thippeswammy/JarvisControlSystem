@@ -43,7 +43,29 @@ def open_app(params: dict) -> SkillResult:
             else:
                 os.startfile(exe)
             logger.info(f"[app_skill] Launched: {exe}")
-            return SkillResult(success=True, action_taken=f"Launched {target}", data={"exe": exe})
+            
+            # Ensure focus
+            import time
+            from pywinauto import Desktop
+            time.sleep(1.5) # Wait for window to initialize
+            try:
+                # 1. Try partial title match
+                win = Desktop(backend="uia").window(title_re=f"(?i).*{target}.*")
+                if win.exists():
+                    win.set_focus()
+                    logger.info(f"[app_skill] Focused window by title: {target}")
+                else:
+                    # 2. Try by process name if known
+                    if exe:
+                        proc_name = exe.replace(".exe", "")
+                        win = Desktop(backend="uia").window(process=proc_name)
+                        if win.exists():
+                            win.set_focus()
+                            logger.info(f"[app_skill] Focused window by process: {proc_name}")
+            except Exception as fe:
+                logger.debug(f"[app_skill] Focus failed for {target}: {fe}")
+
+            return SkillResult(success=True, action_taken=f"Launched and focused {target}", data={"exe": exe})
         except Exception as e:
             logger.error(f"[app_skill] Launch failed for {exe}: {e}")
 

@@ -48,3 +48,20 @@ def switch_window(params: dict) -> SkillResult:
         return SkillResult(success=True, action_taken="Switched window")
     except Exception as e:
         return SkillResult(success=False, message=str(e))
+@skill(triggers=["activate window", "focus window", "bring to front", "switch to"],
+       name="activate_window", category="window")
+def activate_window(params: dict) -> SkillResult:
+    target = params.get("target", "").strip()
+    if not target:
+        return SkillResult(success=False, message="No window title specified")
+    
+    try:
+        from pywinauto import Desktop
+        win = Desktop(backend="uia").window(title_re=f"(?i).*{target}.*")
+        if win.exists():
+            win.set_focus()
+            return SkillResult(success=True, action_taken=f"Focused window: {target}")
+        else:
+            return SkillResult(success=False, message=f"Window not found: {target}")
+    except Exception as e:
+        return SkillResult(success=False, message=str(e))

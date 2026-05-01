@@ -33,6 +33,8 @@ def type_text(params: dict) -> SkillResult:
         return SkillResult(success=False, message="No text specified")
     try:
         import pyautogui
+        import time
+        time.sleep(0.5) # Allow focus to settle
         pyautogui.typewrite(text, interval=interval)
         return SkillResult(success=True, action_taken=f"Typed: {text[:40]!r}")
     except Exception as e:
