@@ -1,4 +1,16 @@
-"""Semantic Memory Layer — stub (Phase 8 full implementation)"""
+"""
+Semantic Memory Layer
+======================
+Stores facts about the world: keyboard shortcuts, hardware info, app knowledge.
+
+Pre-seeded with common shortcuts for Chrome, VS Code, Windows.
+New facts are written by ReactiveLearner when shortcuts are discovered.
+
+Usage:
+    sem = SemanticMemory()
+    facts = sem.query("chrome")          # → list[Fact]
+    ctx = sem.as_llm_context("vscode")  # → compact string for LLM
+"""
 import logging
 from dataclasses import dataclass
 from typing import Optional
@@ -50,3 +62,14 @@ class SemanticMemory:
     def as_context(self, keywords: str = "", top_n: int = 5) -> str:
         facts = self.query(keywords) if keywords else list(self._facts.values())[:top_n]
         return "\n".join(f"- {f.label}: {f.value}" for f in facts[:top_n])
+
+    def as_llm_context(self, command: str = "", top_n: int = 5) -> str:
+        """
+        Alias for as_context — called by RAGContextBuilder.
+        Returns a compact facts string for LLM injection.
+        """
+        facts = self.query(command) if command else list(self._facts.values())[:top_n]
+        if not facts:
+            return "(no semantic facts)"
+        return "\n".join(f"- {f.label}: {f.value}" for f in facts[:top_n])
+
