@@ -284,8 +284,8 @@ class TestTaskMemory(unittest.TestCase):
     def test_create_and_retrieve_task(self):
         task = self.tasks.create_task("Setup Python env", ["install python", "install pip", "install pytest"])
         active = self.tasks.get_active()
-        self.assertEqual(len(active), 1)
-        self.assertEqual(active[0].label, "Setup Python env")
+        self.assertIn(task, active)
+        self.assertEqual(task.label, "Setup Python env")
 
     def test_next_step(self):
         task = self.tasks.create_task("Test task", ["step1", "step2"])

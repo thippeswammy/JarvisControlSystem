@@ -60,7 +60,8 @@ class MemoryManager:
     """
 
     def __init__(self, db_path: str = _DB_DEFAULT):
-        os.makedirs(os.path.dirname(db_path), exist_ok=True)
+        if db_path != ":memory:":
+            os.makedirs(os.path.dirname(db_path), exist_ok=True)
         self._db = GraphDB(db_path)
         self._harvester = StateHarvester()
         self._pathfinder = None  # Injected in Phase 4

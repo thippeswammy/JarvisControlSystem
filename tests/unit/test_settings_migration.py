@@ -19,7 +19,7 @@ from jarvis_v2.pathfinding.graph_pathfinder import GraphPathfinder
 
 
 class TestSettingsSeed(unittest.TestCase):
-    """ProceduralMemory.seed_settings() must load all 130 ms-settings nodes."""
+    """ProceduralMemory.seed_settings_graph() must load all 130 ms-settings nodes."""
 
     def setUp(self):
         """Use in-memory SQLite so no files are modified."""
@@ -27,20 +27,20 @@ class TestSettingsSeed(unittest.TestCase):
         self.proc = ProceduralMemory(self.db)
 
     def test_seed_loads_min_100_nodes(self):
-        self.proc.seed_settings()
+        self.proc.seed_settings_graph()
         nodes = self.db.get_nodes_for_app("settings")
         self.assertGreaterEqual(len(nodes), 100,
             f"Expected ≥100 seeded nodes, got {len(nodes)}")
 
     def test_seeded_nodes_have_uri_strategy(self):
-        self.proc.seed_settings()
+        self.proc.seed_settings_graph()
         nodes = self.db.get_nodes_for_app("settings")
         uri_nodes = [n for n in nodes if n.entry_strategy == "uri" and n.entry_value]
         self.assertGreaterEqual(len(uri_nodes), 50,
             "At least half the seeded nodes should have uri entry_strategy")
 
     def test_seeded_nodes_have_ms_settings_prefix(self):
-        self.proc.seed_settings()
+        self.proc.seed_settings_graph()
         nodes = self.db.get_nodes_for_app("settings")
         uri_nodes = [n for n in nodes if n.entry_value]
         for node in uri_nodes[:10]:  # spot-check first 10
@@ -51,29 +51,28 @@ class TestSettingsSeed(unittest.TestCase):
 
     def test_seed_is_idempotent(self):
         """Seeding twice should not double the node count."""
-        self.proc.seed_settings()
+        self.proc.seed_settings_graph()
         count_after_first = len(self.db.get_nodes_for_app("settings"))
-        self.proc.seed_settings()
+        self.proc.seed_settings_graph()
         count_after_second = len(self.db.get_nodes_for_app("settings"))
         self.assertEqual(count_after_first, count_after_second,
             "Re-seeding must not create duplicate nodes")
 
     def test_home_node_exists(self):
-        self.proc.seed_settings()
+        self.proc.seed_settings_graph()
         node = self.db.get_node("settings.home")
         self.assertIsNotNone(node, "settings.home root node must be seeded")
 
     def test_display_node_exists(self):
-        self.proc.seed_settings()
+        self.proc.seed_settings_graph()
         node = self.db.get_node("settings.display")
         self.assertIsNotNone(node, "settings.display node must be seeded")
 
     def test_wifi_node_exists(self):
-        self.proc.seed_settings()
-        # Try both possible IDs for wifi
-        wifi_node = (self.db.get_node("settings.wifi") or
-                     self.db.get_node("settings.network-wifi") or
-                     self.db.get_node("settings.network_wifi"))
+        self.proc.seed_settings_graph()
+        # Try possible IDs for wifi (settings_seed.yaml uses settings.network.wifi)
+        wifi_node = (self.db.get_node("settings.network.wifi") or
+                     self.db.get_node("settings.wifi"))
         self.assertIsNotNone(wifi_node, "A wifi settings node must be seeded")
 
 
@@ -83,7 +82,7 @@ class TestSettingsRecall(unittest.TestCase):
     def setUp(self):
         self.mem = MemoryManager(db_path=":memory:")
         proc = ProceduralMemory(self.mem.get_db())
-        proc.seed_settings()
+        proc.seed_settings_graph()
         # Wire pathfinder
         pf = GraphPathfinder(self.mem.get_db())
         self.mem.set_pathfinder(pf)
@@ -121,7 +120,7 @@ class TestSeededEdgeConfidence(unittest.TestCase):
     def setUp(self):
         self.db = GraphDB(":memory:")
         proc = ProceduralMemory(self.db)
-        proc.seed_settings()
+        proc.seed_settings_graph()
 
     def test_seeded_edges_have_high_confidence(self):
         edges = self.db.get_edges_for_app("settings")
