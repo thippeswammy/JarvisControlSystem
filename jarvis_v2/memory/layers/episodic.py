@@ -166,23 +166,29 @@ class EpisodicMemory:
 
     # ── LLM Context (RAG) ────────────────────────────────────────────────────
 
-    def as_llm_context(self, max_sessions: int = 3, top_n: int = 5) -> str:
+    def as_llm_context(self, max_sessions: int = 3, top_n: int = 5, include_current: bool = True) -> str:
         """
         Return a compact string summarising recent session history for LLM injection.
-        Reads the last max_sessions log files (not the current session).
-        Token budget: ~100 tokens max.
+        Token budget: ~150 tokens max.
         """
-        logs = sorted(_SESSION_DIR.glob("*.md"))
-        recent = logs[-max_sessions:] if logs else []
-
         cmd_counter: Counter = Counter()
-        for log_path in recent:
+        
+        # 1. Past sessions
+        logs = sorted(_SESSION_DIR.glob("*.md"))
+        recent_logs = logs[-max_sessions:] if logs else []
+        for log_path in recent_logs:
             for line in log_path.read_text(encoding="utf-8").splitlines():
                 if not line.startswith("- ") or "✅" not in line:
                     continue
                 parts = line.split("`")
                 if len(parts) >= 3:
                     cmd_counter[parts[1]] += 1
+
+        # 2. Current session (most recent first)
+        if include_current and self._log:
+            for entry in reversed(self._log[-10:]):
+                if entry["ok"]:
+                    cmd_counter[entry["cmd"]] += 1
 
         top = cmd_counter.most_common(top_n)
         if not top:

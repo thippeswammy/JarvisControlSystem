@@ -26,15 +26,10 @@ class Scenario10(LiveScenario):
 
     def setup(self):
         self.orch = Orchestrator(memory=MemoryManager(), router=LLMRouter.from_config(), bus=SkillBus())
-        # We need an episodic memory instance
-        self.orch._episodic = EpisodicMemory()
         self.orch.boot()
 
     def _run(self, cmd: str):
-        # We log to episodic memory here normally this is done by verification loop
         result = self.orch.process(cmd)
-        if hasattr(self.orch, "_episodic"):
-            self.orch._episodic.log_command(cmd, success=result.success)
         assert result.success, f"Failed: {cmd!r} → {result.message}"
 
     def __init__(self):

@@ -85,7 +85,16 @@ class StateHarvester:
 
         try:
             if app_title:
-                win = desktop.window(title_re=f".*{app_title}.*")
+                try:
+                    win = desktop.window(title_re=f"(?i).*{app_title}.*")
+                    # Force a check to see if it exists
+                    if not win.exists(timeout=0.1):
+                        raise Exception("Window not found")
+                except Exception:
+                    # Fallback: list titles to log
+                    titles = [w.window_text() for w in desktop.windows()]
+                    logger.debug(f"[StateHarvester] '{app_title}' not found. Visible: {titles}")
+                    return {}
             else:
                 # Use the foreground window
                 import win32gui
@@ -95,8 +104,18 @@ class StateHarvester:
                     return {}
                 win = desktop.window(handle=hwnd)
 
-            # Walk the control tree — only 2 levels deep to keep it fast
-            for ctrl in win.descendants(depth=2):
+            # Include the window title in the state (very robust)
+            state["_window_title"] = win.window_text()
+
+            # Walk the control tree — depth 4 for complex apps
+            try:
+                desc = win.descendants(depth=4)
+                # logger.debug(f"[StateHarvester] Found {len(desc)} descendants for '{app_title}'")
+            except Exception as e:
+                logger.debug(f"[StateHarvester] descendants() failed for '{app_title}': {e}")
+                return {}
+
+            for ctrl in desc:
                 try:
                     ctrl_type = ctrl.element_info.control_type
                     name = (ctrl.element_info.name or "").strip()

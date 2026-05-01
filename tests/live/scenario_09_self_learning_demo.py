@@ -10,9 +10,12 @@ Tests:
 Run:
     python -m tests.live.scenario_09_self_learning_demo
 """
+import logging
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(levelname)s] %(name)s: %(message)s')
 
 from tests.live.base_scenario import LiveScenario, StepDef
 from jarvis_v2.brain.orchestrator import Orchestrator
@@ -26,8 +29,15 @@ class Scenario09(LiveScenario):
     scenario_name = "09 — Self-Learning Demo"
 
     def setup(self):
+        from jarvis_v2.memory.state_harvester import StateHarvester
+        from jarvis_v2.memory.state_comparator import StateComparator
+        from jarvis_v2.brain.recovery import RecoveryStrategies
+        from jarvis_v2.skills.skill_bus import SkillBus
+
         mem = MemoryManager(db_path=":memory:") # fresh DB for this test
-        self.orch = Orchestrator(memory=mem, router=LLMRouter.from_config(), bus=SkillBus(), verification_loop=VerificationLoop())
+        bus = SkillBus()
+        vloop = VerificationLoop(StateHarvester(), StateComparator(), RecoveryStrategies(bus), settle_ms=2000)
+        self.orch = Orchestrator(memory=mem, router=LLMRouter.from_config(), bus=bus, verification_loop=vloop)
         self.orch.boot()
 
     def _run(self, cmd: str, expect_memory: bool = False):

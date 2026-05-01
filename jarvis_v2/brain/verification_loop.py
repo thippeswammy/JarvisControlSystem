@@ -112,13 +112,13 @@ class VerificationLoop:
 
         if state_changed:
             # ✅ State changed — verified success
-            logger.info(f"[VerificationLoop] ✅ State changed: {call.skill}")
+            logger.info(f"[VerificationLoop] ✅ State changed: {call.skill} ({before_hash} -> {after_hash})")
             self._maybe_learn(call, packet, learner, success=True)
             result.action_taken = f"[Verified] {result.action_taken}"
             return result
 
         # ❌ No state change — unexpected
-        logger.warning(f"[VerificationLoop] ❌ No state change after: {call.skill}")
+        logger.warning(f"[VerificationLoop] ❌ No state change after: {call.skill} (Hash: {before_hash})")
         return self._handle_failure(call, bus, result, packet, snapshot, pathfinder)
 
     # ── Private ──────────────────────────────────────

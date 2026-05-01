@@ -17,6 +17,7 @@ from typing import Optional
 from jarvis_v2.brain.planner import Planner
 from jarvis_v2.brain.reactive_learner import ReactiveLearner
 from jarvis_v2.llm.llm_router import LLMRouter
+from jarvis_v2.memory.layers.episodic import EpisodicMemory
 from jarvis_v2.memory.memory_manager import MemoryManager
 from jarvis_v2.pathfinding.graph_pathfinder import GraphPathfinder
 from jarvis_v2.perception.context_harvester import ContextHarvester
@@ -42,11 +43,13 @@ class Orchestrator:
         memory: MemoryManager,
         router: LLMRouter,
         bus: SkillBus,
-        verification_loop=None,   # Injected in Phase 6
+        episodic: Optional[EpisodicMemory] = None,
+        verification_loop=None,
     ):
         self._memory = memory
         self._router = router
         self._bus = bus
+        self._episodic = episodic or EpisodicMemory()
         self._verification_loop = verification_loop
 
         self._nlu = NLU()
@@ -90,9 +93,13 @@ class Orchestrator:
 
         # NLU
         packet = self._nlu.parse(utterance, app_context=snapshot.active_app)
-        packet.memory_context = self._memory.get_relevant_context(
+        
+        procedural_ctx = self._memory.get_relevant_context(
             text, app_id=snapshot.active_app or None
         )
+        episodic_ctx = self._episodic.as_llm_context()
+        
+        packet.memory_context = f"{episodic_ctx}\n\n{procedural_ctx}"
 
         logger.info(
             f"[Orchestrator] '{text}' → intent={packet.intent}, "
@@ -118,6 +125,14 @@ class Orchestrator:
                 result = self._bus.dispatch(call)
 
             last_result = result
+            
+            # Log to episodic memory
+            self._episodic.log_command(
+                command=text,
+                success=result.success,
+                app=snapshot.active_app or "",
+                skill=call.skill,
+            )
 
             # Stop plan on failure
             if not result.success:

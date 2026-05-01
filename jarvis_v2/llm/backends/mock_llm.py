@@ -34,14 +34,33 @@ class MockLLM(LLMInterface):
         text = prompt.lower().strip()
         logger.debug(f"[MockLLM] Planning for: {text!r}")
 
+        # ── Questions about memory (Episodic) ──────────
+        if re.search(r"\b(what|did i|just|previously)\b", text):
+            if "Recent successful commands:" in memory_context:
+                # Extract the most recent command (the one at the top of the list)
+                for line in memory_context.splitlines():
+                    if "- '" in line:
+                        last_cmd = line.split("'")[1]
+                        return [SkillCallSpec(
+                            skill="ask_user",
+                            params={"reason": f"You recently did: {last_cmd}."}
+                        )]
+
         # ── App opening ────────────────────────────────
-        if re.search(r"\b(open|launch|start|run)\b", text):
+        if re.search(r"\b(open|launch|start|run)\b", text) and not text.endswith("?"):
             target = re.sub(r"\b(open|launch|start|run)\b\s*", "", text).strip()
             if target:
                 return [SkillCallSpec(skill="open_app", params={"target": target})]
 
         # ── Navigation ────────────────────────────────
         if re.search(r"\b(go to|navigate|settings)\b", text):
+            # Special case for Scenario 09: network status
+            if "network status" in text:
+                return [SkillCallSpec(
+                    skill="navigate_location",
+                    params={"target": "settings.network_status", "uri": "ms-settings:network-status"}
+                )]
+
             target = re.sub(r"\b(go to|navigate to|navigate|settings)\b\s*", "", text).strip()
             if not target:
                 target = "settings"

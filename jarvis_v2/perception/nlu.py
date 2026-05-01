@@ -24,7 +24,8 @@ _INTENT_PATTERNS = [
     # Session
     (r"\b(hi|hello|hey|wake up|activate)\s+jarvis\b",         "session_activate",   {}),
     (r"\b(bye|goodbye|stop|deactivate|sleep|close)\s+jarvis\b","session_deactivate", {}),
-    (r"\b(status|health|how are you)\b",                       "system_status",      {}),
+    (r"^(status|health|how are you)$",                         "system_status",      {}),
+    (r"\b(jarvis\s+status|system\s+status)\b",                 "system_status",      {}),
 
     # Volume
     (r"\b(set|change|put)\s+(volume|sound)\s+(?:to\s+)?(\d+)", "set_volume",    {"level": 3}),

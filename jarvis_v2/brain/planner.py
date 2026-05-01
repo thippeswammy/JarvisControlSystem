@@ -17,7 +17,7 @@ from typing import Optional
 from jarvis_v2.llm.llm_router import LLMRouter
 from jarvis_v2.llm.llm_interface import SkillCallSpec, Plan
 from jarvis_v2.memory.memory_manager import MemoryManager, MemoryPath
-from jarvis_v2.perception.perception_packet import PerceptionPacket
+from jarvis_v2.perception.perception_packet import PerceptionPacket, Utterance
 from jarvis_v2.skills.skill_bus import SkillCall
 
 logger = logging.getLogger(__name__)
@@ -121,11 +121,19 @@ class Planner:
             if mem_path:
                 calls.extend(self._path_to_skill_calls(mem_path))
             else:
-                # Fallback: let LLM figure out navigation
-                calls.append(SkillCall(
-                    skill="navigate_location",
-                    params={"target": sub, "app": target},
-                ))
+                # Fallback: Use LLM to figure out the navigation steps
+                logger.info(f"[Planner] Sub-location {sub!r} unknown — routing to LLM")
+                sub_packet = PerceptionPacket(
+                    utterance=Utterance(
+                        text=f"navigate to {sub} in {target}",
+                        source=packet.utterance.source
+                    ),
+                    intent="navigate_location",
+                    entities={"target": sub, "app": target},
+                    app_context=target,
+                    memory_context=packet.memory_context,
+                )
+                calls.extend(self._plan_via_llm(sub_packet))
 
         return calls
 
