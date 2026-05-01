@@ -1,18 +1,25 @@
 # Task task.001
-<!-- status=in_progress steps_done=0/3 -->
+<!-- status=in_progress steps_done=0/10 -->
 
 ## Node
 - id: task.001
 - type: TASK
-- label: Setup Python env
+- label: Complex Multi-Step Task
 - status: in_progress
-- steps_total: 3
+- steps_total: 10
 - steps_done: 0
-- next_step: install python
-- created: 2026-05-01
-- last_touched: 2026-05-01
+- next_step: open notepad
+- created: 2026-05-02
+- last_touched: 2026-05-02
 
 ## Steps
-- ⬜ install python
-- ⬜ install pip
-- ⬜ install pytest
+- ⬜ open notepad
+- ⬜ type Step 1 done
+- ⬜ set volume to 20
+- ⬜ open calculator
+- ⬜ minimize window
+- ⬜ maximize window
+- ⬜ type Step 7 is here
+- ⬜ open file explorer
+- ⬜ snap window left
+- ⬜ unmute
