@@ -11,6 +11,17 @@ logger = logging.getLogger(__name__)
 def set_volume(params: dict) -> SkillResult:
     level = params.get("level")
     mute = params.get("mute")
+    if mute is not None:
+        if isinstance(mute, str):
+            mute_str = mute.lower()
+            if mute_str in ("mute", "true", "1", "yes", "on"):
+                mute = True
+            elif mute_str in ("unmute", "false", "0", "no", "off"):
+                mute = False
+            else:
+                mute = bool(mute)
+        else:
+            mute = bool(mute)
 
     try:
         from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
