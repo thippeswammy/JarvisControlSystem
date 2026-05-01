@@ -26,7 +26,7 @@ class Scenario08(LiveScenario):
 
     def setup(self):
         mem = MemoryManager()
-        ProceduralMemory(mem.get_db()).seed_settings()
+        ProceduralMemory(mem.get_db()).seed_settings_graph()
         self.orch = Orchestrator(memory=mem, router=LLMRouter.from_config(), bus=SkillBus())
         self.orch.boot()
 

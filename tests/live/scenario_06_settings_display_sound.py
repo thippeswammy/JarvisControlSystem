@@ -27,7 +27,7 @@ class Scenario06(LiveScenario):
     def setup(self):
         mem = MemoryManager()
         # Seed settings to ensure fast-paths are available
-        ProceduralMemory(mem.get_db()).seed_settings()
+        ProceduralMemory(mem.get_db()).seed_settings_graph()
         self.orch = Orchestrator(memory=mem, router=LLMRouter.from_config(), bus=SkillBus())
         self.orch.boot()
 
