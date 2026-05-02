@@ -43,11 +43,25 @@ def navigate_location(params: dict) -> SkillResult:
                 return SkillResult(success=False, message=f"Step failed: {step!r}")
         return SkillResult(success=True, action_taken=f"Navigated via steps to: {target}")
 
-    # Fallback: if target looks like a URL or path, try opening directly
     is_url = any(target.endswith(ext) for ext in [".com", ".net", ".org", ".edu", ".gov", ".io"]) or \
              any(target.startswith(pre) for pre in ["http", "www.", "https"]) or \
              ":\\" in target or "/" in target
+
+    shell_map = {
+        "my documents": "shell:Personal",
+        "documents": "shell:Personal",
+        "downloads": "shell:Downloads",
+        "desktop": "shell:Desktop",
+        "this pc": "shell:MyComputerFolder",
+    }
              
+    if target.lower() in shell_map:
+        try:
+            os.startfile(shell_map[target.lower()])
+            return SkillResult(success=True, action_taken=f"Opened shell target: {target}")
+        except Exception as e:
+            logger.warning(f"[navigator_skill] direct open failed for {target}: {e}")
+
     if target and is_url:
         full_target = target
         if "." in target and not target.startswith("http") and not ":\\" in target:
@@ -100,8 +114,10 @@ def _click_by_label(label: str) -> None:
 def _click_by_accessibility(label: str) -> None:
     try:
         from pywinauto import Desktop
+        import re
         win = Desktop(backend="uia").window(title_re=".*")
-        elem = win.child_window(title=label, control_type="Button")
+        elem = win.child_window(title_re=re.compile(f".*{re.escape(label)}.*", re.IGNORECASE), control_type="Button")
+        elem.wait('ready', timeout=3)
         elem.click_input()
     except Exception as e:
         logger.debug(f"[navigator_skill] Accessibility click failed for {label!r}: {e}")

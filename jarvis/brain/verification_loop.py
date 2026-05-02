@@ -36,7 +36,7 @@ SKIP_VERIFY_SKILLS = {
     "type_text", "press_key", "search_web", "search_windows",
     "session_activate", "session_deactivate", "system_status",
     "ask_user", "set_volume", "set_brightness", "power_action",
-    "scroll_page",
+    "scroll_page", "open_app", "close_app"
 }
 
 _DEFAULT_SETTLE_MS = 600   # ms to wait after action before re-harvesting
@@ -87,58 +87,57 @@ class VerificationLoop:
             app_title=snapshot.active_app or None
         )
 
-        # 2. Execute
-        result = bus.dispatch(call)
-        if not result.success:
-            logger.info(f"[VerificationLoop] Skill failed pre-verification: {call.skill}")
-            return self._handle_failure(call, bus, result, packet, snapshot, pathfinder)
+        for attempt in range(0, 3):
+            if attempt > 0:
+                result = self._recovery.retry(call, attempt)
+            else:
+                result = bus.dispatch(call)
 
-        # 3. Wait for UI to settle
-        time.sleep(self._settle_ms / 1000.0)
+            if not result or not result.success:
+                if attempt == 0:
+                    logger.info(f"[VerificationLoop] Skill failed pre-verification: {call.skill}")
+                continue # Try next attempt
 
-        # 4. Capture AFTER state
-        after_state, after_hash = self._harvester.harvest_and_hash(
-            app_title=snapshot.active_app or None
-        )
+            # 3. Wait for UI to settle
+            time.sleep(self._settle_ms / 1000.0)
 
-        # 5. Compare
-        # No UIA = both hashes are empty strings (StateHarvester unavailable)
-        if not before_hash and not after_hash:
-            logger.debug("[VerificationLoop] No UI state (UIA unavailable), trusting skill result")
-            self._maybe_learn(call, packet, learner, success=result.success)
-            return result
+            # 4. Capture AFTER state
+            after_state, after_hash = self._harvester.harvest_and_hash(
+                app_title=snapshot.active_app or None
+            )
 
-        state_changed = before_hash != after_hash
+            # 5. Compare
+            if not before_hash and not after_hash:
+                logger.debug("[VerificationLoop] No UI state (UIA unavailable), trusting skill result")
+                self._maybe_learn(call, packet, learner, success=True)
+                return result
 
-        if state_changed:
-            # ✅ State changed — verified success
-            logger.info(f"[VerificationLoop] ✅ State changed: {call.skill} ({before_hash} -> {after_hash})")
-            self._maybe_learn(call, packet, learner, success=True)
-            result.action_taken = f"[Verified] {result.action_taken}"
-            return result
+            state_changed = before_hash != after_hash
 
-        # ❌ No state change — unexpected
-        logger.warning(f"[VerificationLoop] ❌ No state change after: {call.skill} (Hash: {before_hash})")
-        return self._handle_failure(call, bus, result, packet, snapshot, pathfinder)
+            if state_changed:
+                # ✅ State changed — verified success
+                logger.info(f"[VerificationLoop] ✅ State changed: {call.skill} ({before_hash} -> {after_hash})")
+                self._maybe_learn(call, packet, learner, success=True)
+                result.action_taken = f"[Verified] {result.action_taken}"
+                return result
+
+            # ❌ No state change — unexpected
+            logger.warning(f"[VerificationLoop] ❌ No state change after: {call.skill} (Hash: {before_hash})")
+
+        # If we exhausted retries and still no state change, try alternative/ask user
+        return self._handle_failure_post_retry(call, bus, packet, snapshot, pathfinder)
 
     # ── Private ──────────────────────────────────────
 
-    def _handle_failure(
+    def _handle_failure_post_retry(
         self,
         call: SkillCall,
         bus: SkillBus,
-        result: SkillResult,
         packet: PerceptionPacket,
         snapshot: ContextSnapshot,
         pathfinder,
     ) -> SkillResult:
-        """Try retry → alternative → ask_user in order."""
-        # Tier 1: Retry (back-off without re-harvesting — harvester is expensive)
-        for attempt in range(1, 3):
-            retry_result = self._recovery.retry(call, attempt)
-            if retry_result and retry_result.success:
-                return retry_result
-
+        """Try alternative → ask_user in order after retries failed."""
         # Tier 2: Alternative path (only for navigation)
         if call.skill == "navigate_location":
             alt_result = self._recovery.try_alternative(

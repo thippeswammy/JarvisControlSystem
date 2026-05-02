@@ -15,42 +15,53 @@ def click_element(params: dict) -> SkillResult:
     Falls back to pyautogui image search if accessibility fails.
     """
     label = params.get("label", "").strip()
-    control_type = params.get("control_type", "")  # Button, CheckBox, etc.
+    control_type = params.get("control_type", "")
     if not label:
         return SkillResult(success=False, message="No element label specified")
 
-    # Try UIA accessibility tree first (fast, reliable)
-    try:
-        from pywinauto import Desktop
-        import win32gui
-        hwnd = win32gui.GetForegroundWindow()
-        title = win32gui.GetWindowText(hwnd)
-        win = Desktop(backend="uia").window(handle=hwnd)
-        kwargs = {"title": label}
-        if control_type:
-            kwargs["control_type"] = control_type
-        elem = win.child_window(**kwargs)
-        elem.click_input()
-        logger.info(f"[crawler_skill] Clicked via UIA: {label!r}")
-        return SkillResult(success=True, action_taken=f"Clicked: {label!r}")
-    except Exception as e:
-        logger.debug(f"[crawler_skill] UIA click failed for {label!r}: {e}")
+    import time
+    from pywinauto import Desktop
+    import win32gui
+    import re
 
-    # Fallback: partial match on any clickable element
-    try:
-        from pywinauto import Desktop
-        import win32gui
+    # Try for up to 5 seconds
+    start_time = time.time()
+    last_err = None
+    
+    while time.time() - start_time < 5.0:
         hwnd = win32gui.GetForegroundWindow()
         win = Desktop(backend="uia").window(handle=hwnd)
-        for ctrl in win.descendants():
-            name = (ctrl.element_info.name or "").strip()
-            if label.lower() in name.lower():
-                ctrl.click_input()
-                return SkillResult(success=True, action_taken=f"Clicked (partial match): {name!r}")
-    except Exception as e:
-        logger.debug(f"[crawler_skill] Partial match failed: {e}")
+        
+        try:
+            kwargs = {"title_re": re.compile(f".*{re.escape(label)}.*", re.IGNORECASE)}
+            if control_type:
+                kwargs["control_type"] = control_type
+            
+            elem = win.child_window(**kwargs)
+            # wait up to 0.5s for it to be ready
+            try:
+                elem.wait('ready', timeout=0.5)
+                elem.click_input()
+                logger.info(f"[crawler_skill] Clicked via UIA: {label!r}")
+                return SkillResult(success=True, action_taken=f"Clicked: {label!r}")
+            except Exception as e:
+                last_err = e
+        except Exception as e:
+            last_err = e
 
-    return SkillResult(success=False, message=f"Could not find element: {label!r}")
+        # Fallback
+        try:
+            for ctrl in win.descendants():
+                name = (ctrl.element_info.name or "").strip()
+                if label.lower() in name.lower():
+                    ctrl.click_input()
+                    return SkillResult(success=True, action_taken=f"Clicked (partial match): {name!r}")
+        except Exception as e:
+            last_err = e
+
+        time.sleep(0.5)
+
+    return SkillResult(success=False, message=f"Could not find element: {label!r} (Last error: {last_err})")
 
 
 @skill(triggers=["scroll down", "scroll up", "scroll page"],

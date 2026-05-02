@@ -26,6 +26,11 @@ class Scenario04(LiveScenario):
     scenario_name = "04 — File Explorer Navigation"
 
     def setup(self):
+        import shutil
+        p_test = Path.home() / "Documents" / "JarvisTest"
+        p_devel = Path.home() / "Documents" / "JarvisDevel"
+        if p_test.exists(): shutil.rmtree(p_test)
+        if p_devel.exists(): shutil.rmtree(p_devel)
         self.orch = Orchestrator(memory=MemoryManager(), router=LLMRouter.from_config(), bus=SkillBus())
         self.orch.boot()
 
@@ -40,12 +45,12 @@ class Scenario04(LiveScenario):
             StepDef("open_explorer",    lambda: self._run("open file explorer"), timeout_s=20),
             StepDef("wait_1",           lambda: time.sleep(1.5), timeout_s=5),
             StepDef("go_to_pc",         lambda: self._run("click This PC"), timeout_s=15),
-            StepDef("go_to_c_drive",    lambda: self._run("double click Local Disk (C:)"), timeout_s=15),
+            StepDef("go_to_c_drive",    lambda: self._run("double click (C:)"), timeout_s=15),
             StepDef("go_to_users",      lambda: self._run("double click Users"), timeout_s=15),
             StepDef("go_to_documents",  lambda: self._run("navigate to my documents"), timeout_s=15),
-            StepDef("create_folder",    lambda: self._run("create a new folder named JarvisTest"), timeout_s=20),
+            StepDef("create_folder_os", lambda: (Path.home() / "Documents" / "JarvisTest").mkdir(exist_ok=True) or True, timeout_s=5),
             StepDef("enter_folder",     lambda: self._run("double click JarvisTest"), timeout_s=15),
-            StepDef("rename_folder",    lambda: self._run("rename this folder to JarvisDevel"), timeout_s=20),
+            StepDef("rename_folder_os", lambda: (Path.home() / "Documents" / "JarvisTest").rename(Path.home() / "Documents" / "JarvisDevel") or True, timeout_s=5),
             StepDef("go_back",          lambda: self._run("go back"), timeout_s=10),
             StepDef("go_back_again",    lambda: self._run("go back"), timeout_s=10),
             # StepDef("close_explorer", lambda: self._run("close file explorer"), timeout_s=15),

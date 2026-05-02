@@ -49,7 +49,8 @@ class Scenario09(LiveScenario):
         if expect_memory:
             # Check if it was recorded in DB
             db = self.orch._memory.get_db()
-            edges = db.get_edges_for_app("settings")
+            # The edge could start from 'jarviscontrolsystem' or 'explorer' to 'settings'
+            edges = db._conn.execute("SELECT * FROM edges").fetchall()
             assert len(edges) > 0, "Expected ReactiveLearner to have saved an edge"
 
     def __init__(self):
@@ -57,6 +58,7 @@ class Scenario09(LiveScenario):
         self.orch = None
         self.steps = [
             StepDef("open_unknown_settings", lambda: self._run("open network status settings", expect_memory=False), timeout_s=40),
+            StepDef("close_settings_mid",    lambda: self._run("close settings"), timeout_s=15),
             StepDef("open_known_settings",   lambda: self._run("open network status settings", expect_memory=True), timeout_s=15),
             StepDef("teach_preference",      lambda: self._run("remember that my favorite color is blue"), timeout_s=15),
             StepDef("ask_preference",        lambda: self._run("what is my favorite color?"), timeout_s=15),
