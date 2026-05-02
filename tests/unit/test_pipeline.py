@@ -188,6 +188,10 @@ class TestPlanner(unittest.TestCase):
             entities={"target": "settings"},
             sub_location="wifi",
         )
+        # Mock the router to return navigate_location for the sub_location
+        self.router.route.return_value = [
+            MagicMock(skill="navigate_location", params={"target": "wifi"})
+        ]
         plan = self.planner.plan(packet)
         # Should have open_app + navigate_location
         skills = [c.skill for c in plan]
@@ -343,12 +347,12 @@ class TestVerificationLoop(unittest.TestCase):
         vloop = self._make_vloop(before_hash="hash1", after_hash="hash2")
         bus = MagicMock()
         bus.dispatch.return_value = SkillResult(success=True, action_taken="navigated")
-        packet = PerceptionPacket(utterance=Utterance("open settings"), intent="open_app",
+        packet = PerceptionPacket(utterance=Utterance("navigate to settings"), intent="navigate_location",
                                   app_context="settings")
         snapshot = MagicMock()
         snapshot.active_app = "settings"
         learner = MagicMock()
-        call = SkillCall(skill="open_app", params={"target": "settings"})
+        call = SkillCall(skill="navigate_location", params={"target": "settings"})
 
         result = vloop.execute_and_verify(call, bus, packet, snapshot, learner)
         self.assertTrue(result.success)
@@ -360,6 +364,8 @@ class TestVerificationLoop(unittest.TestCase):
         harvester.harvest_and_hash.side_effect = [
             ({"CheckBox:WiFi": 1}, "same_hash"),
             ({"CheckBox:WiFi": 1}, "same_hash"),
+            ({"CheckBox:WiFi": 1}, "same_hash"),
+            ({"CheckBox:WiFi": 1}, "same_hash"),
         ]
         comparator = MagicMock()
         recovery = MagicMock()
@@ -368,12 +374,12 @@ class TestVerificationLoop(unittest.TestCase):
 
         bus = MagicMock()
         bus.dispatch.return_value = SkillResult(success=True, action_taken="navigated")
-        packet = PerceptionPacket(utterance=Utterance("open settings"), intent="open_app",
+        packet = PerceptionPacket(utterance=Utterance("navigate to settings"), intent="navigate_location",
                                   app_context="settings")
         snapshot = MagicMock()
         snapshot.active_app = "settings"
         learner = MagicMock()
-        call = SkillCall(skill="open_app", params={"target": "settings"})
+        call = SkillCall(skill="navigate_location", params={"target": "settings"})
 
         vloop.execute_and_verify(call, bus, packet, snapshot, learner)
         self.assertTrue(recovery.retry.called)

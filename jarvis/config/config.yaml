@@ -20,8 +20,8 @@ llm:
     local:
       engine: ollama
       api_url: "http://localhost:11434/v1"
-      model: "qwen2.5:1.5b-instruct"
-      fallback_model: "qwen2.5:0.5b-instruct"   # ultra-light if GPU busy
+      model: "gemma3:1b"
+      fallback_model: "gemma3:1b"   # ultra-light if GPU busy
       max_tokens: 300
       temperature: 0.1               # deterministic — no hallucination on action names
       timeout_seconds: 15

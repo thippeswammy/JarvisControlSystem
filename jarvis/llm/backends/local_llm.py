@@ -132,6 +132,10 @@ class LocalLLM(LLMInterface):
             "temperature": self._temperature,
             "stream": False,
         }
+        # Debug: Print lengths
+        logger.info(f"[LocalLLM] System prompt len: {len(messages[0]['content'])}")
+        logger.info(f"[LocalLLM] Sending prompt: {messages[-1]['content'][:100]}...")
+        logger.debug(f"[LocalLLM] Full messages: {messages}")
 
         try:
             resp = requests.post(
@@ -139,8 +143,11 @@ class LocalLLM(LLMInterface):
                 json=payload,
                 timeout=self._timeout,
             )
+            logger.info(f"[LocalLLM] Response status: {resp.status_code}")
             resp.raise_for_status()
-            content = resp.json()["choices"][0]["message"]["content"].strip()
+            data = resp.json()
+            logger.info(f"[LocalLLM] Raw Response: {data}")
+            content = data["choices"][0]["message"]["content"].strip()
             return self._parse_plan(content)
 
         except requests.exceptions.Timeout:
@@ -155,12 +162,7 @@ class LocalLLM(LLMInterface):
     def _parse_plan(self, raw: str) -> Optional[Plan]:
         """Extract JSON array from LLM response and convert to Plan."""
         # Strip markdown code fences if present
-        raw = raw.strip()
-        if raw.startswith("```"):
-            raw = raw.split("```", 2)[-1] if "```" in raw[3:] else raw[3:]
-            raw = raw.rsplit("```", 1)[0].strip()
-            if raw.startswith("json"):
-                raw = raw[4:].strip()
+        raw = raw.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
 
         try:
             data = json.loads(raw)

@@ -16,6 +16,9 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 
+import os
+from pathlib import Path
+
 @dataclass
 class SkillCallSpec:
     """A single planned action from the LLM."""
@@ -65,18 +68,20 @@ class LLMInterface(ABC):
     def build_system_prompt(self) -> str:
         """
         Returns the Jarvis identity + structured output instructions.
-        Shared across all backends.
+        Loads from external Markdown file if available.
         """
+        try:
+            # Resolve path relative to this file
+            prompt_path = Path(__file__).parent / "prompts" / "system_instructions.md"
+            if prompt_path.exists():
+                return prompt_path.read_text(encoding="utf-8")
+        except Exception as e:
+            logger.warning(f"[LLMInterface] Failed to load external prompt: {e}")
+
+        # Emergency Fallback (minimal identity)
         return (
             "You are Jarvis, a Windows desktop automation assistant.\n"
-            "Given a user command and memory context, output a JSON plan as an array of steps.\n"
-            "Each step: {\"skill\": \"skill_name\", \"params\": {...}}\n"
+            "Output ONLY a valid JSON array of steps: [{\"skill\": \"name\", \"params\": {...}}]\n"
             "Available skills: open_app, close_app, navigate_location, click_element, "
-            "type_text, press_key, set_volume, set_brightness, minimize_window, "
-            "maximize_window, search_web, session_activate, session_deactivate.\n"
-            "Rules:\n"
-            "  - Output ONLY valid JSON array. No explanation, no markdown.\n"
-            "  - Use 1-3 steps maximum. Simple commands = 1 step.\n"
-            "  - If uncertain, output: [{\"skill\": \"ask_user\", \"params\": {\"reason\": \"...\"}}]\n"
-            "  - Temperature is 0.1. Be deterministic.\n"
+            "type_text, press_key, set_volume, set_brightness, search_web, ask_user.\n"
         )
