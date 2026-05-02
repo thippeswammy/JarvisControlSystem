@@ -171,7 +171,14 @@ def main():
         for utterance in adapter.stream():
             result = orch.process(utterance.text, source="telegram")
             status = "✅" if result.success else "❌"
-            print(f"  Jarvis (@{utterance.source}): {status} {result.message or result.action_taken}")
+            
+            # Send back to Telegram
+            chat_id = utterance.metadata.get("chat_id")
+            if chat_id:
+                reply_text = f"{status} {result.message or result.action_taken}"
+                adapter.send_message(chat_id, reply_text)
+                
+            print(f"  Jarvis (@{utterance.metadata.get('username', 'unknown')}): {status} {result.message or result.action_taken}")
         return
 
     # ── Text / CLI mode ───────────────────────────────────────

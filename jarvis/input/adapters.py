@@ -312,7 +312,12 @@ class TelegramAdapter:
                         continue
 
                     logger.info(f"[TelegramAdapter] Received: '{text}' from @{username}")
-                    yield Utterance(text=text, source="telegram", confidence=1.0)
+                    yield Utterance(
+                        text=text,
+                        source="telegram",
+                        confidence=1.0,
+                        metadata={"chat_id": chat_id, "username": username}
+                    )
 
             except KeyboardInterrupt:
                 break
@@ -322,6 +327,24 @@ class TelegramAdapter:
             except Exception as e:
                 logger.error(f"[TelegramAdapter] Error: {e}")
                 time.sleep(5)
+
+    def send_message(self, chat_id: int, text: str) -> bool:
+        """Send a message back to a specific Telegram chat."""
+        import requests
+        try:
+            resp = requests.post(
+                f"{self._api_url}/sendMessage",
+                json={
+                    "chat_id": chat_id,
+                    "text": text,
+                    "parse_mode": "Markdown"
+                },
+                timeout=10
+            )
+            return resp.status_code == 200
+        except Exception as e:
+            logger.error(f"[TelegramAdapter] Failed to send message: {e}")
+            return False
 
     def stop(self):
         self._running = False

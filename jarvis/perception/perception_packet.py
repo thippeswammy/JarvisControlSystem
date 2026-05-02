@@ -19,9 +19,10 @@ from typing import Optional
 class Utterance:
     """Raw user input before NLU processing."""
     text: str
-    source: str = "text"           # text | voice | api
+    source: str = "text"           # text | voice | api | telegram
     confidence: float = 1.0        # speech recognition confidence (1.0 for text)
     session_id: str = ""
+    metadata: dict = field(default_factory=dict) # e.g. {"chat_id": 123}
 
 
 @dataclass
