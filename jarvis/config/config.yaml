@@ -70,3 +70,9 @@ voice:
   wake_word: jarvis
   # CUDA note: faster-whisper uses CTranslate2 which bundles its own CUDA libs.
   # No manual cuBLAS/cuDNN install needed. Just: pip install faster-whisper
+
+# ── Telegram ────────────────────────────────────────────────
+telegram:
+  enabled: true
+  token: "8693706700:AAERwET5RcROo91AbQ9K2-yv1DPx_VwhH40"
+  allowed_chat_ids: []               # list of chat IDs to respond to. empty = all.

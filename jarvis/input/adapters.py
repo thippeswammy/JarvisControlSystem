@@ -235,3 +235,93 @@ class VoiceAdapter:
         except ImportError:
             logger.info("[VoiceAdapter] faster-whisper not installed (voice disabled)")
             return False
+
+
+# ── Telegram Adapter ──────────────────────────────────────────
+
+class TelegramAdapter:
+    """
+    Reads commands from a Telegram Bot using long polling.
+    Useful for remote testing without speech hardware.
+
+    Requires: requests
+
+    Usage:
+        adapter = TelegramAdapter(token="...")
+        for utterance in adapter.stream():
+            orch.process(utterance.text, source="telegram")
+    """
+
+    def __init__(self, token: str, allowed_chat_ids: list[int] = None):
+        self._token = token
+        self._allowed_chat_ids = allowed_chat_ids or []
+        self._api_url = f"https://api.telegram.org/bot{token}"
+        self._last_update_id = 0
+        self._running = False
+
+    def is_available(self) -> bool:
+        return bool(self._token and self._token != "${TELEGRAM_TOKEN}")
+
+    def stream(self):
+        """Yield Utterance objects from Telegram updates."""
+        import requests
+        import time
+
+        if not self.is_available():
+            logger.error("[TelegramAdapter] No token provided")
+            return
+
+        self._running = True
+        logger.info(f"[TelegramAdapter] Listening for messages...")
+
+        while self._running:
+            try:
+                # getUpdates with long polling (timeout=30s)
+                resp = requests.get(
+                    f"{self._api_url}/getUpdates",
+                    params={
+                        "offset": self._last_update_id + 1,
+                        "timeout": 30
+                    },
+                    timeout=35
+                )
+
+                if resp.status_code != 200:
+                    logger.debug(f"[TelegramAdapter] Status {resp.status_code}: {resp.text}")
+                    time.sleep(5)
+                    continue
+
+                data = resp.json()
+                updates = data.get("result", [])
+
+                for update in updates:
+                    self._last_update_id = update["update_id"]
+                    
+                    message = update.get("message", {})
+                    text = message.get("text", "").strip()
+                    chat = message.get("chat", {})
+                    chat_id = chat.get("id")
+                    username = chat.get("username", "unknown")
+
+                    if not text:
+                        continue
+
+                    # Filter by chat ID if specified
+                    if self._allowed_chat_ids and chat_id not in self._allowed_chat_ids:
+                        logger.warning(f"[TelegramAdapter] Ignored message from unauthorized chat: {chat_id} (@{username})")
+                        continue
+
+                    logger.info(f"[TelegramAdapter] Received: '{text}' from @{username}")
+                    yield Utterance(text=text, source="telegram", confidence=1.0)
+
+            except KeyboardInterrupt:
+                break
+            except requests.exceptions.RequestException as re:
+                logger.debug(f"[TelegramAdapter] Network error: {re}")
+                time.sleep(5)
+            except Exception as e:
+                logger.error(f"[TelegramAdapter] Error: {e}")
+                time.sleep(5)
+
+    def stop(self):
+        self._running = False
