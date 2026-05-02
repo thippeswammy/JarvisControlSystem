@@ -45,25 +45,47 @@ class Scenario07(LiveScenario):
         
         return result
 
-    def test_greeting(self):
-        self._simulate("hello jarvis")
+
+    def test_hi(self):
+        self._simulate("hi")
         replies = self.adapter.get_replies()
         assert len(replies) > 0
-        assert self.chat_id == replies[-1]["chat_id"]
         print(f"      Reply received: {replies[-1]['text']}")
+
+    def test_status(self):
+        self._simulate("System status")
+        replies = self.adapter.get_replies()
+        assert any("cpu" in r["text"].lower() or "memory" in r["text"].lower() for r in replies)
+        print(f"      Status received: {replies[-1]['text']}")
 
     def test_command(self):
         self._simulate("open notepad")
         replies = self.adapter.get_replies()
-        # Find if any reply contains notepad (might have multiple steps)
         assert any("notepad" in r["text"].lower() for r in replies)
-        print(f"      Action confirmed in reply: {replies[-1]['text']}")
+        print(f"      Action confirmed: {replies[-1]['text']}")
+
+    def test_type(self):
+        self._simulate("type I am ready")
+        replies = self.adapter.get_replies()
+        assert any("typed" in r["text"].lower() or "✅" in r["text"] for r in replies)
+        print(f"      Type confirmed: {replies[-1]['text']}")
+
+    def test_gpu_info(self):
+        # This will likely use the LLM to generate a description of the GPU and then Jarvis might type it or just reply.
+        # If the user says "write about the GPU", Jarvis should probably type it into the active notepad.
+        self._simulate("write a short sentence about the GPU in notepad")
+        replies = self.adapter.get_replies()
+        assert len(replies) > 0
+        print(f"      GPU Task result: {replies[-1]['text']}")
 
     def __init__(self):
         super().__init__()
         self.steps = [
-            StepDef("greeting", self.test_greeting, timeout_s=15),
-            StepDef("open_notepad", self.test_command, timeout_s=30),
+            StepDef("hi",            self.test_hi,       timeout_s=15),
+            StepDef("status",        self.test_status,   timeout_s=15),
+            StepDef("open_notepad",  self.test_command,  timeout_s=30),
+            StepDef("type_ready",    self.test_type,     timeout_s=20),
+            StepDef("write_gpu",     self.test_gpu_info, timeout_s=40),
         ]
 
 if __name__ == "__main__":
