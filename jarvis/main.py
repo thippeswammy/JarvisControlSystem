@@ -16,6 +16,15 @@ from pathlib import Path
 
 _PROJECT_ROOT = Path(__file__).parent.parent
 
+# ── Ensure logs dir exists ────────────────────────────────
+(_PROJECT_ROOT / "logs").mkdir(exist_ok=True)
+
+# ── Ensure UTF-8 console output (Windows fix) ─────────────
+if sys.platform == "win32":
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+
 # ── Logging setup ─────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
@@ -51,7 +60,7 @@ def build_orchestrator(config_path: str = ""):
 
     # ── LLM Router ────────────────────────────────────────────
     from jarvis.llm.llm_router import LLMRouter
-    router = LLMRouter(config_path=config_file)
+    router = LLMRouter.from_config(config_path=config_file)
 
     # ── Skill Bus ─────────────────────────────────────────────
     from jarvis.skills.skill_bus import SkillBus
@@ -97,8 +106,6 @@ def main():
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
 
-    # ── Ensure logs dir exists ────────────────────────────────
-    (_PROJECT_ROOT / "logs").mkdir(exist_ok=True)
 
     logger.info("=" * 55)
     logger.info("  JARVIS v2.1 — Iron Man Architecture  ")

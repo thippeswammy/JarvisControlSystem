@@ -47,10 +47,12 @@ def ask_user(params: dict) -> SkillResult:
 @skill(triggers=["system status", "jarvis status", "health check"],
        name="system_status", category="session")
 def system_status(params: dict) -> SkillResult:
-    import platform, psutil
+    import platform, psutil, datetime
     cpu = psutil.cpu_percent(interval=0.1)
     ram = psutil.virtual_memory()
+    now = datetime.datetime.now().strftime("%H:%M:%S")
     msg = (
+        f"Time: {now} | "
         f"System: {platform.node()} | "
         f"CPU: {cpu}% | "
         f"RAM: {ram.used // (1024**2)}MB / {ram.total // (1024**2)}MB"
