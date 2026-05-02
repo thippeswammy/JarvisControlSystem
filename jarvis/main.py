@@ -99,6 +99,7 @@ def main():
     parser = argparse.ArgumentParser(description="Jarvis v2 Control System")
     parser.add_argument("--voice",    action="store_true", help="Enable voice input")
     parser.add_argument("--telegram", action="store_true", help="Enable Telegram bot input")
+    parser.add_argument("--telegram-test", action="store_true", help="Enable Mock Telegram mode for testing")
     parser.add_argument("--config",   default="",          help="Path to config.yaml")
     parser.add_argument("--command", default="",          help="Run a single command and exit")
     parser.add_argument("--debug",   action="store_true", help="Enable DEBUG logging")
@@ -138,47 +139,57 @@ def main():
             print(f"  Jarvis: {result.message or result.action_taken}")
         return
 
-    # ── Telegram mode ─────────────────────────────────────────
-    if args.telegram:
+    # ── Telegram mode (Real or Mock) ──────────────────────────
+    if args.telegram or args.telegram_test:
         import yaml
         config_file = args.config or str(_PROJECT_ROOT / "jarvis" / "config" / "config.yaml")
         with open(config_file, encoding="utf-8") as f:
             cfg = yaml.safe_load(f)
         
         tel_cfg = cfg.get("telegram", {})
-        if not tel_cfg.get("enabled"):
-            print("❌ Telegram input is disabled in config.yaml. Set telegram.enabled: true")
-            sys.exit(1)
-
-        from jarvis.input.adapters import TelegramAdapter
+        from jarvis.input.adapters import TelegramAdapter, MockTelegramAdapter
         
-        # Resolve token (expand ${ENV_VAR})
-        token = tel_cfg.get("token", "")
-        if token.startswith("${") and token.endswith("}"):
-            import os
-            token = os.environ.get(token[2:-1], "")
-            
-        adapter = TelegramAdapter(
-            token=token,
-            allowed_chat_ids=tel_cfg.get("allowed_chat_ids", [])
-        )
+        if args.telegram_test:
+            print("🧪 Telegram MOCK mode active.")
+            adapter = MockTelegramAdapter()
+            # In mock mode, we might want to inject a startup message or similar
+            adapter.simulate_message("hello jarvis")
+        else:
+            if not tel_cfg.get("enabled"):
+                print("❌ Telegram input is disabled in config.yaml. Set telegram.enabled: true")
+                sys.exit(1)
+
+            # Resolve token (expand ${ENV_VAR})
+            token = tel_cfg.get("token", "")
+            if token.startswith("${") and token.endswith("}"):
+                import os
+                token = os.environ.get(token[2:-1], "")
+                
+            adapter = TelegramAdapter(
+                token=token,
+                allowed_chat_ids=tel_cfg.get("allowed_chat_ids", [])
+            )
         
         if not adapter.is_available():
             print("❌ Telegram token missing or invalid. Check config.yaml or set TELEGRAM_TOKEN env var.")
             sys.exit(1)
             
         print(f"🤖 Telegram bot active. Send messages to your bot or Ctrl+C to quit.")
+        
         for utterance in adapter.stream():
-            result = orch.process(utterance.text, source="telegram")
+            username = utterance.metadata.get("username", "unknown")
+            chat_id = utterance.metadata.get("chat_id")
+            text = utterance.text
+            
+            result = orch.process(text, source="telegram")
             status = "✅" if result.success else "❌"
+            reply_text = f"{status} {result.message or result.action_taken}"
             
             # Send back to Telegram
-            chat_id = utterance.metadata.get("chat_id")
             if chat_id:
-                reply_text = f"{status} {result.message or result.action_taken}"
                 adapter.send_message(chat_id, reply_text)
                 
-            print(f"  Jarvis (@{utterance.metadata.get('username', 'unknown')}): {status} {result.message or result.action_taken}")
+            print(f"  Jarvis (@{username}): {reply_text}")
         return
 
     # ── Text / CLI mode ───────────────────────────────────────
