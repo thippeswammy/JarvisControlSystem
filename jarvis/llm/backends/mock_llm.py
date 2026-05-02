@@ -52,10 +52,23 @@ class MockLLM(LLMInterface):
             if target:
                 return [SkillCallSpec(skill="open_app", params={"target": target})]
 
-        # ── Navigation ────────────────────────────────
-        if text == "go back":
-            return [SkillCallSpec(skill="press_key", params={"key": "alt+left"})]
+        # ── Context-Aware Testing Mock ────────────────
+        if "semantic intent:" in text:
+            # Parse enriched prompt:
+            app_match = re.search(r"active app context:\s*(.+)", text)
+            intent_match = re.search(r"semantic intent:\s*(.+)", text)
+            
+            if app_match and intent_match:
+                app_ctx = app_match.group(1).strip()
+                intent_ctx = intent_match.group(1).strip()
+                
+                # App-specific mock simulation
+                if intent_ctx == "navigate_back":
+                    if "explorer" in app_ctx:
+                        return [SkillCallSpec(skill="press_key", params={"key": "alt+left"})]
+                    # Could add browser mock: if "msedge" in app_ctx: return "alt+left" etc.
 
+        # ── Navigation ────────────────────────────────
         if re.search(r"\b(go to|navigate|settings)\b", text):
             # Special case for Scenario 09: network status
             if "network status" in text:

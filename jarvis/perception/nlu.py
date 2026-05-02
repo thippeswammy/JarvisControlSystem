@@ -49,6 +49,13 @@ _INTENT_PATTERNS = [
     (r"\b(switch|alt.?tab)\b",                                 "switch_window", {}),
     (r"\b(close|quit|exit)\s+(.+)",                            "close_app",     {"target": 2}),
 
+    # Context-Aware App Actions (Generic semantic intents)
+    (r"\b(go|navigate)\s+(back|backward|previous)\b",          "navigate_back",    {}),
+    (r"\b(go|navigate)\s+(forward|next)\b",                    "navigate_forward", {}),
+    (r"\b(refresh|reload)(?:\s+page|\s+view)?\b",              "refresh_view",     {}),
+    (r"\b(save)(?:\s+this|\s+file|\s+item)?\b",                "save_item",        {}),
+    (r"\b(search\s+in\s+app|find\s+in\s+page)\b",              "search_in_app",    {}),
+
     # Navigation (before open_app — "go to wifi" should be navigate, not open)
     (r"\b(go\s+to|navigate\s+to|navigate)\s+(.+)",            "navigate_location", {"target": 2}),
 

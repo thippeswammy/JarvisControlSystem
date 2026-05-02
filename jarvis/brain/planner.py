@@ -153,8 +153,18 @@ class Planner:
         return [SkillCall(skill="navigate_location", params={"target": target})]
 
     def _plan_via_llm(self, packet: PerceptionPacket) -> list[SkillCall]:
+        # Context enrichment for LLM
+        enriched_prompt = packet.text
+        if packet.app_context and packet.intent != "unknown":
+            enriched_prompt = (
+                f"Active App Context: {packet.app_context}\n"
+                f"Semantic Intent: {packet.intent}\n"
+                f"User Utterance: {packet.text}\n\n"
+                f"Task: Generate a plan to achieve the semantic intent inside the given active app."
+            )
+
         llm_plan: Plan = self._router.route(
-            prompt=packet.text,
+            prompt=enriched_prompt,
             memory_context=packet.memory_context,
         )
         return [
