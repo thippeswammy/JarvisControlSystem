@@ -53,6 +53,9 @@ class MockLLM(LLMInterface):
                 return [SkillCallSpec(skill="open_app", params={"target": target})]
 
         # ── Navigation ────────────────────────────────
+        if text == "go back":
+            return [SkillCallSpec(skill="press_key", params={"key": "alt+left"})]
+
         if re.search(r"\b(go to|navigate|settings)\b", text):
             # Special case for Scenario 09: network status
             if "network status" in text:
