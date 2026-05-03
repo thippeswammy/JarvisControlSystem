@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Optional
 
 from jarvis.memory.graph_db import GraphDB, GraphNode, GraphEdge
+from jarvis.memory.semantic_encoder import SemanticEncoder
 from jarvis.memory.state_harvester import StateHarvester
 
 logger = logging.getLogger(__name__)
@@ -65,7 +66,26 @@ class MemoryManager:
         self._db = GraphDB(db_path)
         self._harvester = StateHarvester()
         self._pathfinder = None  # Injected in Phase 4
+        self._encoder = SemanticEncoder()
+        self._trigger_embeddings: dict[str, list[float]] = {}
         logger.info(f"[MemoryManager] DB: {db_path}")
+        self._warm_embedding_cache()
+
+    def _warm_embedding_cache(self) -> None:
+        """Embed all known triggers at startup into RAM for zero-latency routing."""
+        logger.info("[MemoryManager] Warming semantic embedding cache...")
+        count = 0
+        apps = self._db.list_apps()
+        for aid in apps:
+            for edge in self._db.get_edges_for_app(aid):
+                for trigger in edge.triggers:
+                    trigger_clean = trigger.lower().strip()
+                    if trigger_clean not in self._trigger_embeddings:
+                        vec = self._encoder.embed(trigger_clean)
+                        if vec:
+                            self._trigger_embeddings[trigger_clean] = vec
+                            count += 1
+        logger.info(f"[MemoryManager] Cached {count} embeddings in RAM.")
 
     def set_pathfinder(self, pathfinder) -> None:
         """Inject the A* pathfinder (Phase 4). Called by Orchestrator on startup."""
@@ -77,7 +97,7 @@ class MemoryManager:
         self,
         command: str,
         app_id: Optional[str] = None,
-        command_threshold: float = 0.60,
+        command_threshold: float = 0.55,
     ) -> Optional[MemoryPath]:
         """
         Find a known path for this command.
@@ -93,35 +113,74 @@ class MemoryManager:
             if path:
                 return path
 
-        # Fuzzy fallback: scan all edges for trigger matches
-        return self._fuzzy_recall(command, app_id, command_threshold)
+        # Fallback to Hybrid Search (Exact Match -> Semantic Vector Search)
+        return self._hybrid_recall(command, app_id, command_threshold)
 
-    def _fuzzy_recall(
+    def _hybrid_recall(
         self,
         command: str,
         app_id: Optional[str],
         threshold: float,
     ) -> Optional[MemoryPath]:
         cmd_lower = command.lower().strip()
-        best_edge: Optional[GraphEdge] = None
-        best_score = 0.0
+        apps = set([app_id]) if app_id else set(self._db.list_apps())
+        apps.add("global")
 
-        apps = [app_id] if app_id else self._db.list_apps()
+        # Step 1: O(1) Exact Match (Fast-Lane)
+        for aid in apps:
+            for edge in self._db.get_edges_for_app(aid):
+                for trigger in edge.triggers:
+                    if cmd_lower == trigger.lower().strip():
+                        logger.info(f"[MemoryManager] Exact match (1.0) → {edge.id}")
+                        return MemoryPath(edges=[edge], source_app=aid)
+
+        # Step 2: Semantic Vector Search
+        cmd_vec = self._encoder.embed(cmd_lower)
+        if not cmd_vec:
+            logger.warning("[MemoryManager] Failed to embed command for semantic search.")
+            return None
+
+        scored_edges: list[tuple[float, GraphEdge, str]] = []
+
         for aid in apps:
             edges = self._db.get_edges_for_app(aid)
             for edge in edges:
                 for trigger in edge.triggers:
-                    sim = SequenceMatcher(None, cmd_lower, trigger.lower()).ratio()
-                    if sim > best_score:
-                        best_score = sim
-                        best_edge = edge
+                    trigger_clean = trigger.lower().strip()
+                    trigger_vec = self._trigger_embeddings.get(trigger_clean)
+                    
+                    if trigger_vec:
+                        sim = self._encoder.cosine_similarity(cmd_vec, trigger_vec)
+                        scored_edges.append((sim, edge, aid))
 
-        if best_edge and best_score >= threshold:
-            logger.info(f"[MemoryManager] Fuzzy recall match: {best_score:.2f} → {best_edge.id}")
-            return MemoryPath(edges=[best_edge], source_app=best_edge.from_id.split(".")[0])
+        if not scored_edges:
+            return None
 
-        logger.debug(f"[MemoryManager] No recall match for: {command!r}")
-        return None
+        # Sort by score descending
+        scored_edges.sort(key=lambda x: x[0], reverse=True)
+        
+        best_score = scored_edges[0][0]
+        if best_score < threshold:
+            logger.debug(f"[MemoryManager] No recall match (best score {best_score:.3f} < {threshold}) for: {command!r}")
+            return None
+
+        # Tie-Breaker Logic
+        # Filter top edges within 0.02 of the best score
+        top_candidates = [cand for cand in scored_edges if (best_score - cand[0]) <= 0.02]
+        
+        # Bias towards active_app (local) over "global"
+        best_candidate = top_candidates[0]
+        if app_id and app_id != "global":
+            for cand in top_candidates:
+                if cand[2] == app_id:
+                    best_candidate = cand
+                    break
+
+        best_edge = best_candidate[1]
+        best_aid = best_candidate[2]
+
+        logger.info(f"[MemoryManager] Semantic match: {best_candidate[0]:.3f} → {best_edge.id} (App: {best_aid})")
+        return MemoryPath(edges=[best_edge], source_app=best_aid)
 
     # ── Save ─────────────────────────────────────────
 
@@ -129,6 +188,19 @@ class MemoryManager:
         """Save or update an edge in the graph database."""
         self._db.save_edge(edge)
         logger.info(f"[MemoryManager] Saved edge: {edge.id}")
+
+    def add_learned_macro(self, edge: GraphEdge) -> None:
+        """Save macro to DB and hot-load the trigger embedding into RAM."""
+        self.save_edge(edge)
+        
+        # Hot-load triggers into RAM
+        for trigger in edge.triggers:
+            trigger_clean = trigger.lower().strip()
+            if trigger_clean not in self._trigger_embeddings:
+                vec = self._encoder.embed(trigger_clean)
+                if vec:
+                    self._trigger_embeddings[trigger_clean] = vec
+                    logger.info(f"[MemoryManager] Hot-loaded semantic trigger: '{trigger_clean}'")
 
     def save_node(self, node: GraphNode) -> None:
         """Save or update a node."""
@@ -163,15 +235,31 @@ class MemoryManager:
         cmd_lower = command.lower().strip()
         scored: list[tuple[float, GraphEdge]] = []
 
+        cmd_vec = self._encoder.embed(cmd_lower)
         apps = [app_id] if app_id else self._db.list_apps()
+        
         for aid in apps:
             for edge in self._db.get_edges_for_app(aid):
-                trigger_scores = [
-                    SequenceMatcher(None, cmd_lower, t.lower()).ratio()
-                    for t in edge.triggers
-                ] if edge.triggers else [0.0]
-                best_trigger = max(trigger_scores)
-                if best_trigger < 0.15:
+                if not edge.triggers:
+                    continue
+                
+                # If embedding fails, fallback to basic SequenceMatcher
+                if cmd_vec:
+                    trigger_scores = []
+                    for t in edge.triggers:
+                        t_vec = self._trigger_embeddings.get(t.lower().strip())
+                        if t_vec:
+                            trigger_scores.append(self._encoder.cosine_similarity(cmd_vec, t_vec))
+                        else:
+                            trigger_scores.append(0.0)
+                else:
+                    trigger_scores = [
+                        SequenceMatcher(None, cmd_lower, t.lower()).ratio()
+                        for t in edge.triggers
+                    ]
+
+                best_trigger = max(trigger_scores) if trigger_scores else 0.0
+                if best_trigger < 0.30:  # raised slightly for cosine sim
                     continue
                 score = best_trigger * 0.7 + edge.confidence * 0.3
                 scored.append((score, edge))

@@ -111,7 +111,16 @@ class Orchestrator:
 
         # Execute each skill call in the plan
         last_result = SkillResult(success=True, message="No skills executed")
+        all_success = True
+        has_llm_source = False
+        has_unsafe_skill = False
+        
         for call in plan:
+            if getattr(call, "source", "") == "llm":
+                has_llm_source = True
+            if self._bus.is_cognitive(call.skill):
+                has_unsafe_skill = True
+
             if self._verification_loop:
                 result = self._verification_loop.execute_and_verify(
                     call=call,
@@ -137,7 +146,56 @@ class Orchestrator:
             # Stop plan on failure
             if not result.success:
                 logger.warning(f"[Orchestrator] Plan halted at skill: {call.skill}")
+                all_success = False
                 break
+
+        # Auto-Learn Semantic Macro (The Reflex)
+        if all_success and has_llm_source and plan:
+            if has_unsafe_skill:
+                logger.info("[Orchestrator] Skipping macro learning: plan contains dynamic cognitive skill")
+            else:
+                import json
+                import hashlib
+                from datetime import date
+                from jarvis.memory.graph_db import GraphNode, GraphEdge
+                
+                db = self._memory.get_db()
+                if not db.get_node("app.global"):
+                    db.save_node(GraphNode(id="app.global", app_id="global", type="APP", label="Global System"))
+
+                serialized_calls = [{"skill": c.skill, "params": c.params} for c in plan]
+                plan_json = json.dumps(serialized_calls)
+                plan_hash = hashlib.md5(plan_json.encode()).hexdigest()[:8]
+                
+                target_node_id = f"global.macro_{plan_hash}"
+                if not db.get_node(target_node_id):
+                    db.save_node(GraphNode(id=target_node_id, app_id="global", type="PAGE", label=f"Macro {plan_hash}"))
+
+                edge_id = f"edge.macro_{plan_hash}"
+                existing_edge = db.get_edge(edge_id)
+
+                if existing_edge:
+                    trigger_clean = text.lower().strip()
+                    existing_triggers = [t.lower().strip() for t in existing_edge.triggers]
+                    if trigger_clean not in existing_triggers:
+                        existing_edge.triggers.append(text)
+                        self._memory.add_learned_macro(existing_edge)
+                        logger.info(f"[Orchestrator] Added new trigger {text!r} to existing macro {edge_id}")
+                else:
+                    new_edge = GraphEdge(
+                        id=edge_id,
+                        from_id="app.global",
+                        to_id=target_node_id,
+                        edge_type="FORWARD",
+                        action_type="macro",
+                        action_params={"calls": plan_json},
+                        triggers=[text],
+                        confidence=0.85,
+                        success_count=1,
+                        last_used=date.today().isoformat()
+                    )
+                    self._memory.add_learned_macro(new_edge)
+                    logger.info(f"[Orchestrator] Learned new macro edge for trigger: {text!r}")
 
         return last_result
 
