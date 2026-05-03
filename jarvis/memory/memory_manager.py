@@ -71,22 +71,40 @@ class MemoryManager:
         self._encoder = SemanticEncoder()
         self._trigger_embeddings: dict[str, list[float]] = {}
         logger.info(f"[MemoryManager] DB: {db_path}")
-        self._warm_embedding_cache()
+        # Warm cache in background — never block startup even if Ollama is busy
+        import threading
+        threading.Thread(target=self._warm_embedding_cache, daemon=True).start()
 
     def _warm_embedding_cache(self) -> None:
-        """Embed all known triggers at startup into RAM for zero-latency routing."""
+        """Embed all known triggers at startup into RAM for zero-latency routing.
+        Uses a short timeout per call so a busy Ollama doesn't block startup.
+        """
         logger.info("[MemoryManager] Warming semantic embedding cache...")
         count = 0
         apps = self._db.list_apps()
-        for aid in apps:
-            for edge in self._db.get_edges_for_app(aid):
-                for trigger in edge.triggers:
-                    trigger_clean = trigger.lower().strip()
-                    if trigger_clean not in self._trigger_embeddings:
-                        vec = self._encoder.embed(trigger_clean)
-                        if vec:
-                            self._trigger_embeddings[trigger_clean] = vec
-                            count += 1
+        
+        # Use a short timeout for warm-up — if Ollama is busy loading a model,
+        # we skip warm-up gracefully rather than hanging for 30s per trigger.
+        original_timeout = self._encoder.timeout
+        self._encoder.timeout = 5.0
+        
+        try:
+            for aid in apps:
+                for edge in self._db.get_edges_for_app(aid):
+                    for trigger in edge.triggers:
+                        trigger_clean = trigger.lower().strip()
+                        if trigger_clean not in self._trigger_embeddings:
+                            vec = self._encoder.embed(trigger_clean)
+                            if vec:
+                                self._trigger_embeddings[trigger_clean] = vec
+                                count += 1
+                            else:
+                                # Ollama unavailable — abort warm-up, will retry on demand
+                                logger.info(f"[MemoryManager] Embedding service busy — skipping warm-up after {count} entries.")
+                                return
+        finally:
+            self._encoder.timeout = original_timeout
+        
         logger.info(f"[MemoryManager] Cached {count} embeddings in RAM.")
 
     def set_pathfinder(self, pathfinder) -> None:

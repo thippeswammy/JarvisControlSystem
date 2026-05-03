@@ -42,6 +42,7 @@ _DIRECT_MAP: dict[str, str] = {
     "click_element":    "click_element",
     "scroll_page":      "scroll_page",
     "ask_user":         "ask_user",
+    "chat":             "chat_reply",
 }
 
 
@@ -90,7 +91,11 @@ class Planner:
         skill_name = _DIRECT_MAP.get(packet.intent)
         if skill_name:
             logger.info(f"[Planner] Direct map: {packet.intent} → {skill_name}")
-            return [SkillCall(skill=skill_name, params=packet.entities)]
+            # For chat, forward the raw text so the skill can personalise its response
+            params = dict(packet.entities)
+            if packet.intent == "chat":
+                params["text"] = packet.utterance.text
+            return [SkillCall(skill=skill_name, params=params)]
 
         # 3. App opening with optional sub-location
         if packet.intent == "open_app":

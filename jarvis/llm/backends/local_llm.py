@@ -161,11 +161,22 @@ class LocalLLM(LLMInterface):
 
     def _parse_plan(self, raw: str) -> Optional[Plan]:
         """Extract JSON array from LLM response and convert to Plan."""
-        # Strip markdown code fences if present
-        raw = raw.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
+        import re
+        
+        # Step 1: Strip all markdown code fences (```json ... ``` or ``` ... ```)
+        cleaned = re.sub(r"```(?:json)?\s*", "", raw, flags=re.IGNORECASE).strip()
+        cleaned = cleaned.replace("```", "").strip()
+
+        # Step 2: Extract first valid JSON array via regex
+        # Handles cases like: [...]\n] (double bracket) or extra trailing text
+        array_match = re.search(r"(\[.*?\])", cleaned, re.DOTALL)
+        if array_match:
+            candidate = array_match.group(1)
+        else:
+            candidate = cleaned
 
         try:
-            data = json.loads(raw)
+            data = json.loads(candidate)
             if not isinstance(data, list):
                 data = [data]
             plan = []
@@ -176,8 +187,21 @@ class LocalLLM(LLMInterface):
                         params=item.get("params", {}),
                     ))
             return plan if plan else None
-        except json.JSONDecodeError as e:
-            logger.warning(f"[LocalLLM] Failed to parse plan JSON: {e}\nRaw: {raw[:200]}")
+        except json.JSONDecodeError:
+            # Step 3: Last-resort — find any {"skill": ...} object in the raw text
+            objects = re.findall(r'\{[^{}]*"skill"[^{}]*\}', cleaned, re.DOTALL)
+            if objects:
+                plan = []
+                for obj_str in objects:
+                    try:
+                        item = json.loads(obj_str)
+                        if "skill" in item:
+                            plan.append(SkillCallSpec(skill=item["skill"], params=item.get("params", {})))
+                    except Exception:
+                        continue
+                if plan:
+                    return plan
+            logger.warning(f"[LocalLLM] Failed to parse plan JSON.\nRaw: {raw[:300]}")
             return None
 
     def _pull_model_async(self, model: str) -> None:

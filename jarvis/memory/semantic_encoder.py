@@ -29,6 +29,7 @@ class SemanticEncoder:
         self.api_url = api_url
         self.model = model
         self.timeout = timeout
+        self._available: Optional[bool] = None  # None = unknown, will be set on first call
         logger.info(f"[SemanticEncoder] Initialized with {self.model} at {self.api_url}")
 
     def embed(self, text: str) -> Optional[List[float]]:

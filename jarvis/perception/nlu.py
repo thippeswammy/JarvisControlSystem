@@ -21,6 +21,14 @@ logger = logging.getLogger(__name__)
 
 # ── Intent patterns (order matters — first match wins) ──────────
 _INTENT_PATTERNS = [
+    # Chat / Conversational (must come first so "hi" doesn't fall to unknown)
+    (r"^(hi|hello|hey|what'?s\s+up|howdy|greetings|yo)$",       "chat", {}),
+    (r"^(how are you|how do you do|how'?s\s+it\s+going)\?*$",   "chat", {}),
+    (r"^(what\s+(are|can)\s+you\s+do|help|\?)$",                 "chat", {}),
+    (r"^(thanks|thank\s+you|thx|ty|cool|nice|awesome|great)$",  "chat", {}),
+    (r"^(ok|okay|got\s+it|sure|alright)$",                       "chat", {}),
+    (r"^(who\s+are\s+you|what\s+are\s+you)\?*$",                "chat", {}),
+
     # Session
     (r"\b(hi|hello|hey|wake up|activate)\s+jarvis\b",         "session_activate",   {}),
     (r"\b(bye|goodbye|stop|deactivate|sleep|close)\s+jarvis\b","session_deactivate", {}),
