@@ -30,7 +30,7 @@ def session_deactivate(params: dict) -> SkillResult:
 
 
 @skill(triggers=["ask user", "clarify", "i don't understand", "need clarification"],
-       name="ask_user", category="session")
+       name="ask_user", category="session", is_cognitive=True)
 def ask_user(params: dict) -> SkillResult:
     """Called when Jarvis needs user input to proceed."""
     reason = params.get("reason", "I need more information to proceed.")
