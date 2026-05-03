@@ -20,8 +20,8 @@ llm:
     local:
       engine: ollama
       api_url: "http://localhost:11434/v1"
-      model: "gemma3:1b"
-      fallback_model: "gemma3:1b"   # ultra-light if GPU busy
+      model: "gemma3:4b"
+      fallback_model: "gemma3:4b"   # stable for 4GB VRAM
       max_tokens: 300
       temperature: 0.1               # deterministic — no hallucination on action names
       timeout_seconds: 15

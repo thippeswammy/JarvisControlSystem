@@ -1,19 +1,19 @@
 """
 Local LLM Backend — Ollama
 ===========================
-Uses Ollama's OpenAI-compatible REST API to run qwen2.5:0.5b-instruct
+Uses Ollama's OpenAI-compatible REST API to run gemma3:4b
 locally. Ollama handles CUDA, cuBLAS, cuDNN — no manual setup needed.
 
 Setup:
     1. Install Ollama: https://ollama.com/download
-    2. ollama pull qwen2.5:0.5b-instruct
+    2. ollama pull gemma3:4b
     3. ollama serve   (starts on localhost:11434 automatically on Windows)
 
-Why qwen2.5:0.5b-instruct:
-    - 0.5B parameters → ~400MB VRAM (well within 4GB limit)
+Why gemma3:4b:
+    - 4B parameters → ~3GB VRAM (fits within 4GB limit)
     - Instruction-tuned: follows JSON output format reliably
-    - 32k context window: fits full RAG memory injection
-    - Fallback: qwen2.5:0.5b-instruct (0.5B, ~400MB VRAM)
+    - 128k context window: fits full RAG memory injection
+    - Fallback: gemma3:4b
 """
 
 import json
@@ -27,7 +27,7 @@ import requests
 from jarvis.llm.llm_interface import LLMInterface, Plan, SkillCallSpec, LLMDecision
 
 logger = logging.getLogger(__name__)
-_DEFAULT_MODEL = "gemma3:1b"
+_DEFAULT_MODEL = "gemma3:4b"
 
 
 class LocalLLM(LLMInterface):
@@ -36,7 +36,7 @@ class LocalLLM(LLMInterface):
 
     Integration:
         LocalLLM → HTTP POST → Ollama /v1/chat/completions
-                             → GPU inference (qwen2.5:0.5b-instruct, Q4_K_M)
+                             → GPU inference (gemma3:4b, Q4_K_M)
                              → JSON Plan response
     """
 
