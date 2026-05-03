@@ -297,6 +297,26 @@ class GraphDB:
     def _init_schema(self):
         self._conn.executescript(self._SCHEMA)
         self._conn.commit()
+        self._migrate_db()
+
+    def _migrate_db(self) -> None:
+        """Add missing columns to existing tables if needed."""
+        # Check edges table
+        cursor = self._conn.execute("PRAGMA table_info(edges)")
+        columns = [row["name"] for row in cursor.fetchall()]
+        
+        new_cols = {
+            "starting_state_sig": "TEXT DEFAULT ''",
+            "state_origin": "TEXT DEFAULT ''",
+            "prior_action": "TEXT DEFAULT ''"
+        }
+        
+        for col, col_type in new_cols.items():
+            if col not in columns:
+                logger.info(f"[GraphDB] Migrating: Adding column '{col}' to edges table.")
+                self._conn.execute(f"ALTER TABLE edges ADD COLUMN {col} {col_type}")
+        
+        self._conn.commit()
 
     @staticmethod
     def _compute_weight(edge: GraphEdge) -> float:
@@ -326,22 +346,23 @@ class GraphDB:
 
     @staticmethod
     def _row_to_edge(row) -> GraphEdge:
+        r = dict(row)
         return GraphEdge(
-            id=row["id"],
-            from_id=row["from_id"],
-            to_id=row["to_id"],
-            edge_type=row["edge_type"],
-            action_type=row["action_type"],
-            action_params=json.loads(row["action_params"] or "{}"),
-            confidence=float(row["confidence"]),
-            success_count=int(row["success_count"]),
-            fail_count=int(row["fail_count"]),
-            triggers=json.loads(row["triggers"] or "[]"),
-            fast_path=row["fast_path"],
-            fast_path_value=row["fast_path_value"],
-            steps=json.loads(row["steps"] or "[]"),
-            last_used=row["last_used"],
-            starting_state_sig=row.get("starting_state_sig", ""),
-            state_origin=row.get("state_origin", ""),
-            prior_action=row.get("prior_action", ""),
+            id=r["id"],
+            from_id=r["from_id"],
+            to_id=r["to_id"],
+            edge_type=r["edge_type"],
+            action_type=r["action_type"],
+            action_params=json.loads(r["action_params"] or "{}"),
+            confidence=float(r["confidence"]),
+            success_count=int(r["success_count"]),
+            fail_count=int(r["fail_count"]),
+            triggers=json.loads(r["triggers"] or "[]"),
+            fast_path=r["fast_path"],
+            fast_path_value=r["fast_path_value"],
+            steps=json.loads(r["steps"] or "[]"),
+            last_used=r["last_used"],
+            starting_state_sig=r.get("starting_state_sig", ""),
+            state_origin=r.get("state_origin", ""),
+            prior_action=r.get("prior_action", ""),
         )

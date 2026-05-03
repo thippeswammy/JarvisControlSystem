@@ -62,7 +62,9 @@ class MemoryManager:
 
     def __init__(self, db_path: str = _DB_DEFAULT):
         if db_path != ":memory:":
-            os.makedirs(os.path.dirname(db_path), exist_ok=True)
+            db_dir = os.path.dirname(db_path)
+            if db_dir:
+                os.makedirs(db_dir, exist_ok=True)
         self._db = GraphDB(db_path)
         self._harvester = StateHarvester()
         self._pathfinder = None  # Injected in Phase 4
@@ -129,6 +131,7 @@ class MemoryManager:
         cmd_lower = command.lower().strip()
         apps = set([app_id]) if app_id else set(self._db.list_apps())
         apps.add("global")
+        scored_edges: list[tuple[float, GraphEdge, str]] = []
 
         # Step 1: O(1) Exact Match with State Bias
         for aid in apps:

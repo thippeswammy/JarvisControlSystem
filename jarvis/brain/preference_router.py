@@ -8,7 +8,7 @@ Injects persistent 'System Context' into LLM prompts (default browser, email, et
 import logging
 import os
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 
 import yaml
 
@@ -40,7 +40,9 @@ class PreferenceRouter:
     def _load_prefs(self) -> Dict:
         if not os.path.exists(self._config_path):
             logger.info(f"[PreferenceRouter] No preferences.yaml found. Creating default.")
-            os.makedirs(os.path.dirname(self._config_path), exist_ok=True)
+            dir_name = os.path.dirname(self._config_path)
+            if dir_name:
+                os.makedirs(dir_name, exist_ok=True)
             with open(self._config_path, "w", encoding="utf-8") as f:
                 yaml.dump(_DEFAULT_PREFS, f, default_flow_style=False)
             return _DEFAULT_PREFS
