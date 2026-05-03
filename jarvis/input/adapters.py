@@ -283,6 +283,7 @@ class TelegramAdapter:
         self._last_update_id = 0
         self._running = False
         self._logger = TelegramLogger(log_path)
+        self._typing_events: dict[int, threading.Event] = {}
 
     def is_available(self) -> bool:
         return bool(self._token and self._token != "${TELEGRAM_TOKEN}" and "AA" in self._token)
@@ -359,6 +360,7 @@ class TelegramAdapter:
 
     def send_message(self, chat_id: int, text: str) -> bool:
         """Send a message back to a specific Telegram chat."""
+        self.stop_typing(chat_id)  # Stop typing when sending message
         import requests
         try:
             resp = requests.post(
@@ -377,6 +379,36 @@ class TelegramAdapter:
         except Exception as e:
             logger.error(f"[TelegramAdapter] Failed to send message: {e}")
             return False
+
+    def start_typing(self, chat_id: int):
+        """Starts a background thread to keep sending 'typing' action until stopped."""
+        if chat_id in self._typing_events:
+            return
+
+        stop_event = threading.Event()
+        self._typing_events[chat_id] = stop_event
+
+        def _typing_loop():
+            import requests
+            while not stop_event.is_set():
+                try:
+                    requests.post(
+                        f"{self._api_url}/sendChatAction",
+                        json={"chat_id": chat_id, "action": "typing"},
+                        timeout=5
+                    )
+                except Exception:
+                    pass
+                stop_event.wait(4.0)  # Telegram clears typing status after ~5s
+
+        t = threading.Thread(target=_typing_loop, daemon=True)
+        t.start()
+
+    def stop_typing(self, chat_id: int):
+        """Stops the background typing thread."""
+        if chat_id in self._typing_events:
+            self._typing_events[chat_id].set()
+            del self._typing_events[chat_id]
 
 
 class MockTelegramAdapter(TelegramAdapter):
@@ -423,10 +455,17 @@ class MockTelegramAdapter(TelegramAdapter):
                 continue
 
     def send_message(self, chat_id: int, text: str) -> bool:
+        self.stop_typing(chat_id)
         logger.info(f"[MockTelegramAdapter] REPLY to {chat_id}: {text}")
         self._logger.log_output(chat_id, text)
         self._replies.append({"chat_id": chat_id, "text": text})
         return True
+
+    def start_typing(self, chat_id: int):
+        pass
+
+    def stop_typing(self, chat_id: int):
+        pass
 
     def get_replies(self):
         return self._replies

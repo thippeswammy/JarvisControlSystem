@@ -157,6 +157,18 @@ class SkillBus:
                 result[t] = entry.name
         return result
 
+    def get_skill_catalog(self) -> str:
+        """Returns a formatted string of all skills, their descriptions, and parameters for the LLM."""
+        lines = []
+        for name in sorted(self._registry.keys()):
+            entry = self._registry[name]
+            doc = entry.fn.__doc__ or "No description."
+            doc = doc.strip().split("\n")[0]  # Just the first line
+            # Instead of full signature (which is always params: dict), we could look at the docstring
+            # Or just list the name and doc
+            lines.append(f"- {name}: {doc}")
+        return "\n".join(lines)
+
     def register(self, fn: Callable, override: bool = False) -> None:
         """Manually register a skill function (for tests / dynamic loading)."""
         if not getattr(fn, "__skill__", False):

@@ -12,7 +12,7 @@ import logging
 import re
 from typing import Optional
 
-from jarvis.llm.llm_interface import LLMInterface, Plan, SkillCallSpec
+from jarvis.llm.llm_interface import LLMInterface, Plan, SkillCallSpec, LLMDecision
 
 logger = logging.getLogger(__name__)
 
@@ -125,3 +125,14 @@ class MockLLM(LLMInterface):
             skill="ask_user",
             params={"reason": f"I don't know how to handle: '{prompt}'"}
         )]
+
+    def decide(self, prompt: str, context: str = "") -> Optional[LLMDecision]:
+        logger.debug(f"[MockLLM] Deciding for: {prompt!r}")
+        plan = self.plan(prompt, context)
+        if plan:
+            # Check if it's just asking user, then clarify
+            if len(plan) == 1 and plan[0].skill == "ask_user":
+                return LLMDecision(type="clarify", question=plan[0].params.get("reason", "Could you clarify?"))
+            # Otherwise return plan
+            return LLMDecision(type="plan", steps=plan)
+        return LLMDecision(type="chat", message="I'm a mock brain, and I don't know what to say.")

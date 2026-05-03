@@ -28,6 +28,14 @@ class SkillCallSpec:
 
 Plan = list[SkillCallSpec]
 
+@dataclass
+class LLMDecision:
+    """The unified decision from the LLM Brain."""
+    type: str  # "chat", "plan", "mixed", "clarify"
+    message: Optional[str] = None
+    steps: Optional[Plan] = None
+    question: Optional[str] = None
+
 
 class LLMInterface(ABC):
     """
@@ -63,6 +71,13 @@ class LLMInterface(ABC):
 
         Returns:
             Plan (list of SkillCallSpec), or None on failure / uncertainty.
+        """
+
+    @abstractmethod
+    def decide(self, prompt: str, context: str = "") -> Optional[LLMDecision]:
+        """
+        Given a user command and full context block, make a unified decision.
+        Returns None if the backend cannot produce a valid decision.
         """
 
     def build_system_prompt(self) -> str:

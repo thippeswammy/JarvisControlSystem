@@ -30,7 +30,7 @@ from typing import Optional
 
 import yaml
 
-from jarvis.llm.llm_interface import LLMInterface, Plan
+from jarvis.llm.llm_interface import LLMInterface, Plan, LLMDecision
 from jarvis.llm.backends.mock_llm import MockLLM
 from jarvis.llm.backends.local_llm import LocalLLM
 from jarvis.llm.backends.openai_llm import OpenAILLM
@@ -167,6 +167,35 @@ class LLMRouter:
         # Final fallback: mock always works
         logger.warning("[LLMRouter] All backends failed. Using mock emergency fallback.")
         return self._emergency.plan(prompt, memory_context) or []
+
+    def decide(self, prompt: str, context: str = "") -> LLMDecision:
+        """
+        New unified LLM router path. Tries primary → fallback.
+        Falls back to emergency mock chat if everything fails.
+        """
+        for backend in [self._primary, self._fallback]:
+            if not backend:
+                continue
+            if not self._is_healthy(backend):
+                logger.info(f"[LLMRouter] Skipping unhealthy backend: {backend.name}")
+                continue
+
+            logger.info(f"[LLMRouter] Trying decide() on backend: {backend.name}")
+            try:
+                decision = backend.decide(prompt, context)
+                if decision:
+                    logger.info(f"[LLMRouter] Decision from {backend.name}: {decision.type}")
+                    return decision
+                else:
+                    logger.warning(f"[LLMRouter] {backend.name} returned empty decision — trying next.")
+            except Exception as e:
+                logger.error(f"[LLMRouter] {backend.name} raised: {e} — trying next.")
+                with self._lock:
+                    self._health[backend.name] = False
+
+        # Final fallback
+        logger.warning("[LLMRouter] All backends failed. Returning emergency offline chat.")
+        return LLMDecision(type="chat", message="Sorry, my cognitive core is currently offline.")
 
     def stop(self):
         """Stop the health monitor thread."""

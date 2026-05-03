@@ -12,7 +12,7 @@ Every SkillCall is wrapped by the VerificationLoop before storing.
 """
 
 import logging
-from typing import Optional
+from typing import Optional, Callable
 
 from jarvis.brain.planner import Planner
 from jarvis.brain.reactive_learner import ReactiveLearner
@@ -54,7 +54,7 @@ class Orchestrator:
 
         self._nlu = NLU()
         self._context = ContextHarvester(episodic=self._episodic)
-        self._planner = Planner(memory, router)
+        self._planner = Planner(memory, router, bus)
         self._learner = ReactiveLearner(memory)
         self._pathfinder: Optional[GraphPathfinder] = None
 
@@ -73,13 +73,24 @@ class Orchestrator:
 
         logger.info("[Orchestrator] Boot complete ✅")
 
-    def process(self, text: str, source: str = "text", confidence: float = 1.0) -> SkillResult:
+    def process(
+        self,
+        text: str,
+        source: str = "text",
+        confidence: float = 1.0,
+        metadata: Optional[dict] = None,
+        typing_callback: Optional[Callable] = None
+    ) -> SkillResult:
         """
         Full pipeline: text → NLU → Plan → Execute → (Verify) → Learn.
 
         Returns the SkillResult of the last executed skill.
         """
-        utterance = Utterance(text=text, source=source, confidence=confidence)
+        if typing_callback:
+            typing_callback()
+            
+        utterance = Utterance(text=text, source=source, confidence=confidence, metadata=metadata)
+
 
         # Low-confidence voice input → ask to confirm
         if utterance.source == "voice" and utterance.confidence < 0.70:

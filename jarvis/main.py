@@ -181,7 +181,11 @@ def main():
             chat_id = utterance.metadata.get("chat_id")
             text = utterance.text
             
-            result = orch.process(text, source="telegram")
+            result = orch.process(
+                text, 
+                source="telegram", 
+                typing_callback=lambda: adapter.start_typing(chat_id)
+            )
             status = "✅" if result.success else "❌"
             reply_text = f"{status} {result.message or result.action_taken}"
             

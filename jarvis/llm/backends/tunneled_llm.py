@@ -19,7 +19,7 @@ from typing import Optional
 
 import requests
 
-from jarvis.llm.llm_interface import LLMInterface, Plan, SkillCallSpec
+from jarvis.llm.llm_interface import LLMInterface, Plan, SkillCallSpec, LLMDecision
 
 logger = logging.getLogger(__name__)
 
@@ -93,6 +93,50 @@ class TunneledLLM(LLMInterface):
             logger.error(f"[TunneledLLM] Request failed: {e}")
             return None
 
+    def decide(self, prompt: str, context: str = "") -> Optional[LLMDecision]:
+        if not self._api_url:
+            return None
+
+        sys_prompt = (
+            "You are JARVIS, an advanced AI desktop assistant.\n"
+            "You must ALWAYS return a SINGLE valid JSON object and absolutely nothing else. No markdown, no explanations.\n"
+            "Your JSON object must exactly match one of these 4 formats:\n"
+            '1. Chat only (for greetings, general talk): {"type": "chat", "message": "your reply here"}\n'
+            '2. Plan only (for pure actions): {"type": "plan", "steps": [{"skill": "skill_name", "params": {}}]}\n'
+            '3. Mixed (talk AND act): {"type": "mixed", "message": "your reply", "steps": [{"skill": "skill_name", "params": {}}]}\n'
+            '4. Clarify (ask user for missing info): {"type": "clarify", "question": "your question"}\n'
+            "\n"
+            "CRITICAL RULES:\n"
+            "- Only use skills listed in the [Available Skills] section of the context.\n"
+            "- Output valid JSON only.\n"
+        )
+
+        messages = [
+            {"role": "system", "content": sys_prompt},
+            {"role": "system", "content": context},
+            {"role": "user", "content": prompt}
+        ]
+
+        try:
+            resp = requests.post(
+                f"{self._api_url}/chat/completions",
+                headers=self._headers(),
+                json={
+                    "model": self._model,
+                    "messages": messages,
+                    "max_tokens": self._max_tokens + 200,
+                    "temperature": 0.4,
+                    "stream": False,
+                },
+                timeout=self._timeout,
+            )
+            resp.raise_for_status()
+            content = resp.json()["choices"][0]["message"]["content"].strip()
+            return self._parse_decision(content)
+        except Exception as e:
+            logger.error(f"[TunneledLLM] Decide request failed: {e}")
+            return None
+
     def _headers(self) -> dict:
         h = {"Content-Type": "application/json"}
         if self._api_key:
@@ -111,4 +155,42 @@ class TunneledLLM(LLMInterface):
             ] or None
         except Exception as e:
             logger.warning(f"[TunneledLLM] Plan parse error: {e}")
+            return None
+
+    def _parse_decision(self, raw: str) -> Optional[LLMDecision]:
+        import re
+        cleaned = re.sub(r"```(?:json)?\s*", "", raw, flags=re.IGNORECASE).strip()
+        cleaned = cleaned.replace("```", "").strip()
+
+        obj_match = re.search(r"(\{.*?\})", cleaned, re.DOTALL)
+        if obj_match:
+            candidate = obj_match.group(1)
+        else:
+            candidate = cleaned
+            
+        try:
+            data = json.loads(candidate)
+            if not isinstance(data, dict):
+                raise ValueError("Decision must be a JSON object")
+                
+            dec_type = data.get("type", "chat")
+            
+            steps = None
+            if "steps" in data and isinstance(data["steps"], list):
+                steps = []
+                for item in data["steps"]:
+                    if isinstance(item, dict) and "skill" in item:
+                        steps.append(SkillCallSpec(
+                            skill=item["skill"],
+                            params=item.get("params", {}),
+                        ))
+            
+            return LLMDecision(
+                type=dec_type,
+                message=data.get("message"),
+                steps=steps,
+                question=data.get("question")
+            )
+        except Exception as e:
+            logger.warning(f"[TunneledLLM] Failed to parse decision JSON.\nRaw: {raw[:300]}\nError: {e}")
             return None

@@ -21,66 +21,14 @@ logger = logging.getLogger(__name__)
 
 # ── Intent patterns (order matters — first match wins) ──────────
 _INTENT_PATTERNS = [
-    # Chat / Conversational (must come first so "hi" doesn't fall to unknown)
-    (r"^(hi|hello|hey|what'?s\s+up|howdy|greetings|yo)$",       "chat", {}),
-    (r"^(how are you|how do you do|how'?s\s+it\s+going)\?*$",   "chat", {}),
-    (r"^(what\s+(are|can)\s+you\s+do|help|\?)$",                 "chat", {}),
-    (r"^(thanks|thank\s+you|thx|ty|cool|nice|awesome|great)$",  "chat", {}),
-    (r"^(ok|okay|got\s+it|sure|alright)$",                       "chat", {}),
-    (r"^(who\s+are\s+you|what\s+are\s+you)\?*$",                "chat", {}),
-
     # Session
     (r"\b(hi|hello|hey|wake up|activate)\s+jarvis\b",         "session_activate",   {}),
     (r"\b(bye|goodbye|stop|deactivate|sleep|close)\s+jarvis\b","session_deactivate", {}),
-    (r"^(status|health|how are you)$",                         "system_status",      {}),
-    (r"\b(jarvis\s+status|system\s+status)\b",                 "system_status",      {}),
-
-    # Volume
-    (r"\b(set|change|put)\s+(volume|sound)\s+(?:to\s+)?(\d+)", "set_volume",    {"level": 3}),
-    (r"\b(mute)\b",                                            "set_volume",    {"mute": True}),
-    (r"\b(unmute)\b",                                          "set_volume",    {"mute": False}),
-    (r"\bvolume\s+(?:up|increase)\b",                          "set_volume",    {"action": "up"}),
-    (r"\bvolume\s+(?:down|decrease|lower)\b",                  "set_volume",    {"action": "down"}),
-
-    # Brightness
-    (r"\b(set|change)\s+brightness\s+(?:to\s+)?(\d+)",        "set_brightness", {"level": 2}),
-
-    # Power
+    
+    # Power (Safety commands we do not want LLM to hallucinate)
     (r"\b(shutdown|shut down|power off)\b",                    "power_action",  {"action": "shutdown"}),
     (r"\b(restart|reboot)\b",                                  "power_action",  {"action": "restart"}),
     (r"\b(sleep|hibernate)\b",                                 "power_action",  {"action": "sleep"}),
-
-    # Window management
-    (r"\b(minimize|minimise)\b",                               "minimize_window", {}),
-    (r"\b(maximize|maximise|fullscreen|full\s*screen)\b",      "maximize_window", {}),
-    (r"\bsnap\s+(left|right)\b",                               "snap_window",   {"direction": 1}),
-    (r"\b(switch|alt.?tab)\b",                                 "switch_window", {}),
-    (r"\b(close|quit|exit)\s+(.+)",                            "close_app",     {"target": 2}),
-
-    # Context-Aware App Actions (Generic semantic intents)
-    (r"\b(go|navigate)\s+(back|backward|previous)\b",          "navigate_back",    {}),
-    (r"\b(go|navigate)\s+(forward|next)\b",                    "navigate_forward", {}),
-    (r"\b(refresh|reload)(?:\s+page|\s+view)?\b",              "refresh_view",     {}),
-    (r"\b(save)(?:\s+this|\s+file|\s+item)?\b",                "save_item",        {}),
-    (r"\b(search\s+in\s+app|find\s+in\s+page)\b",              "search_in_app",    {}),
-
-    # Navigation (before open_app — "go to wifi" should be navigate, not open)
-    (r"\b(go\s+to|navigate\s+to|navigate)\s+(.+)",            "navigate_location", {"target": 2}),
-
-    # App launching
-    (r"\b(open|launch|start|run)\s+(.+)",                      "open_app",      {"target": 2}),
-
-    # Keyboard
-    (r"\bpress\s+(.+)",                                        "press_key",     {"key": 1}),
-    (r"\bhold\s+(.+)",                                         "press_key",     {"key": 1}),
-    (r"\b(type|write)\s+(.+)",                                 "type_text",     {"text": 2}),
-
-    # Search
-    (r"\b(search|google|find|look\s+up)\s+(?:for\s+)?(.+)",   "search_web",    {"query": 2}),
-    (r"\b(click)\s+(.+)",                                      "click_element", {"label": 2}),
-
-    # Scroll
-    (r"\bscroll\s+(down|up)\b",                                "scroll_page",   {"direction": 1}),
 ]
 
 # Words and symbols that signal compound commands
@@ -168,7 +116,7 @@ class NLU:
             if m:
                 entities = self._extract_entities(m, entity_map)
                 return intent, entities
-        return "unknown", {"raw": text}
+        return "llm_route", {"raw": text}
 
     @staticmethod
     def _extract_entities(match: re.Match, entity_map: dict) -> dict:

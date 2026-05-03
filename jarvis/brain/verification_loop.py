@@ -36,7 +36,7 @@ SKIP_VERIFY_SKILLS = {
     "type_text", "press_key", "search_web", "search_windows",
     "session_activate", "session_deactivate", "system_status",
     "ask_user", "set_volume", "set_brightness", "power_action",
-    "scroll_page", "open_app", "close_app"
+    "scroll_page", "open_app", "close_app", "chat_reply"
 }
 
 _DEFAULT_SETTLE_MS = 600   # ms to wait after action before re-harvesting

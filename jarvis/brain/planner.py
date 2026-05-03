@@ -19,30 +19,15 @@ from jarvis.llm.llm_interface import SkillCallSpec, Plan
 from jarvis.brain.preference_router import PreferenceRouter
 from jarvis.memory.memory_manager import MemoryManager, MemoryPath
 from jarvis.perception.perception_packet import PerceptionPacket, Utterance
-from jarvis.skills.skill_bus import SkillCall
+from jarvis.skills.skill_bus import SkillCall, SkillBus
 
 logger = logging.getLogger(__name__)
 
-# Intent → skill_name direct mapping (no LLM needed for these)
+# Intent → skill_name direct mapping (only safety/session intents bypass LLM)
 _DIRECT_MAP: dict[str, str] = {
-    "set_volume":       "set_volume",
-    "set_brightness":   "set_brightness",
     "power_action":     "power_action",
-    "minimize_window":  "minimize_window",
-    "maximize_window":  "maximize_window",
-    "snap_window":      "snap_window",
-    "switch_window":    "switch_window",
-    "press_key":        "press_key",
-    "type_text":        "type_text",
     "session_activate": "session_activate",
     "session_deactivate":"session_deactivate",
-    "system_status":    "system_status",
-    "search_web":       "search_web",
-    "search_windows":   "search_windows",
-    "click_element":    "click_element",
-    "scroll_page":      "scroll_page",
-    "ask_user":         "ask_user",
-    "chat":             "chat_reply",
 }
 
 
@@ -57,9 +42,10 @@ class Planner:
             bus.dispatch(call)
     """
 
-    def __init__(self, memory: MemoryManager, router: LLMRouter):
+    def __init__(self, memory: MemoryManager, router: LLMRouter, bus: SkillBus):
         self._memory = memory
         self._router = router
+        self._bus = bus
         self._preference_router = PreferenceRouter()
 
     def plan(self, packet: PerceptionPacket) -> list[SkillCall]:
@@ -87,31 +73,9 @@ class Planner:
             logger.info("[Planner] Using memory recall plan")
             return packet.raw_plan_override
 
-        # 2. Direct intent → skill (no LLM needed)
-        skill_name = _DIRECT_MAP.get(packet.intent)
-        if skill_name:
-            logger.info(f"[Planner] Direct map: {packet.intent} → {skill_name}")
-            # For chat, forward the raw text so the skill can personalise its response
-            params = dict(packet.entities)
-            if packet.intent == "chat":
-                params["text"] = packet.utterance.text
-            return [SkillCall(skill=skill_name, params=params)]
-
-        # 3. App opening with optional sub-location
-        if packet.intent == "open_app":
-            return self._plan_open_app(packet)
-
-        # 4. Navigation
-        if packet.intent == "navigate_location":
-            return self._plan_navigate(packet)
-
-        # 5. Close app
-        if packet.intent == "close_app":
-            return [SkillCall(skill="close_app", params=packet.entities)]
-
-        # 6. Unknown intent → LLM
-        logger.info(f"[Planner] LLM routing for intent: {packet.intent!r}")
-        return self._plan_via_llm(packet)
+        # 2. Unknown intent / all others → LLM Unified Router
+        logger.info(f"[Planner] Unified LLM routing for intent: {packet.intent!r}")
+        return self._plan_via_unified_llm(packet, snapshot=snapshot)
 
     def _plan_open_app(self, packet: PerceptionPacket) -> list[SkillCall]:
         target = packet.entities.get("target", "")
@@ -159,7 +123,7 @@ class Planner:
         # Fallback skill call
         return [SkillCall(skill="navigate_location", params={"target": target})]
 
-    def _plan_via_llm(self, packet: PerceptionPacket, snapshot=None) -> list[SkillCall]:
+    def _plan_via_unified_llm(self, packet: PerceptionPacket, snapshot=None) -> list[SkillCall]:
         # Context enrichment for LLM
         system_ctx = self._preference_router.get_system_context()
         ui_ctx = "UI State: Unknown"
@@ -171,24 +135,58 @@ class Planner:
             if snapshot.state_origin:
                 lineage_ctx = f"State reached by: {snapshot.state_origin} — '{snapshot.prior_action}'"
 
-        enriched_prompt = (
-            f"{system_ctx}\n\n"
+        skill_catalog = self._bus.get_skill_catalog()
+        episodic_context = packet.memory_context or "No recent memory."
+
+        enriched_context = (
+            f"[System Preferences]\n{system_ctx}\n\n"
             f"[Current UI State]\n{ui_ctx}\n\n"
             f"[State Provenance]\n{lineage_ctx}\n\n"
-            f"[Task]\n{packet.text}\n\n"
-            f"Semantic Intent: {packet.intent}\n"
-            "IMPORTANT: Output ONLY the DELTA steps needed from the CURRENT UI state. "
-            "Do NOT re-open apps that are already open. Do NOT re-navigate to pages already visible."
+            f"[Episodic Memory]\n{episodic_context}\n\n"
+            f"[Available Skills]\n{skill_catalog}\n"
         )
 
-        llm_plan: Plan = self._router.route(
-            prompt=enriched_prompt,
-            memory_context=packet.memory_context,
+        decision = self._router.decide(
+            prompt=packet.text,
+            context=enriched_context,
         )
-        return [
-            SkillCall(skill=s.skill, params=s.params, source="llm")
-            for s in llm_plan
-        ]
+
+        if not decision:
+            logger.error("[Planner] LLM returned no decision.")
+            return [SkillCall(skill="chat_reply", params={"message": "I'm sorry, I failed to generate a response."})]
+
+        calls = []
+        
+        # 1. Chat
+        if decision.type == "chat":
+            if decision.message:
+                calls.append(SkillCall(skill="chat_reply", params={"message": decision.message}))
+                
+        # 2. Plan
+        elif decision.type == "plan":
+            if decision.steps:
+                for s in decision.steps:
+                    calls.append(SkillCall(skill=s.skill, params=s.params, source="llm"))
+                    
+        # 3. Mixed
+        elif decision.type == "mixed":
+            if decision.message:
+                calls.append(SkillCall(skill="chat_reply", params={"message": decision.message}))
+            if decision.steps:
+                for s in decision.steps:
+                    calls.append(SkillCall(skill=s.skill, params=s.params, source="llm"))
+                    
+        # 4. Clarify
+        elif decision.type == "clarify":
+            if decision.question:
+                calls.append(SkillCall(skill="ask_user", params={"question": decision.question}))
+
+        # Safety fallback
+        if not calls:
+            logger.warning(f"[Planner] Decision generated no calls: {decision}")
+            calls.append(SkillCall(skill="chat_reply", params={"message": "I'm not quite sure how to do that."}))
+            
+        return calls
 
     @staticmethod
     def _path_to_skill_calls(path: MemoryPath) -> list[SkillCall]:
