@@ -1,37 +1,34 @@
 # JarvisControlSystem
-JarvisControlSystem is a Python-based virtual assistant system inspired by J.A.R.V.I.S from Marvel's Iron Man. It integrates various functionalities aimed at automating and enhancing computer interaction through voice commands and image processing.
 
-## Features
-Speech Recognition and Response: Converts speech into text using the Speech Recognizer module, allowing users to command the system verbally.
+JarvisControlSystem is an advanced, autonomous virtual assistant system inspired by J.A.R.V.I.S from Marvel's Iron Man. Evolving from a basic voice-command and gesture script, JARVIS is now a self-aware, state-persistent, and fully autonomous desktop agent built on the robust v2.1 "Iron Man" Architecture.
 
-RecentAppPerformanceMonitor: Tracks and logs information about opened applications and their file paths.
+## Vision & Architecture
+JARVIS aims to provide seamless, hands-free automation of the digital workspace by decoupling cognitive intent from physical execution. 
 
-SystemFilePathScanner: Scans specified locations for executable (.exe) and shortcut (.lnk) files, storing results in an Excel (.xlsx) file.
+The system relies on an **Orchestrator brain** and a continuous **Verification Loop** to interpret semantic intents and safely execute native Windows actions. Powered by local LLMs (like Ollama/gemma3) for privacy and offline inference, JARVIS maintains a rich context of the user's environment through a DAG-based persistent memory model.
 
-KeyboardAutomationController: Simulates keyboard inputs based on user commands, enabling automation without physical interaction.
+## Core System Capabilities 
 
-WindowsSettingsAutomation - DesktopSystemController: Controls system settings such as brightness and volume, and manages window positions.
+* **State-Aware Delta Navigation**: Employs "Look-Before-You-Leap" execution by dynamically evaluating the current UI state (`get_ui_tree`). This state-awareness prevents blind macro execution and ensures the agent knows exactly where it is before acting.
+* **Self-Learning Semantic Macros**: An autonomous macro-learning engine that caches successful, LLM-generated physical skill sequences into a Graph DB. These learned "reflexes" are intrinsically tied to the specific UI state signatures in which they are valid.
+* **Advanced Memory Architecture**: Utilizes a 5-layer persistent memory model (Episodic, Preference, Task, etc.) coupled with a RAG context pipeline. This allows JARVIS to remember complex workflows, inject persistent system context (Preference Routing), and elegantly handle semantic collisions.
+* **Robust Execution & Safety**: Enforces "Success-Gate" validation and strict "Payload Safety Checks" to filter out dynamic cognitive tasks from static physical execution, guaranteeing that learned macros are executed safely.
+* **Intelligent Pathfinding**: Implements an A* pathfinding engine to navigate complex desktop environments and reach intended UI states dynamically.
+* **Remote Telemetry & Control**: Features a fully integrated Telegram bot acting as a remote interface for command execution and two-way communication, complete with extensive interaction logging (`telegram_chat.log`) for auditing and debugging.
 
-WindowsSettingsAutomation - WindowsAppController: Manipulates application windows (minimize, maximize, close) and manages active windows.
+## Legacy Automation Features
 
-ApplicationManager: Opens and closes applications based on user commands, using application names to locate executable files.
+While the core architecture has been overhauled, JARVIS still supports its foundational automation capabilities:
+* **Application Management**: Monitors, opens, and closes applications dynamically, tracking performance and file paths.
+* **System & Window Control**: Navigates Windows settings, adjusts system controls (brightness, volume), and manages active windows.
+* **Accessibility Inputs**: Integrates multi-threaded speech recognition and camera-based hand gesture detection for alternative control paradigms.
 
-CommandProcessor: Interprets user commands to perform various actions, remembers states, and manages application lifecycles.
+## Setup & Usage
 
-SettingControlApp: Navigates through system settings using window titles and interacts with UI elements like buttons, text fields, and links.
+1. Clone the repository.
+2. Install Python dependencies using `pip install -r requirements.txt`.
+3. Configure your local LLM provider (e.g., Ollama) and Telegram Bot tokens.
+4. Run the main orchestration loop to initialize the Jarvis Control System.
 
-HandSectionMovement: Processes camera input to detect hands and uses gestures to control window operations like minimize and maximize.
-
-JarvisAssistantRunWithSpeech: Orchestrates speech input processing, app performance monitoring, and camera handling with multi-threading for efficient parallel execution.
-
-## Usage
-JarvisControlSystem eliminates the need for direct computer interaction, providing a hands-free experience through voice commands and gesture control. It enhances productivity by automating repetitive tasks and simplifying system management.
-
-
-Clone the repository.
-Install Python dependencies (requirements.txt).
-Ensure appropriate hardware for camera input if using gesture control features.
-Future Development
-Extend gesture recognition capabilities for more complex interactions.
-Enhance speech recognition accuracy and expand command vocabulary.
-Integrate with additional applications and system controls for broader functionality.
+---
+*This system is currently undergoing active migration to finalize the v2.1 architecture, stabilizing the testing regression suite and refining its persistent DAG-based memory models.*
