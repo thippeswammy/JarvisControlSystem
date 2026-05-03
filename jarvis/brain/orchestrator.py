@@ -53,7 +53,7 @@ class Orchestrator:
         self._verification_loop = verification_loop
 
         self._nlu = NLU()
-        self._context = ContextHarvester()
+        self._context = ContextHarvester(episodic=self._episodic)
         self._planner = Planner(memory, router)
         self._learner = ReactiveLearner(memory)
         self._pathfinder: Optional[GraphPathfinder] = None
@@ -93,9 +93,12 @@ class Orchestrator:
 
         # NLU
         packet = self._nlu.parse(utterance, app_context=snapshot.active_app)
+        packet.context_snapshot = snapshot # Store for planner
         
         procedural_ctx = self._memory.get_relevant_context(
-            text, app_id=snapshot.active_app or None
+            text, 
+            app_id=snapshot.active_app or None,
+            state_sig=snapshot.state_sig
         )
         episodic_ctx = self._episodic.as_llm_context()
         
@@ -107,7 +110,17 @@ class Orchestrator:
         )
 
         # Plan
-        plan = self._planner.plan(packet)
+        # Check memory first for exact state match
+        mem_path = self._memory.recall(
+            text, 
+            app_id=snapshot.active_app or None,
+            state_sig=snapshot.state_sig
+        )
+        if mem_path:
+            logger.info(f"[Orchestrator] Memory HIT (state-aware) for '{text}'")
+            plan = self._planner._path_to_skill_calls(mem_path)
+        else:
+            plan = self._planner.plan(packet)
 
         # Execute each skill call in the plan
         last_result = SkillResult(success=True, message="No skills executed")
@@ -142,6 +155,16 @@ class Orchestrator:
                 app=snapshot.active_app or "",
                 skill=call.skill,
             )
+
+            # Record state transition for lineage tracking
+            if result.success:
+                self._episodic.record_state_transition(
+                    state_sig="", # post-execution state (unknown until next cycle)
+                    cause="JARVIS",
+                    action=f"executed {call.skill}",
+                    skill_used=call.skill,
+                    app_context=snapshot.active_app or ""
+                )
 
             # Stop plan on failure
             if not result.success:
@@ -192,10 +215,13 @@ class Orchestrator:
                         triggers=[text],
                         confidence=0.85,
                         success_count=1,
-                        last_used=date.today().isoformat()
+                        last_used=date.today().isoformat(),
+                        starting_state_sig=snapshot.state_sig,
+                        state_origin=snapshot.state_origin,
+                        prior_action=snapshot.prior_action
                     )
                     self._memory.add_learned_macro(new_edge)
-                    logger.info(f"[Orchestrator] Learned new macro edge for trigger: {text!r}")
+                    logger.info(f"[Orchestrator] Learned new state-aware macro for trigger: {text!r}")
 
         return last_result
 

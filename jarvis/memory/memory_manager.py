@@ -97,50 +97,65 @@ class MemoryManager:
         self,
         command: str,
         app_id: Optional[str] = None,
+        state_sig: str = "",
         command_threshold: float = 0.55,
     ) -> Optional[MemoryPath]:
         """
         Find a known path for this command.
 
-        Phase 2: Fuzzy trigger matching on edge triggers.
-        Phase 4: Full A* pathfinding replaces this.
+        Pass 1: State-keyed match (A* or exact trigger match with matching state_sig)
+        Pass 2: State-agnostic fallback (semantic search across all edges)
 
         Returns MemoryPath or None.
         """
-        # Try A* first if pathfinder is available
+        # Pass 1: A* with state knowledge if pathfinder is available
         if self._pathfinder and app_id:
+            # We assume A* handles its own state logic if it's evolved, 
+            # for now pathfinding is app-level
             path = self._pathfinder.find_path_by_command(command, app_id)
             if path:
                 return path
 
-        # Fallback to Hybrid Search (Exact Match -> Semantic Vector Search)
-        return self._hybrid_recall(command, app_id, command_threshold)
+        # Pass 1 & 2 combined in hybrid search
+        return self._hybrid_recall(command, app_id, state_sig, command_threshold)
 
     def _hybrid_recall(
         self,
         command: str,
         app_id: Optional[str],
+        state_sig: str,
         threshold: float,
     ) -> Optional[MemoryPath]:
         cmd_lower = command.lower().strip()
         apps = set([app_id]) if app_id else set(self._db.list_apps())
         apps.add("global")
 
-        # Step 1: O(1) Exact Match (Fast-Lane)
+        # Step 1: O(1) Exact Match with State Bias
         for aid in apps:
-            for edge in self._db.get_edges_for_app(aid):
+            edges = self._db.get_edges_for_app(aid)
+            for edge in edges:
                 for trigger in edge.triggers:
                     if cmd_lower == trigger.lower().strip():
-                        logger.info(f"[MemoryManager] Exact match (1.0) → {edge.id}")
-                        return MemoryPath(edges=[edge], source_app=aid)
+                        # If state signature matches, it's a perfect hit
+                        if state_sig and edge.starting_state_sig == state_sig:
+                            logger.info(f"[MemoryManager] State-Keyed Exact match (1.0) → {edge.id}")
+                            return MemoryPath(edges=[edge], source_app=aid)
+                        # Otherwise log it as potential but keep searching for state match
+                        scored_edges.append((1.0, edge, aid))
 
         # Step 2: Semantic Vector Search
         cmd_vec = self._encoder.embed(cmd_lower)
         if not cmd_vec:
             logger.warning("[MemoryManager] Failed to embed command for semantic search.")
+            # If we had any exact matches (without state match), return best one now
+            if scored_edges:
+                scored_edges.sort(key=lambda x: x[0], reverse=True)
+                return MemoryPath(edges=[scored_edges[0][1]], source_app=scored_edges[0][2])
             return None
 
-        scored_edges: list[tuple[float, GraphEdge, str]] = []
+        # scored_edges already might have 1.0 matches from above
+        # (avoid re-scoring exact matches)
+        existing_edge_ids = {e[1].id for e in scored_edges}
 
         for aid in apps:
             edges = self._db.get_edges_for_app(aid)
@@ -151,7 +166,8 @@ class MemoryManager:
                     
                     if trigger_vec:
                         sim = self._encoder.cosine_similarity(cmd_vec, trigger_vec)
-                        scored_edges.append((sim, edge, aid))
+                        if edge.id not in existing_edge_ids:
+                            scored_edges.append((sim, edge, aid))
 
         if not scored_edges:
             return None
@@ -164,13 +180,27 @@ class MemoryManager:
             logger.debug(f"[MemoryManager] No recall match (best score {best_score:.3f} < {threshold}) for: {command!r}")
             return None
 
-        # Tie-Breaker Logic
+        # Tie-Breaker Logic (Upgraded for State-Awareness)
         # Filter top edges within 0.02 of the best score
         top_candidates = [cand for cand in scored_edges if (best_score - cand[0]) <= 0.02]
         
-        # Bias towards active_app (local) over "global"
+        # Priority Order:
+        # 1. State Signature Match
+        # 2. Local App Bias
+        # 3. Highest Score
+        
         best_candidate = top_candidates[0]
-        if app_id and app_id != "global":
+        
+        # 1. Look for state signature match first
+        if state_sig:
+            for cand in top_candidates:
+                if cand[1].starting_state_sig == state_sig:
+                    best_candidate = cand
+                    logger.debug(f"[MemoryManager] State match tie-breaker → {cand[1].id}")
+                    break
+        
+        # 2. Bias towards active_app if no state match or multiple state matches
+        if best_candidate[1].starting_state_sig != state_sig and app_id and app_id != "global":
             for cand in top_candidates:
                 if cand[2] == app_id:
                     best_candidate = cand
@@ -226,11 +256,12 @@ class MemoryManager:
         self,
         command: str,
         app_id: Optional[str] = None,
+        state_sig: str = "",
         top_n: int = 4,
     ) -> str:
         """
         RAG: return top-N relevant edge descriptions for LLM injection.
-        Scores by trigger similarity + confidence.
+        Scores by trigger similarity + confidence + state match bonus.
         """
         cmd_lower = command.lower().strip()
         scored: list[tuple[float, GraphEdge]] = []
@@ -261,7 +292,14 @@ class MemoryManager:
                 best_trigger = max(trigger_scores) if trigger_scores else 0.0
                 if best_trigger < 0.30:  # raised slightly for cosine sim
                     continue
+                
+                # Base score: trigger similarity + confidence
                 score = best_trigger * 0.7 + edge.confidence * 0.3
+                
+                # State match bonus (0.2)
+                if state_sig and edge.starting_state_sig == state_sig:
+                    score += 0.2
+                
                 scored.append((score, edge))
 
         scored.sort(key=lambda x: x[0], reverse=True)

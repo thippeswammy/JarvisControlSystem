@@ -12,7 +12,10 @@ Flow:
 """
 
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from jarvis.perception.ui_inspector import UISnapshot
 
 
 @dataclass
@@ -32,6 +35,10 @@ class ContextSnapshot:
     active_window_title: str = ""  # Raw window title
     active_node_id: str = ""       # Last known graph node (e.g. "settings.display")
     screen_hash: str = ""          # MD5 of current UIState (from StateHarvester)
+    ui_snapshot: Optional["UISnapshot"] = None   # NEW — live UI tree
+    state_sig: str = ""                          # NEW — short stable state ID
+    state_origin: str = ""                       # NEW — USER | JARVIS
+    prior_action: str = ""                       # NEW — last traceable action
 
 
 @dataclass
@@ -49,6 +56,7 @@ class PerceptionPacket:
     sub_commands: list = field(default_factory=list)  # list of (intent, entities) for compound
     memory_context: str = ""       # RAG snippets from MemoryManager
     raw_plan_override: list = field(default_factory=list)  # pre-built plan (from memory recall)
+    context_snapshot: Optional[ContextSnapshot] = None # NEW
 
     @property
     def text(self) -> str:

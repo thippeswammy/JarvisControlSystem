@@ -16,6 +16,7 @@ from typing import Optional
 
 from jarvis.llm.llm_router import LLMRouter
 from jarvis.llm.llm_interface import SkillCallSpec, Plan
+from jarvis.brain.preference_router import PreferenceRouter
 from jarvis.memory.memory_manager import MemoryManager, MemoryPath
 from jarvis.perception.perception_packet import PerceptionPacket, Utterance
 from jarvis.skills.skill_bus import SkillCall
@@ -58,6 +59,7 @@ class Planner:
     def __init__(self, memory: MemoryManager, router: LLMRouter):
         self._memory = memory
         self._router = router
+        self._preference_router = PreferenceRouter()
 
     def plan(self, packet: PerceptionPacket) -> list[SkillCall]:
         """Convert PerceptionPacket → ordered list of SkillCalls."""
@@ -73,12 +75,12 @@ class Planner:
                     app_context=packet.app_context,
                     memory_context=packet.memory_context,
                 )
-                result.extend(self._plan_single(sub_packet))
+                result.extend(self._plan_single(sub_packet, snapshot=packet.context_snapshot))
             return result
 
-        return self._plan_single(packet)
+        return self._plan_single(packet, snapshot=packet.context_snapshot)
 
-    def _plan_single(self, packet: PerceptionPacket) -> list[SkillCall]:
+    def _plan_single(self, packet: PerceptionPacket, snapshot=None) -> list[SkillCall]:
         # 1. Pre-built plan from memory recall (pathfinder result)
         if packet.raw_plan_override:
             logger.info("[Planner] Using memory recall plan")
@@ -152,16 +154,27 @@ class Planner:
         # Fallback skill call
         return [SkillCall(skill="navigate_location", params={"target": target})]
 
-    def _plan_via_llm(self, packet: PerceptionPacket) -> list[SkillCall]:
+    def _plan_via_llm(self, packet: PerceptionPacket, snapshot=None) -> list[SkillCall]:
         # Context enrichment for LLM
-        enriched_prompt = packet.text
-        if packet.app_context and packet.intent != "unknown":
-            enriched_prompt = (
-                f"Active App Context: {packet.app_context}\n"
-                f"Semantic Intent: {packet.intent}\n"
-                f"User Utterance: {packet.text}\n\n"
-                f"Task: Generate a plan to achieve the semantic intent inside the given active app."
-            )
+        system_ctx = self._preference_router.get_system_context()
+        ui_ctx = "UI State: Unknown"
+        lineage_ctx = "State reached by: UNKNOWN"
+
+        if snapshot:
+            if snapshot.ui_snapshot:
+                ui_ctx = snapshot.ui_snapshot.to_llm_context()
+            if snapshot.state_origin:
+                lineage_ctx = f"State reached by: {snapshot.state_origin} — '{snapshot.prior_action}'"
+
+        enriched_prompt = (
+            f"{system_ctx}\n\n"
+            f"[Current UI State]\n{ui_ctx}\n\n"
+            f"[State Provenance]\n{lineage_ctx}\n\n"
+            f"[Task]\n{packet.text}\n\n"
+            f"Semantic Intent: {packet.intent}\n"
+            "IMPORTANT: Output ONLY the DELTA steps needed from the CURRENT UI state. "
+            "Do NOT re-open apps that are already open. Do NOT re-navigate to pages already visible."
+        )
 
         llm_plan: Plan = self._router.route(
             prompt=enriched_prompt,

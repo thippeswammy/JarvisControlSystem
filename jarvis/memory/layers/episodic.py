@@ -21,9 +21,19 @@ import logging
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from dataclasses import dataclass
+from typing import Optional, List
 
 logger = logging.getLogger(__name__)
+
+@dataclass
+class StateTransition:
+    state_sig: str           # The resulting UI state
+    cause: str               # USER | JARVIS
+    action: str              # e.g. "clicked 'Windows Update'"
+    skill_used: str          # skill name or ""
+    timestamp: str           # ISO8601
+    app_context: str         # "settings"
 
 _MEMORY_ROOT = Path(__file__).resolve().parent.parent.parent.parent / "memory"
 _SESSION_DIR = _MEMORY_ROOT / "episodic" / "sessions"
@@ -45,6 +55,7 @@ class EpisodicMemory:
         _SESSION_DIR.mkdir(parents=True, exist_ok=True)
         self._session_id = datetime.now().strftime("%Y-%m-%d_%H%M%S")
         self._log: list[dict] = []
+        self._lineage: list[StateTransition] = [] # Memory-only for now
         self._start_time = datetime.now()
 
     # ── Recording ────────────────────────────────────────────────────────────
@@ -66,6 +77,42 @@ class EpisodicMemory:
             "skill": skill,
             "from_memory": from_memory,
         })
+
+    def record_state_transition(
+        self,
+        state_sig: str,
+        cause: str,
+        action: str,
+        skill_used: str = "",
+        app_context: str = "",
+    ) -> None:
+        """Log a state transition to the lineage journal."""
+        transition = StateTransition(
+            state_sig=state_sig,
+            cause=cause,
+            action=action,
+            skill_used=skill_used,
+            timestamp=datetime.now().isoformat(timespec="seconds"),
+            app_context=app_context,
+        )
+        self._lineage.append(transition)
+        logger.debug(f"[EpisodicMemory] Lineage: {cause} caused '{action}' -> {state_sig}")
+
+    def get_lineage(self, state_sig: str = "") -> Optional[StateTransition]:
+        """
+        Get the most recent state transition.
+        If state_sig is provided, returns the most recent transition matching it.
+        """
+        if not self._lineage:
+            return None
+        
+        if not state_sig:
+            return self._lineage[-1]
+            
+        for transition in reversed(self._lineage):
+            if transition.state_sig == state_sig:
+                return transition
+        return None
 
     # ── Persistence ──────────────────────────────────────────────────────────
 

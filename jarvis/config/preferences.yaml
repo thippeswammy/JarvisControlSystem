@@ -1,0 +1,7 @@
+workspace:
+  os: windows_11
+  browser: chrome
+  email: gmail_web
+  email_url: https://mail.google.com
+  terminal: powershell
+  text_editor: vscode

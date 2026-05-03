@@ -59,6 +59,9 @@ class GraphEdge:
     fast_path_value: str = ""        # ms-settings:display, Ctrl+D, etc.
     steps: list = field(default_factory=list)  # ordered action strings
     last_used: str = ""
+    starting_state_sig: str = ""     # sha256[:12] of UISnapshot at start
+    state_origin: str = ""           # USER | JARVIS
+    prior_action: str = ""           # Last action leading to this state
 
 
 # ── Database ──────────────────────────────────────────────────
@@ -101,6 +104,9 @@ class GraphDB:
         fast_path_value TEXT DEFAULT '',
         steps           TEXT DEFAULT '[]',
         last_used       TEXT DEFAULT '',
+        starting_state_sig TEXT DEFAULT '',
+        state_origin    TEXT DEFAULT '',
+        prior_action    TEXT DEFAULT '',
         FOREIGN KEY(from_id) REFERENCES nodes(id),
         FOREIGN KEY(to_id)   REFERENCES nodes(id)
     );
@@ -172,21 +178,26 @@ class GraphDB:
                 INSERT INTO edges
                     (id, from_id, to_id, edge_type, action_type, action_params,
                      confidence, success_count, fail_count, triggers,
-                     fast_path, fast_path_value, steps, last_used)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     fast_path, fast_path_value, steps, last_used,
+                     starting_state_sig, state_origin, prior_action)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     confidence=excluded.confidence,
                     success_count=excluded.success_count,
                     fail_count=excluded.fail_count,
                     triggers=excluded.triggers,
                     steps=excluded.steps,
-                    last_used=excluded.last_used
+                    last_used=excluded.last_used,
+                    starting_state_sig=excluded.starting_state_sig,
+                    state_origin=excluded.state_origin,
+                    prior_action=excluded.prior_action
             """, (
                 edge.id, edge.from_id, edge.to_id, edge.edge_type,
                 edge.action_type, json.dumps(edge.action_params),
                 edge.confidence, edge.success_count, edge.fail_count,
                 json.dumps(edge.triggers), edge.fast_path, edge.fast_path_value,
                 json.dumps(edge.steps), edge.last_used,
+                edge.starting_state_sig, edge.state_origin, edge.prior_action
             ))
 
     def get_edge(self, edge_id: str) -> Optional[GraphEdge]:
@@ -202,6 +213,15 @@ class GraphDB:
             JOIN nodes n ON e.from_id = n.id
             WHERE n.app_id = ?
         """, (app_id,)).fetchall()
+        return [self._row_to_edge(r) for r in rows]
+
+    def get_edges_by_state(self, app_id: str, state_sig: str) -> list[GraphEdge]:
+        """Return all edges for an app that match a specific starting state signature."""
+        rows = self._conn.execute("""
+            SELECT e.* FROM edges e
+            JOIN nodes n ON e.from_id = n.id
+            WHERE n.app_id = ? AND e.starting_state_sig = ?
+        """, (app_id, state_sig)).fetchall()
         return [self._row_to_edge(r) for r in rows]
 
     def update_edge_confidence(self, edge_id: str, success: bool, decay: float = 0.05, boost: float = 0.02) -> None:
@@ -321,4 +341,7 @@ class GraphDB:
             fast_path_value=row["fast_path_value"],
             steps=json.loads(row["steps"] or "[]"),
             last_used=row["last_used"],
+            starting_state_sig=row.get("starting_state_sig", ""),
+            state_origin=row.get("state_origin", ""),
+            prior_action=row.get("prior_action", ""),
         )

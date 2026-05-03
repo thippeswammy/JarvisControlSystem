@@ -13,6 +13,7 @@ import re
 from typing import Optional
 
 from jarvis.perception.perception_packet import ContextSnapshot
+from jarvis.perception.ui_inspector import UIInspector
 
 logger = logging.getLogger(__name__)
 
@@ -47,8 +48,10 @@ class ContextHarvester:
         # snapshot.active_window_title == "Display - Settings"
     """
 
-    def __init__(self, state_harvester=None):
+    def __init__(self, state_harvester=None, episodic=None):
         self._state_harvester = state_harvester  # Optional StateHarvester for hash
+        self._inspector = UIInspector()
+        self._episodic = episodic                # For lineage query
 
     def capture(self) -> ContextSnapshot:
         """Capture current foreground window context."""
@@ -67,7 +70,22 @@ class ContextHarvester:
             active_window_title=title,
             screen_hash=state_hash,
         )
-        logger.debug(f"[ContextHarvester] Context: app={app_id!r}, title={title!r}")
+
+        # Delta Navigation Upgrades
+        ui_snap = self._inspector.inspect(app_title=app_id)
+        snapshot.ui_snapshot = ui_snap
+        snapshot.state_sig = ui_snap.state_signature
+        
+        if self._episodic:
+            lineage = self._episodic.get_lineage()
+            if lineage:
+                snapshot.state_origin = lineage.cause
+                snapshot.prior_action = lineage.action
+            else:
+                snapshot.state_origin = "USER"
+                snapshot.prior_action = "manually navigated"
+
+        logger.debug(f"[ContextHarvester] Context: app={app_id!r}, title={title!r}, sig={snapshot.state_sig}")
         return snapshot
 
     def get_active_app(self) -> str:
