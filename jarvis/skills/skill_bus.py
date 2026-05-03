@@ -166,15 +166,37 @@ class SkillBus:
         return result
 
     def get_skill_catalog(self) -> str:
-        """Returns a formatted string of all skills, their descriptions, and parameters for the LLM."""
+        """Returns a rich skill catalog with params examples, for the LLM system prompt."""
+        # Hand-crafted param examples — the LLM needs to see exactly what params to pass
+        _PARAM_EXAMPLES: dict[str, str] = {
+            "open_app":         '{"target": "notepad"}  # also: chrome, settings, calculator, explorer',
+            "close_app":        '{"target": "settings"}  # also: notepad, active (closes foreground)',
+            "navigate_location":'{{"uri": "ms-settings:display"}}  # or {"target": "wifi"}',
+            "type_text":        '{"text": "hello world"}',
+            "press_key":        '{"key": "ctrl+s"}  # any pyautogui hotkey',
+            "click_element":    '{"label": "OK"}  # clicks UI element by visible label text',
+            "search_web":       '{"query": "weather today"}',
+            "search_windows":   '{"query": "paint"}',
+            "scroll_page":      '{"direction": "down", "amount": 3}',
+            "set_volume":       '{"volume": 50}  # 0-100, or delta: -10',
+            "set_brightness":   '{"brightness": 80}  # 0-100',
+            "maximize_window":  '{}',
+            "minimize_window":  '{}',
+            "snap_window":      '{"side": "left"}  # left or right',
+            "switch_window":    '{"target": "notepad"}',
+            "activate_window":  '{"target": "settings"}',
+            "power_action":     '{"action": "shutdown"}  # shutdown, restart, sleep',
+            "chat_reply":       '{"message": "Hello!"}',
+            "ask_user":         '{"question": "Which file?"}',
+            "system_status":    '{}',
+        }
         lines = []
         for name in sorted(self._registry.keys()):
             entry = self._registry[name]
             doc = entry.fn.__doc__ or "No description."
-            doc = doc.strip().split("\n")[0]  # Just the first line
-            # Instead of full signature (which is always params: dict), we could look at the docstring
-            # Or just list the name and doc
-            lines.append(f"- {name}: {doc}")
+            doc = doc.strip().split("\n")[0]  # First line only
+            example = _PARAM_EXAMPLES.get(name, "{}")
+            lines.append(f"- {name}({example}): {doc}")
         return "\n".join(lines)
 
     def register(self, fn: Callable, override: bool = False) -> None:

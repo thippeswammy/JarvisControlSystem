@@ -57,6 +57,7 @@ class PerceptionPacket:
     memory_context: str = ""       # RAG snippets from MemoryManager
     raw_plan_override: list = field(default_factory=list)  # pre-built plan (from memory recall)
     context_snapshot: Optional[ContextSnapshot] = None # NEW
+    override_prompt: Optional[str] = None  # If set, Planner uses this text for the LLM call instead of packet.text
 
     @property
     def text(self) -> str:

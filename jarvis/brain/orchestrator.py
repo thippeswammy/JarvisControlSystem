@@ -121,18 +121,10 @@ class Orchestrator:
         )
 
         # Plan
-        # 1. Check if we should skip memory recall (compound commands or close verbs)
-        skip_recall = packet.compound
-        
-        close_verbs = {"close", "quit", "exit", "kill", "stop", "terminate"}
-        first_word = text.lower().split()[0] if text.split() else ""
-        if first_word in close_verbs:
-            skip_recall = True
-            logger.info(f"[Orchestrator] Close verb detected: {first_word} - skipping navigation memory")
-
+        # Compound commands go directly to the LLM (full sentence, one call).
+        # Single commands: try memory recall first (fast path), then fall to LLM.
         mem_path = None
-        if not skip_recall:
-            # Check memory first for exact state match
+        if not packet.compound:
             mem_path = self._memory.recall(
                 text, 
                 app_id=snapshot.active_app or None,
@@ -144,7 +136,7 @@ class Orchestrator:
             plan = self._planner._path_to_skill_calls(mem_path)
         else:
             if packet.compound:
-                logger.info("[Orchestrator] Planning compound command...")
+                logger.info("[Orchestrator] Compound command → single LLM call")
             plan = self._planner.plan(packet)
 
         # Execute each skill call in the plan

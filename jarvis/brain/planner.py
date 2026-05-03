@@ -51,19 +51,31 @@ class Planner:
     def plan(self, packet: PerceptionPacket) -> list[SkillCall]:
         """Convert PerceptionPacket → ordered list of SkillCalls."""
 
-        # Compound command: plan each sub-command, flatten
+        # Compound command: send the FULL original sentence to the LLM in ONE call.
+        # This is better than splitting because:
+        #   - The LLM understands the whole sentence in context
+        #   - "write about the Ai" makes sense only when LLM sees the full command
+        #   - Results in one LLM call instead of N calls
         if packet.compound and packet.sub_commands:
-            result = []
-            for sub in packet.sub_commands:
-                sub_packet = PerceptionPacket(
-                    utterance=packet.utterance,
-                    intent=sub["intent"],
-                    entities=sub["entities"],
-                    app_context=packet.app_context,
-                    memory_context=packet.memory_context,
-                )
-                result.extend(self._plan_single(sub_packet, snapshot=packet.context_snapshot))
-            return result
+            full_text = packet.utterance.text  # The original un-split full sentence
+            sub_texts = [s["text"] for s in packet.sub_commands]
+            compound_prompt = (
+                f"{full_text}\n"
+                f"[This is a compound command with {len(sub_texts)} parts: "
+                + ", ".join(f'"{t}"' for t in sub_texts)
+                + "]. Plan ALL steps in a single 'plan' or 'mixed' response."
+            )
+            logger.info(f"[Planner] Compound → single LLM call: {full_text!r}")
+            compound_packet = PerceptionPacket(
+                utterance=packet.utterance,
+                intent="llm_route",
+                entities={"raw": full_text},
+                app_context=packet.app_context,
+                memory_context=packet.memory_context,
+            )
+            compound_packet.context_snapshot = packet.context_snapshot
+            compound_packet.override_prompt = compound_prompt
+            return self._plan_single(compound_packet, snapshot=packet.context_snapshot)
 
         return self._plan_single(packet, snapshot=packet.context_snapshot)
 
@@ -143,11 +155,19 @@ class Planner:
             f"[Current UI State]\n{ui_ctx}\n\n"
             f"[State Provenance]\n{lineage_ctx}\n\n"
             f"[Episodic Memory]\n{episodic_context}\n\n"
-            f"[Available Skills]\n{skill_catalog}\n"
+            f"[Available Skills]\n{skill_catalog}\n\n"
+            "[Examples]\n"
+            'User: "close settings" → {{"type":"plan","steps":[{{"skill":"close_app","params":{{"target":"settings"}}}}]}}\n'
+            'User: "open notepad" → {{"type":"plan","steps":[{{"skill":"open_app","params":{{"target":"notepad"}}}}]}}\n'
+            'User: "type hello world" → {{"type":"plan","steps":[{{"skill":"type_text","params":{{"text":"hello world"}}}}]}}\n'
+            'User: "close settings and open notepad and type hello" → {{"type":"plan","steps":[{{"skill":"close_app","params":{{"target":"settings"}}}},{{"skill":"open_app","params":{{"target":"notepad"}}}},{{"skill":"type_text","params":{{"text":"hello"}}}}]}}\n'
         )
 
+        # Use override prompt if compound command prepared one
+        prompt = packet.override_prompt or packet.text
+
         decision = self._router.decide(
-            prompt=packet.text,
+            prompt=prompt,
             context=enriched_context,
         )
 
