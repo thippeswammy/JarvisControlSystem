@@ -123,7 +123,8 @@ class MemoryManager:
         threshold: float,
     ) -> Optional[MemoryPath]:
         cmd_lower = command.lower().strip()
-        apps = [app_id] if app_id else self._db.list_apps()
+        apps = set([app_id]) if app_id else set(self._db.list_apps())
+        apps.add("global")
 
         # Step 1: O(1) Exact Match (Fast-Lane)
         for aid in apps:
@@ -131,7 +132,7 @@ class MemoryManager:
                 for trigger in edge.triggers:
                     if cmd_lower == trigger.lower().strip():
                         logger.info(f"[MemoryManager] Exact match (1.0) → {edge.id}")
-                        return MemoryPath(edges=[edge], source_app=edge.from_id.split(".")[0])
+                        return MemoryPath(edges=[edge], source_app=aid)
 
         # Step 2: Semantic Vector Search
         cmd_vec = self._encoder.embed(cmd_lower)
@@ -139,8 +140,7 @@ class MemoryManager:
             logger.warning("[MemoryManager] Failed to embed command for semantic search.")
             return None
 
-        best_edge: Optional[GraphEdge] = None
-        best_score = 0.0
+        scored_edges: list[tuple[float, GraphEdge, str]] = []
 
         for aid in apps:
             edges = self._db.get_edges_for_app(aid)
@@ -151,18 +151,36 @@ class MemoryManager:
                     
                     if trigger_vec:
                         sim = self._encoder.cosine_similarity(cmd_vec, trigger_vec)
-                        # Optionally log all scores to help calibrate threshold
-                        # logger.debug(f"[Semantic] '{cmd_lower}' vs '{trigger_clean}' = {sim:.3f}")
-                        if sim > best_score:
-                            best_score = sim
-                            best_edge = edge
+                        scored_edges.append((sim, edge, aid))
 
-        if best_edge and best_score >= threshold:
-            logger.info(f"[MemoryManager] Semantic match: {best_score:.3f} → {best_edge.id}")
-            return MemoryPath(edges=[best_edge], source_app=best_edge.from_id.split(".")[0])
+        if not scored_edges:
+            return None
 
-        logger.debug(f"[MemoryManager] No recall match (best score {best_score:.3f} < {threshold}) for: {command!r}")
-        return None
+        # Sort by score descending
+        scored_edges.sort(key=lambda x: x[0], reverse=True)
+        
+        best_score = scored_edges[0][0]
+        if best_score < threshold:
+            logger.debug(f"[MemoryManager] No recall match (best score {best_score:.3f} < {threshold}) for: {command!r}")
+            return None
+
+        # Tie-Breaker Logic
+        # Filter top edges within 0.02 of the best score
+        top_candidates = [cand for cand in scored_edges if (best_score - cand[0]) <= 0.02]
+        
+        # Bias towards active_app (local) over "global"
+        best_candidate = top_candidates[0]
+        if app_id and app_id != "global":
+            for cand in top_candidates:
+                if cand[2] == app_id:
+                    best_candidate = cand
+                    break
+
+        best_edge = best_candidate[1]
+        best_aid = best_candidate[2]
+
+        logger.info(f"[MemoryManager] Semantic match: {best_candidate[0]:.3f} → {best_edge.id} (App: {best_aid})")
+        return MemoryPath(edges=[best_edge], source_app=best_aid)
 
     # ── Save ─────────────────────────────────────────
 
@@ -170,6 +188,19 @@ class MemoryManager:
         """Save or update an edge in the graph database."""
         self._db.save_edge(edge)
         logger.info(f"[MemoryManager] Saved edge: {edge.id}")
+
+    def add_learned_macro(self, edge: GraphEdge) -> None:
+        """Save macro to DB and hot-load the trigger embedding into RAM."""
+        self.save_edge(edge)
+        
+        # Hot-load triggers into RAM
+        for trigger in edge.triggers:
+            trigger_clean = trigger.lower().strip()
+            if trigger_clean not in self._trigger_embeddings:
+                vec = self._encoder.embed(trigger_clean)
+                if vec:
+                    self._trigger_embeddings[trigger_clean] = vec
+                    logger.info(f"[MemoryManager] Hot-loaded semantic trigger: '{trigger_clean}'")
 
     def save_node(self, node: GraphNode) -> None:
         """Save or update a node."""

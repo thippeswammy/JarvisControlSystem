@@ -174,10 +174,26 @@ class Planner:
 
     @staticmethod
     def _path_to_skill_calls(path: MemoryPath) -> list[SkillCall]:
-        """Convert a MemoryPath into navigate_location SkillCalls."""
+        """Convert a MemoryPath into executable SkillCalls."""
         calls = []
         for edge in path.edges:
-            if edge.fast_path == "uri":
+            if getattr(edge, "action_type", "") == "macro":
+                import json
+                try:
+                    # Generic macros store serialized SkillCalls in action_params["calls"]
+                    serialized_calls = edge.action_params.get("calls", [])
+                    if isinstance(serialized_calls, str):
+                        serialized_calls = json.loads(serialized_calls)
+                    
+                    for call_dict in serialized_calls:
+                        calls.append(SkillCall(
+                            skill=call_dict.get("skill", "unknown"),
+                            params=call_dict.get("params", {}),
+                            source="memory"
+                        ))
+                except Exception as e:
+                    logger.error(f"[Planner] Failed to deserialize macro edge {edge.id}: {e}")
+            elif edge.fast_path == "uri":
                 calls.append(SkillCall(
                     skill="navigate_location",
                     params={"uri": edge.fast_path_value, "target": edge.to_id},
