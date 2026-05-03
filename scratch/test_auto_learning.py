@@ -25,7 +25,7 @@ def test_auto_learning():
     def set_brightness(params, **kwargs):
         return SkillResult(success=True)
 
-    @skill(triggers=["type text"])
+    @skill(triggers=["type text"], is_cognitive=True)
     def type_text(params, **kwargs):
         return SkillResult(success=True)
 

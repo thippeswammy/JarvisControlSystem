@@ -51,6 +51,7 @@ class _SkillEntry:
     priority: int
     category: str
     requires: list[str]
+    is_cognitive: bool = False
 
 
 class SkillBus:
@@ -141,6 +142,13 @@ class SkillBus:
     def list_skills(self) -> list[str]:
         return sorted(self._registry.keys())
 
+    def is_cognitive(self, skill_name: str) -> bool:
+        """Returns True if the skill is marked as cognitive/dynamic."""
+        entry = self._find(skill_name)
+        if not entry:
+            return False
+        return entry.is_cognitive
+
     def get_trigger_map(self) -> dict[str, str]:
         """Returns {trigger_phrase: skill_name} for LLM system prompt injection."""
         result = {}
@@ -160,6 +168,7 @@ class SkillBus:
             priority=fn.__skill_priority__,
             category=fn.__skill_category__,
             requires=fn.__skill_requires__,
+            is_cognitive=fn.__skill_cognitive__,
         )
         if entry.name in self._registry and not override:
             existing = self._registry[entry.name]

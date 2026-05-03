@@ -115,15 +115,10 @@ class Orchestrator:
         has_llm_source = False
         has_unsafe_skill = False
         
-        SAFE_SKILLS = {
-            "set_volume", "set_brightness", "power_action", "launch_app", 
-            "navigate_location", "click_element", "mouse_click", "press_key", "system_status"
-        }
-
         for call in plan:
             if getattr(call, "source", "") == "llm":
                 has_llm_source = True
-            if call.skill not in SAFE_SKILLS:
+            if self._bus.is_cognitive(call.skill):
                 has_unsafe_skill = True
 
             if self._verification_loop:
