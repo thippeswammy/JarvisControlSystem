@@ -25,6 +25,7 @@ def skill(
     category: str = "general",
     requires: Optional[list[str]] = None,
     is_cognitive: bool = False,
+    settle_ms: int = 0,
 ):
     """
     Decorator to register a function as a Jarvis skill.
@@ -47,6 +48,7 @@ def skill(
         fn.__skill_category__ = category
         fn.__skill_requires__ = requires or []
         fn.__skill_cognitive__ = is_cognitive
+        fn.__skill_settle_ms__ = settle_ms
 
         @functools.wraps(fn)
         def wrapper(*args, **kwargs):
@@ -60,6 +62,7 @@ def skill(
         wrapper.__skill_category__ = fn.__skill_category__
         wrapper.__skill_requires__ = fn.__skill_requires__
         wrapper.__skill_cognitive__ = fn.__skill_cognitive__
+        wrapper.__skill_settle_ms__ = fn.__skill_settle_ms__
 
         return wrapper
     return decorator

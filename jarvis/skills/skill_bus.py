@@ -52,6 +52,7 @@ class _SkillEntry:
     category: str
     requires: list[str]
     is_cognitive: bool = False
+    settle_ms: int = 0
 
 
 class SkillBus:
@@ -149,6 +150,13 @@ class SkillBus:
             return False
         return entry.is_cognitive
 
+    def get_settle_ms(self, skill_name: str) -> int:
+        """Returns the settle_ms wait time for a skill (Phase 6)."""
+        entry = self._find(skill_name)
+        if not entry:
+            return 0
+        return entry.settle_ms
+
     def get_trigger_map(self) -> dict[str, str]:
         """Returns {trigger_phrase: skill_name} for LLM system prompt injection."""
         result = {}
@@ -181,6 +189,7 @@ class SkillBus:
             category=fn.__skill_category__,
             requires=fn.__skill_requires__,
             is_cognitive=fn.__skill_cognitive__,
+            settle_ms=getattr(fn, "__skill_settle_ms__", 0),
         )
         if entry.name in self._registry and not override:
             existing = self._registry[entry.name]

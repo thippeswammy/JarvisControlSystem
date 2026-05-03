@@ -27,6 +27,7 @@ import requests
 from jarvis.llm.llm_interface import LLMInterface, Plan, SkillCallSpec, LLMDecision
 
 logger = logging.getLogger(__name__)
+_DEFAULT_MODEL = "gemma3:1b"
 
 
 class LocalLLM(LLMInterface):
@@ -42,8 +43,8 @@ class LocalLLM(LLMInterface):
     def __init__(
         self,
         api_url: str = "http://localhost:11434/v1",
-        model: str = "qwen2.5:0.5b-instruct",
-        fallback_model: str = "qwen2.5:0.5b-instruct",
+        model: str = _DEFAULT_MODEL,
+        fallback_model: str = _DEFAULT_MODEL,
         max_tokens: int = 300,
         temperature: float = 0.1,
         timeout: float = 15.0,
@@ -163,14 +164,18 @@ class LocalLLM(LLMInterface):
         sys_prompt = (
             "You are JARVIS, an advanced AI desktop assistant.\n"
             "You must ALWAYS return a SINGLE valid JSON object and absolutely nothing else. No markdown, no explanations.\n"
+            "If you just want to talk, return a 'chat' type JSON.\n"
+            "\n"
             "Your JSON object must exactly match one of these 4 formats:\n"
-            '1. Chat only (for greetings, general talk): {"type": "chat", "message": "your reply here"}\n'
-            '2. Plan only (for pure actions): {"type": "plan", "steps": [{"skill": "skill_name", "params": {}}]}\n'
+            '1. Chat only: {"type": "chat", "message": "your reply here"}\n'
+            '2. Plan only: {"type": "plan", "steps": [{"skill": "skill_name", "params": {}}]}\n'
             '3. Mixed (talk AND act): {"type": "mixed", "message": "your reply", "steps": [{"skill": "skill_name", "params": {}}]}\n'
-            '4. Clarify (ask user for missing info): {"type": "clarify", "question": "your question"}\n'
+            '4. Clarify (ask user): {"type": "clarify", "question": "your question"}\n'
             "\n"
             "CRITICAL RULES:\n"
-            "- Only use skills listed in the [Available Skills] section of the context.\n"
+            "- Only use skills listed in the [Available Skills] section.\n"
+            "- If the user says 'hello' or generic talk, use type 'chat'.\n"
+            "- If the user asks to do something, use 'plan' or 'mixed'.\n"
             "- Output valid JSON only.\n"
         )
 
@@ -212,9 +217,8 @@ class LocalLLM(LLMInterface):
         cleaned = re.sub(r"```(?:json)?\s*", "", raw, flags=re.IGNORECASE).strip()
         cleaned = cleaned.replace("```", "").strip()
 
-        # Step 2: Extract first valid JSON array via regex
-        # Handles cases like: [...]\n] (double bracket) or extra trailing text
-        array_match = re.search(r"(\[.*?\])", cleaned, re.DOTALL)
+        # Step 2: Extract first valid JSON array via regex (greedy)
+        array_match = re.search(r"(\[.*\])", cleaned, re.DOTALL)
         if array_match:
             candidate = array_match.group(1)
         else:
@@ -263,6 +267,21 @@ class LocalLLM(LLMInterface):
             
         try:
             data = json.loads(candidate)
+        except Exception:
+            # Fallback for small models: if it's not JSON, assume it's a chat message
+            # But first try to find any { } block (greedy to get outermost)
+            obj_match = re.search(r"(\{.*\})", raw, re.DOTALL)
+            if obj_match:
+                try:
+                    data = json.loads(obj_match.group(1))
+                except Exception:
+                    logger.info("[LocalLLM] JSON block found but invalid, wrapping as chat.")
+                    return LLMDecision(type="chat", message=raw.strip())
+            else:
+                logger.info("[LocalLLM] No JSON block found, wrapping as chat.")
+                return LLMDecision(type="chat", message=raw.strip())
+
+        try:
             if not isinstance(data, dict):
                 raise ValueError("Decision must be a JSON object")
                 
@@ -286,7 +305,8 @@ class LocalLLM(LLMInterface):
             )
         except Exception as e:
             logger.warning(f"[LocalLLM] Failed to parse decision JSON.\nRaw: {raw[:300]}\nError: {e}")
-            return None
+            # Final fallback: wrap as chat
+            return LLMDecision(type="chat", message=raw.strip())
 
     def _pull_model_async(self, model: str) -> None:
         """Non-blocking model pull via subprocess."""

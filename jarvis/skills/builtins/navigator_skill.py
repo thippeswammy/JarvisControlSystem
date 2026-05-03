@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 @skill(triggers=["navigate location", "navigate to", "go to", "open location"],
-       name="navigate_location", category="navigation")
+       name="navigate_location", category="navigation", settle_ms=1500)
 def navigate_location(params: dict) -> SkillResult:
     """
     Navigate to a location. Tries URI deep-link first, then step sequence.

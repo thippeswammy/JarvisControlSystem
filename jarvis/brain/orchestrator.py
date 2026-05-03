@@ -121,16 +121,30 @@ class Orchestrator:
         )
 
         # Plan
-        # Check memory first for exact state match
-        mem_path = self._memory.recall(
-            text, 
-            app_id=snapshot.active_app or None,
-            state_sig=snapshot.state_sig
-        )
+        # 1. Check if we should skip memory recall (compound commands or close verbs)
+        skip_recall = packet.compound
+        
+        close_verbs = {"close", "quit", "exit", "kill", "stop", "terminate"}
+        first_word = text.lower().split()[0] if text.split() else ""
+        if first_word in close_verbs:
+            skip_recall = True
+            logger.info(f"[Orchestrator] Close verb detected: {first_word} - skipping navigation memory")
+
+        mem_path = None
+        if not skip_recall:
+            # Check memory first for exact state match
+            mem_path = self._memory.recall(
+                text, 
+                app_id=snapshot.active_app or None,
+                state_sig=snapshot.state_sig
+            )
+        
         if mem_path:
             logger.info(f"[Orchestrator] Memory HIT (state-aware) for '{text}'")
             plan = self._planner._path_to_skill_calls(mem_path)
         else:
+            if packet.compound:
+                logger.info("[Orchestrator] Planning compound command...")
             plan = self._planner.plan(packet)
 
         # Execute each skill call in the plan

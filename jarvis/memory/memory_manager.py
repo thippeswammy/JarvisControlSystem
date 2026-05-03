@@ -118,7 +118,7 @@ class MemoryManager:
         command: str,
         app_id: Optional[str] = None,
         state_sig: str = "",
-        command_threshold: float = 0.55,
+        command_threshold: float = 0.65,
     ) -> Optional[MemoryPath]:
         """
         Find a known path for this command.

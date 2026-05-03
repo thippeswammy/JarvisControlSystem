@@ -111,42 +111,42 @@ class StateHarvester:
             try:
                 desc = win.descendants(depth=4)
                 # logger.debug(f"[StateHarvester] Found {len(desc)} descendants for '{app_title}'")
+                
+                for ctrl in desc:
+                    try:
+                        ctrl_type = ctrl.element_info.control_type
+                        name = (ctrl.element_info.name or "").strip()
+
+                        # Skip noise
+                        if any(noise in name.lower() for noise in _NOISE_LABELS):
+                            continue
+                        if not name:
+                            continue
+
+                        key = f"{ctrl_type}:{name}"
+
+                        if ctrl_type == "CheckBox":
+                            state[key] = ctrl.get_toggle_state()
+                        elif ctrl_type == "ToggleButton":
+                            state[key] = ctrl.get_toggle_state()
+                        elif ctrl_type == "ComboBox":
+                            state[key] = str(ctrl.selected_text() or "")
+                        elif ctrl_type == "Slider":
+                            raw_val = ctrl.element_info.rich_text or "0"
+                            try:
+                                val = int(float(raw_val))
+                                bucketed = (val // _SLIDER_BUCKET_SIZE) * _SLIDER_BUCKET_SIZE
+                                state[key] = bucketed
+                            except ValueError:
+                                state[key] = raw_val
+                        elif ctrl_type == "RadioButton":
+                            state[key] = ctrl.get_toggle_state()
+
+                    except Exception:
+                        pass  # Skip any control that fails to query
             except Exception as e:
                 logger.debug(f"[StateHarvester] descendants() failed for '{app_title}': {e}")
-                return {}
-
-            for ctrl in desc:
-                try:
-                    ctrl_type = ctrl.element_info.control_type
-                    name = (ctrl.element_info.name or "").strip()
-
-                    # Skip noise
-                    if any(noise in name.lower() for noise in _NOISE_LABELS):
-                        continue
-                    if not name:
-                        continue
-
-                    key = f"{ctrl_type}:{name}"
-
-                    if ctrl_type == "CheckBox":
-                        state[key] = ctrl.get_toggle_state()
-                    elif ctrl_type == "ToggleButton":
-                        state[key] = ctrl.get_toggle_state()
-                    elif ctrl_type == "ComboBox":
-                        state[key] = str(ctrl.selected_text() or "")
-                    elif ctrl_type == "Slider":
-                        raw_val = ctrl.element_info.rich_text or "0"
-                        try:
-                            val = int(float(raw_val))
-                            bucketed = (val // _SLIDER_BUCKET_SIZE) * _SLIDER_BUCKET_SIZE
-                            state[key] = bucketed
-                        except ValueError:
-                            state[key] = raw_val
-                    elif ctrl_type == "RadioButton":
-                        state[key] = ctrl.get_toggle_state()
-
-                except Exception:
-                    pass  # Skip any control that fails to query
+                # We still return 'state' because it at least has the window title
 
         except Exception as e:
             logger.debug(f"[StateHarvester] Window access failed: {e}")

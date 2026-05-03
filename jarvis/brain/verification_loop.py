@@ -82,10 +82,12 @@ class VerificationLoop:
         if call.skill in SKIP_VERIFY_SKILLS:
             return bus.dispatch(call)
 
+        # 0. Let UI settle from previous commands
+        time.sleep(0.3)
+
         # 1. Capture BEFORE state
-        before_state, before_hash = self._harvester.harvest_and_hash(
-            app_title=snapshot.active_app or None
-        )
+        # Use foreground window (app_title=None) to ensure we get real UI state
+        before_state, before_hash = self._harvester.harvest_and_hash(app_title=None)
 
         for attempt in range(0, 3):
             if attempt > 0:
@@ -98,13 +100,14 @@ class VerificationLoop:
                     logger.info(f"[VerificationLoop] Skill failed pre-verification: {call.skill}")
                 continue # Try next attempt
 
-            # 3. Wait for UI to settle
-            time.sleep(self._settle_ms / 1000.0)
+            # 3. Wait for UI to settle (use skill-specific or default)
+            skill_settle = bus.get_settle_ms(call.skill)
+            wait_ms = max(self._settle_ms, skill_settle)
+            if wait_ms > 0:
+                time.sleep(wait_ms / 1000.0)
 
             # 4. Capture AFTER state
-            after_state, after_hash = self._harvester.harvest_and_hash(
-                app_title=snapshot.active_app or None
-            )
+            after_state, after_hash = self._harvester.harvest_and_hash(app_title=None)
 
             # 5. Compare
             if not before_hash and not after_hash:
