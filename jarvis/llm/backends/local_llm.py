@@ -1,16 +1,16 @@
 """
 Local LLM Backend — Ollama
 ===========================
-Uses Ollama's OpenAI-compatible REST API to run qwen2.5:1.5b-instruct
+Uses Ollama's OpenAI-compatible REST API to run qwen2.5:0.5b-instruct
 locally. Ollama handles CUDA, cuBLAS, cuDNN — no manual setup needed.
 
 Setup:
     1. Install Ollama: https://ollama.com/download
-    2. ollama pull qwen2.5:1.5b-instruct
+    2. ollama pull qwen2.5:0.5b-instruct
     3. ollama serve   (starts on localhost:11434 automatically on Windows)
 
-Why qwen2.5:1.5b-instruct:
-    - 1.5B parameters → ~900MB VRAM (well within 4GB limit)
+Why qwen2.5:0.5b-instruct:
+    - 0.5B parameters → ~400MB VRAM (well within 4GB limit)
     - Instruction-tuned: follows JSON output format reliably
     - 32k context window: fits full RAG memory injection
     - Fallback: qwen2.5:0.5b-instruct (0.5B, ~400MB VRAM)
@@ -35,14 +35,14 @@ class LocalLLM(LLMInterface):
 
     Integration:
         LocalLLM → HTTP POST → Ollama /v1/chat/completions
-                             → GPU inference (qwen2.5:1.5b-instruct, Q4_K_M)
+                             → GPU inference (qwen2.5:0.5b-instruct, Q4_K_M)
                              → JSON Plan response
     """
 
     def __init__(
         self,
         api_url: str = "http://localhost:11434/v1",
-        model: str = "qwen2.5:1.5b-instruct",
+        model: str = "qwen2.5:0.5b-instruct",
         fallback_model: str = "qwen2.5:0.5b-instruct",
         max_tokens: int = 300,
         temperature: float = 0.1,

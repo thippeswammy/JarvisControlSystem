@@ -104,7 +104,7 @@ class LLMRouter:
             if name == "local":
                 return LocalLLM(
                     api_url=bc.get("api_url", "http://localhost:11434/v1"),
-                    model=bc.get("model", "qwen2.5:1.5b-instruct"),
+                    model=bc.get("model", "qwen2.5:0.5b-instruct"),
                     fallback_model=bc.get("fallback_model", "qwen2.5:0.5b-instruct"),
                     max_tokens=bc.get("max_tokens", 300),
                     temperature=bc.get("temperature", 0.1),

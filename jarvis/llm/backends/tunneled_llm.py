@@ -7,7 +7,7 @@ The tunnel endpoint must expose an OpenAI-compatible /v1/chat/completions API.
 Setup:
     export JARVIS_TUNNEL_URL=https://abc123.ngrok.io/v1
     export JARVIS_TUNNEL_KEY=your-optional-key
-    export JARVIS_TUNNEL_MODEL=qwen2.5:1.5b-instruct
+    export JARVIS_TUNNEL_MODEL=qwen2.5:0.5b-instruct
 
 This is functionally identical to LocalLLM but uses a remote URL.
 """
@@ -38,7 +38,7 @@ class TunneledLLM(LLMInterface):
     ):
         self._api_url = (api_url or os.environ.get("JARVIS_TUNNEL_URL", "")).rstrip("/")
         self._api_key = api_key or os.environ.get("JARVIS_TUNNEL_KEY", "")
-        self._model = model or os.environ.get("JARVIS_TUNNEL_MODEL", "qwen2.5:1.5b-instruct")
+        self._model = model or os.environ.get("JARVIS_TUNNEL_MODEL", "qwen2.5:0.5b-instruct")
         self._max_tokens = max_tokens
         self._temperature = temperature
         self._timeout = timeout

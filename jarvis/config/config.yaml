@@ -15,8 +15,8 @@ llm:
   backends:
 
     # Local: Ollama running on localhost
-    # Model: qwen2.5:1.5b-instruct  (<2B, ~900MB VRAM, fits 4GB GPU)
-    # Pull:  ollama pull qwen2.5:1.5b-instruct
+    # Model: qwen2.5:0.5b-instruct  (<2B, ~900MB VRAM, fits 4GB GPU)
+    # Pull:  ollama pull qwen2.5:0.5b-instruct
     local:
       engine: ollama
       api_url: "http://localhost:11434/v1"
