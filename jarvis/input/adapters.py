@@ -12,11 +12,35 @@ Both return an Utterance to pass to Orchestrator.process().
 import logging
 import queue
 import threading
+from pathlib import Path
 from typing import Optional, Callable
 
 from jarvis.perception.perception_packet import Utterance
 
 logger = logging.getLogger(__name__)
+
+
+# ── Telegram Logger ───────────────────────────────────────────
+
+class TelegramLogger:
+    """
+    Handles logging of Telegram interactions to a dedicated file.
+    """
+    def __init__(self, log_path: str = "logs/telegram_chat.log"):
+        self.log_path = Path(log_path)
+        self.log_path.parent.mkdir(exist_ok=True)
+
+    def log_input(self, chat_id: int, username: str, text: str):
+        import datetime
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with open(self.log_path, "a", encoding="utf-8") as f:
+            f.write(f"[{now}] [Chat:{chat_id}] [@{username}] >> {text}\n")
+
+    def log_output(self, chat_id: int, text: str):
+        import datetime
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        with open(self.log_path, "a", encoding="utf-8") as f:
+            f.write(f"[{now}] [Chat:{chat_id}] Jarvis << {text}\n")
 
 
 # ── Text Adapter ──────────────────────────────────────────────
@@ -252,15 +276,16 @@ class TelegramAdapter:
             orch.process(utterance.text, source="telegram")
     """
 
-    def __init__(self, token: str, allowed_chat_ids: list[int] = None):
+    def __init__(self, token: str, allowed_chat_ids: list[int] = None, log_path: str = "logs/telegram_chat.log"):
         self._token = token
         self._allowed_chat_ids = allowed_chat_ids or []
         self._api_url = f"https://api.telegram.org/bot{token}"
         self._last_update_id = 0
         self._running = False
+        self._logger = TelegramLogger(log_path)
 
     def is_available(self) -> bool:
-        return bool(self._token and self._token != "${TELEGRAM_TOKEN}")
+        return bool(self._token and self._token != "${TELEGRAM_TOKEN}" and "AA" in self._token)
 
     def stream(self):
         """Yield Utterance objects from Telegram updates."""
@@ -312,7 +337,16 @@ class TelegramAdapter:
                         continue
 
                     logger.info(f"[TelegramAdapter] Received: '{text}' from @{username}")
-                    yield Utterance(text=text, source="telegram", confidence=1.0)
+                    
+                    # Internal logging
+                    self._logger.log_input(chat_id, username, text)
+
+                    yield Utterance(
+                        text=text,
+                        source="telegram",
+                        confidence=1.0,
+                        metadata={"chat_id": chat_id, "username": username}
+                    )
 
             except KeyboardInterrupt:
                 break
@@ -322,6 +356,80 @@ class TelegramAdapter:
             except Exception as e:
                 logger.error(f"[TelegramAdapter] Error: {e}")
                 time.sleep(5)
+
+    def send_message(self, chat_id: int, text: str) -> bool:
+        """Send a message back to a specific Telegram chat."""
+        import requests
+        try:
+            resp = requests.post(
+                f"{self._api_url}/sendMessage",
+                json={
+                    "chat_id": chat_id,
+                    "text": text
+                },
+                timeout=10
+            )
+            if resp.status_code != 200:
+                logger.error(f"[TelegramAdapter] Send failed ({resp.status_code}): {resp.text}")
+            else:
+                self._logger.log_output(chat_id, text)
+            return resp.status_code == 200
+        except Exception as e:
+            logger.error(f"[TelegramAdapter] Failed to send message: {e}")
+            return False
+
+
+class MockTelegramAdapter(TelegramAdapter):
+    """
+    Mock version of TelegramAdapter for testing.
+    Instead of polling an API, it reads from a queue of simulated messages.
+    """
+    def __init__(self, log_path: str = "logs/telegram_test.log"):
+        super().__init__(token="MOCK_TOKEN", log_path=log_path)
+        self._input_queue = queue.Queue()
+        self._replies = []
+
+    def is_available(self) -> bool:
+        return True
+
+    def simulate_message(self, text: str, chat_id: int = 12345, username: str = "testuser"):
+        """Programmatically inject a message into the stream."""
+        self._input_queue.put({
+            "text": text,
+            "chat": {"id": chat_id, "username": username},
+            "update_id": 0
+        })
+
+    def stream(self):
+        self._running = True
+        logger.info("[MockTelegramAdapter] Listening for mock messages...")
+        while self._running:
+            try:
+                msg_data = self._input_queue.get(timeout=1.0)
+                if msg_data is None: break
+                
+                text = msg_data["text"]
+                chat_id = msg_data["chat"]["id"]
+                username = msg_data["chat"]["username"]
+
+                self._logger.log_input(chat_id, username, text)
+                yield Utterance(
+                    text=text,
+                    source="telegram",
+                    confidence=1.0,
+                    metadata={"chat_id": chat_id, "username": username}
+                )
+            except queue.Empty:
+                continue
+
+    def send_message(self, chat_id: int, text: str) -> bool:
+        logger.info(f"[MockTelegramAdapter] REPLY to {chat_id}: {text}")
+        self._logger.log_output(chat_id, text)
+        self._replies.append({"chat_id": chat_id, "text": text})
+        return True
+
+    def get_replies(self):
+        return self._replies
 
     def stop(self):
         self._running = False
