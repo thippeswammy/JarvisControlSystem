@@ -475,6 +475,3 @@ class MockTelegramAdapter(TelegramAdapter):
 
     def get_replies(self):
         return self._replies
-
-    def stop(self):
-        self._running = False

@@ -34,6 +34,18 @@ class MockLLM(LLMInterface):
         text = prompt.lower().strip()
         logger.debug(f"[MockLLM] Planning for: {text!r}")
 
+        # ── Greetings / Help ──────────
+        if re.search(r"\b(hi|hello|hey|greetings|morning|evening)\b", text) and len(text.split()) < 4:
+            return [SkillCallSpec(
+                skill="chat_reply",
+                params={"message": "Hello! My cognitive core is running in emergency mode, but I can still help with basic app controls."}
+            )]
+        if re.search(r"\b(help|what can you do|who are you)\b", text):
+            return [SkillCallSpec(
+                skill="chat_reply",
+                params={"message": "I am JARVIS. My main brain is offline, so I'm using my emergency reflexes. I can open apps, type text, and control your system volume or windows."}
+            )]
+
         # ── Questions about memory (Episodic) ──────────
         if re.search(r"\b(what|did i|just|previously)\b", text):
             if "Recent successful commands:" in memory_context:
@@ -130,9 +142,21 @@ class MockLLM(LLMInterface):
         logger.debug(f"[MockLLM] Deciding for: {prompt!r}")
         plan = self.plan(prompt, context)
         if plan:
-            # Check if it's just asking user, then clarify
+            # 1. Clarification
             if len(plan) == 1 and plan[0].skill == "ask_user":
                 return LLMDecision(type="clarify", question=plan[0].params.get("reason", "Could you clarify?"))
-            # Otherwise return plan
-            return LLMDecision(type="plan", steps=plan)
+            
+            # 2. Pure Chat
+            if len(plan) == 1 and plan[0].skill == "chat_reply":
+                return LLMDecision(type="chat", message=plan[0].params.get("message", "I'm not sure."))
+            
+            # 3. Mixed / Plan
+            chat_step = next((s for s in plan if s.skill == "chat_reply"), None)
+            other_steps = [s for s in plan if s.skill != "chat_reply"]
+            
+            if chat_step and other_steps:
+                return LLMDecision(type="mixed", message=chat_step.params.get("message"), steps=other_steps)
+            elif other_steps:
+                return LLMDecision(type="plan", steps=other_steps)
+            
         return LLMDecision(type="chat", message="I'm a mock brain, and I don't know what to say.")
