@@ -38,7 +38,7 @@ logging.basicConfig(
 logger = logging.getLogger("jarvis.main")
 
 
-def build_orchestrator(config_path: str = ""):
+def build_orchestrator(config_path: str = "", use_ollama: bool = False):
     """
     Wire all components and return a ready Orchestrator.
     Imports deferred to keep startup fast when only testing.
@@ -50,6 +50,12 @@ def build_orchestrator(config_path: str = ""):
     )
     with open(config_file, encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
+
+    # ── Ensure Ollama is running ──────────────────────────────
+    if use_ollama:
+        from jarvis.utils.ollama_utils import enable_auto_start, ensure_ollama_running
+        enable_auto_start(True)
+        ensure_ollama_running()
 
     # ── Memory ────────────────────────────────────────────────
     from jarvis.memory.memory_manager import MemoryManager
@@ -100,6 +106,7 @@ def main():
     parser.add_argument("--voice",    action="store_true", help="Enable voice input")
     parser.add_argument("--telegram", action="store_true", help="Enable Telegram bot input")
     parser.add_argument("--telegram-test", action="store_true", help="Enable Mock Telegram mode for testing")
+    parser.add_argument("--ollama",   action="store_true", help="Auto-start Ollama service if not running")
     parser.add_argument("--config",   default="",          help="Path to config.yaml")
     parser.add_argument("--command", default="",          help="Run a single command and exit")
     parser.add_argument("--debug",   action="store_true", help="Enable DEBUG logging")
@@ -113,7 +120,7 @@ def main():
     logger.info("  JARVIS v2.1 — Iron Man Architecture  ")
     logger.info("=" * 55)
 
-    orch = build_orchestrator(config_path=args.config)
+    orch = build_orchestrator(config_path=args.config, use_ollama=args.ollama)
 
     # ── Single command mode ───────────────────────────────────
     if args.command:

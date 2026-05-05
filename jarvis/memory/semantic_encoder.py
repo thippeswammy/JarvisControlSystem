@@ -12,6 +12,8 @@ import urllib.request
 import urllib.error
 from typing import List, Optional
 
+from jarvis.utils.ollama_utils import ensure_ollama_running
+
 logger = logging.getLogger(__name__)
 
 class SemanticEncoder:
@@ -56,7 +58,12 @@ class SemanticEncoder:
                 result = json.loads(response.read().decode("utf-8"))
                 return result.get("embedding")
         except urllib.error.URLError as e:
-            logger.error(f"[SemanticEncoder] Failed to connect to Ollama: {e}")
+            logger.error(f"[SemanticEncoder] Failed to connect to Ollama: {e}. Attempting auto-start.")
+            # Resolve base URL from api_url (e.g. http://localhost:11434/api/embeddings -> http://localhost:11434)
+            from urllib.parse import urlparse
+            parsed = urlparse(self.api_url)
+            base_url = f"{parsed.scheme}://{parsed.netloc}"
+            ensure_ollama_running(url=base_url)
             return None
         except Exception as e:
             logger.error(f"[SemanticEncoder] Error generating embedding: {e}")

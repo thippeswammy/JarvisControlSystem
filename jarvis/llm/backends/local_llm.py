@@ -24,6 +24,7 @@ from typing import Optional
 
 import requests
 
+from jarvis.utils.ollama_utils import ensure_ollama_running
 from jarvis.llm.llm_interface import LLMInterface, Plan, SkillCallSpec, LLMDecision
 
 logger = logging.getLogger(__name__)
@@ -99,7 +100,8 @@ class LocalLLM(LLMInterface):
             return False
 
         except requests.exceptions.ConnectionError:
-            logger.debug("[LocalLLM] Ollama not running or unreachable.")
+            logger.debug("[LocalLLM] Ollama not running or unreachable. Attempting auto-start.")
+            ensure_ollama_running(url=self._api_url.replace("/v1", ""))
             return False
         except Exception as e:
             logger.debug(f"[LocalLLM] Health check error: {e}")
