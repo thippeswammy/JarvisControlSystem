@@ -80,11 +80,11 @@ class Orchestrator:
         confidence: float = 1.0,
         metadata: Optional[dict] = None,
         typing_callback: Optional[Callable] = None
-    ) -> SkillResult:
+    ) -> list[SkillResult]:
         """
         Full pipeline: text → NLU → Plan → Execute → (Verify) → Learn.
 
-        Returns the SkillResult of the last executed skill.
+        Returns a list of SkillResult objects for each executed step in the plan.
         """
         if typing_callback:
             typing_callback()
@@ -94,10 +94,10 @@ class Orchestrator:
 
         # Low-confidence voice input → ask to confirm
         if utterance.source == "voice" and utterance.confidence < 0.70:
-            return self._bus.dispatch(SkillCall(
+            return [self._bus.dispatch(SkillCall(
                 skill="ask_user",
                 params={"reason": f"I heard: '{text}'. Is that correct?"}
-            ))
+            ))]
 
         # Capture context
         snapshot = self._context.capture()
@@ -140,7 +140,7 @@ class Orchestrator:
             plan = self._planner.plan(packet)
 
         # Execute each skill call in the plan
-        last_result = SkillResult(success=True, message="No skills executed")
+        results = []
         all_success = True
         has_llm_source = False
         has_unsafe_skill = False
@@ -163,7 +163,7 @@ class Orchestrator:
                 # Phase 5 mode: execute without verification
                 result = self._bus.dispatch(call)
 
-            last_result = result
+            results.append(result)
             
             # Log to episodic memory
             self._episodic.log_command(
@@ -240,7 +240,7 @@ class Orchestrator:
                     self._memory.add_learned_macro(new_edge)
                     logger.info(f"[Orchestrator] Learned new state-aware macro for trigger: {text!r}")
 
-        return last_result
+        return results
 
     def set_verification_loop(self, vloop) -> None:
         """Inject verification loop (Phase 6)."""

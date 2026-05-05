@@ -263,6 +263,8 @@ class VoiceAdapter:
 
 # ── Telegram Adapter ──────────────────────────────────────────
 
+import requests
+
 class TelegramAdapter:
     """
     Reads commands from a Telegram Bot using long polling.
@@ -284,13 +286,13 @@ class TelegramAdapter:
         self._running = False
         self._logger = TelegramLogger(log_path)
         self._typing_events: dict[int, threading.Event] = {}
+        self._session = requests.Session()
 
     def is_available(self) -> bool:
         return bool(self._token and self._token != "${TELEGRAM_TOKEN}" and "AA" in self._token)
 
     def stream(self):
         """Yield Utterance objects from Telegram updates."""
-        import requests
         import time
 
         if not self.is_available():
@@ -303,7 +305,7 @@ class TelegramAdapter:
         while self._running:
             try:
                 # getUpdates with long polling (timeout=30s)
-                resp = requests.get(
+                resp = self._session.get(
                     f"{self._api_url}/getUpdates",
                     params={
                         "offset": self._last_update_id + 1,
@@ -361,13 +363,13 @@ class TelegramAdapter:
     def send_message(self, chat_id: int, text: str) -> bool:
         """Send a message back to a specific Telegram chat."""
         self.stop_typing(chat_id)  # Stop typing when sending message
-        import requests
         try:
-            resp = requests.post(
+            resp = self._session.post(
                 f"{self._api_url}/sendMessage",
                 json={
                     "chat_id": chat_id,
-                    "text": text
+                    "text": text,
+                    "parse_mode": "Markdown" # Enable rich formatting
                 },
                 timeout=10
             )
@@ -389,10 +391,9 @@ class TelegramAdapter:
         self._typing_events[chat_id] = stop_event
 
         def _typing_loop():
-            import requests
             while not stop_event.is_set():
                 try:
-                    requests.post(
+                    self._session.post(
                         f"{self._api_url}/sendChatAction",
                         json={"chat_id": chat_id, "action": "typing"},
                         timeout=5

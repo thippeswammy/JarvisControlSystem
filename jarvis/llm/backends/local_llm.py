@@ -255,31 +255,36 @@ class LocalLLM(LLMInterface):
 
     def _parse_decision(self, raw: str) -> Optional[LLMDecision]:
         import re
+        
+        # Pre-clean: strip markdown fences globally before extraction
         cleaned = re.sub(r"```(?:json)?\s*", "", raw, flags=re.IGNORECASE).strip()
         cleaned = cleaned.replace("```", "").strip()
 
-        # Find first JSON object
-        obj_match = re.search(r"(\{.*?\})", cleaned, re.DOTALL)
-        if obj_match:
-            candidate = obj_match.group(1)
-        else:
-            candidate = cleaned
+        # Strategy 1: Find the largest outermost JSON object {...}
+        # This handles cases where the LLM adds text before or after the JSON block.
+        obj_match = re.search(r"(\{.*\})", cleaned, re.DOTALL)
+        candidate = obj_match.group(1) if obj_match else cleaned
             
         try:
             data = json.loads(candidate)
         except Exception:
-            # Fallback for small models: if it's not JSON, assume it's a chat message
-            # But first try to find any { } block (greedy to get outermost)
-            obj_match = re.search(r"(\{.*\})", raw, re.DOTALL)
-            if obj_match:
-                try:
-                    data = json.loads(obj_match.group(1))
-                except Exception:
-                    logger.info("[LocalLLM] JSON block found but invalid, wrapping as chat.")
-                    return LLMDecision(type="chat", message=raw.strip())
+            # Strategy 2: If JSON loads failed, it might be partial or contain non-JSON text.
+            # Try to find ANY { } block if we haven't already.
+            if candidate != cleaned: # we already tried the search once
+                # Wrap the raw text (cleaned of markdown) as a chat message as a last resort.
+                # BUT: if it still looks like JSON (starts with {), try to strip the outer layer.
+                if cleaned.startswith("{") and "}" in cleaned:
+                    # Final attempt: try to just take everything between first and last bracket
+                    try:
+                        idx_start = cleaned.find("{")
+                        idx_end = cleaned.rfind("}")
+                        data = json.loads(cleaned[idx_start:idx_end+1])
+                    except Exception:
+                        return LLMDecision(type="chat", message=self._clean_chat_text(raw))
+                else:
+                    return LLMDecision(type="chat", message=self._clean_chat_text(raw))
             else:
-                logger.info("[LocalLLM] No JSON block found, wrapping as chat.")
-                return LLMDecision(type="chat", message=raw.strip())
+                return LLMDecision(type="chat", message=self._clean_chat_text(raw))
 
         try:
             if not isinstance(data, dict):
@@ -304,9 +309,24 @@ class LocalLLM(LLMInterface):
                 question=data.get("question")
             )
         except Exception as e:
-            logger.warning(f"[LocalLLM] Failed to parse decision JSON.\nRaw: {raw[:300]}\nError: {e}")
-            # Final fallback: wrap as chat
-            return LLMDecision(type="chat", message=raw.strip())
+            logger.warning(f"[LocalLLM] Failed to parse decision JSON fields.\nRaw: {raw[:300]}\nError: {e}")
+            return LLMDecision(type="chat", message=self._clean_chat_text(raw))
+
+    def _clean_chat_text(self, text: str) -> str:
+        """Strips markdown fences and attempts to hide JSON artifacts from the user."""
+        import re
+        # Remove markdown fences
+        text = re.sub(r"```(?:json)?\s*", "", text, flags=re.IGNORECASE).strip()
+        text = text.replace("```", "").strip()
+        # If it's JUST a JSON object, try to extract the "message" or "question" field
+        if text.startswith("{") and text.endswith("}"):
+            try:
+                data = json.loads(text)
+                if "message" in data: return data["message"]
+                if "question" in data: return data["question"]
+            except:
+                pass
+        return text
 
     def _pull_model_async(self, model: str) -> None:
         """Non-blocking model pull via subprocess."""

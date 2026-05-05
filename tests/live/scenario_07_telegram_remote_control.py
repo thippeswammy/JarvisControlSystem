@@ -38,12 +38,14 @@ class Scenario07(LiveScenario):
         # Pull the utterance from the active generator
         utterance = next(self._stream_gen)
         
-        result = self.orch.process(utterance.text, source="telegram")
+        results = self.orch.process(utterance.text, source="telegram")
         
-        reply_text = f"{'✅' if result.success else '❌'} {result.message or result.action_taken}"
+        from jarvis.brain.message_formatter import MessageFormatter
+        reply_text = MessageFormatter.format(results, source="telegram")
         self.adapter.send_message(self.chat_id, reply_text)
         
-        return result
+        # Return the last result for assertions (or first if needed)
+        return results[-1] if results else SkillResult(success=False)
 
 
     def test_hi(self):

@@ -47,14 +47,26 @@ def ask_user(params: dict) -> SkillResult:
 @skill(triggers=["system status", "jarvis status", "health check"],
        name="system_status", category="session")
 def system_status(params: dict) -> SkillResult:
-    import platform, psutil, datetime
+    import platform, psutil, datetime, os
     cpu = psutil.cpu_percent(interval=0.1)
     ram = psutil.virtual_memory()
     now = datetime.datetime.now().strftime("%H:%M:%S")
+    
+    # Try to get more context if possible (this is a bit hacky but good for status)
+    from pywinauto import Desktop
+    active_app = "Unknown"
+    try:
+        active_app = Desktop(backend="uia").get_active_window().window_text()
+    except:
+        pass
+
     msg = (
-        f"Time: {now} | "
-        f"System: {platform.node()} | "
-        f"CPU: {cpu}% | "
-        f"RAM: {ram.used // (1024**2)}MB / {ram.total // (1024**2)}MB"
+        f"🖥 **System Status Report**\n"
+        f"• **Time**: `{now}`\n"
+        f"• **Host**: `{platform.node()}`\n"
+        f"• **CPU**: `{cpu}%`\n"
+        f"• **RAM**: `{ram.used // (1024**2)}MB / {ram.total // (1024**2)}MB`\n"
+        f"• **Active**: `{active_app[:30]}`\n"
+        f"• **Status**: `ONLINE` ✅"
     )
-    return SkillResult(success=True, message=msg, action_taken="Status reported")
+    return SkillResult(success=True, message=msg, action_taken="Reported rich system status")

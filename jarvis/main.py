@@ -117,9 +117,9 @@ def main():
 
     # ── Single command mode ───────────────────────────────────
     if args.command:
-        result = orch.process(args.command)
-        status = "✅" if result.success else "❌"
-        print(f"{status} {result.message or result.action_taken}")
+        results = orch.process(args.command)
+        from jarvis.brain.message_formatter import MessageFormatter
+        print(MessageFormatter.format(results, source="text"))
         return
 
     # ── Voice mode ────────────────────────────────────────────
@@ -131,12 +131,13 @@ def main():
             sys.exit(1)
         print("🎙 Voice mode active. Say 'Jarvis <command>' or Ctrl+C to quit.")
         for utterance in adapter.stream():
-            result = orch.process(
+            results = orch.process(
                 utterance.text,
                 source="voice",
                 confidence=utterance.confidence,
             )
-            print(f"  Jarvis: {result.message or result.action_taken}")
+            from jarvis.brain.message_formatter import MessageFormatter
+            print(f"  Jarvis: {MessageFormatter.format(results, source='voice')}")
         return
 
     # ── Telegram mode (Real or Mock) ──────────────────────────
@@ -181,13 +182,14 @@ def main():
             chat_id = utterance.metadata.get("chat_id")
             text = utterance.text
             
-            result = orch.process(
+            results = orch.process(
                 text, 
                 source="telegram", 
                 typing_callback=lambda: adapter.start_typing(chat_id)
             )
-            status = "✅" if result.success else "❌"
-            reply_text = f"{status} {result.message or result.action_taken}"
+            
+            from jarvis.brain.message_formatter import MessageFormatter
+            reply_text = MessageFormatter.format(results, source="telegram")
             
             # Send back to Telegram
             if chat_id:
@@ -201,9 +203,9 @@ def main():
     adapter = TextAdapter(prompt="Jarvis> ")
     print("💬 Text mode. Type a command or 'exit' to quit.")
     for utterance in adapter.stream():
-        result = orch.process(utterance.text, source="text")
-        status = "✅" if result.success else "❌"
-        print(f"  Jarvis: {status} {result.message or result.action_taken}")
+        results = orch.process(utterance.text, source="text")
+        from jarvis.brain.message_formatter import MessageFormatter
+        print(f"  Jarvis: {MessageFormatter.format(results, source='text')}")
 
 
 if __name__ == "__main__":
