@@ -71,7 +71,7 @@ class Orchestrator:
         self._pathfinder = GraphPathfinder(db)
         self._memory.set_pathfinder(self._pathfinder)
 
-        logger.info("[Orchestrator] Boot complete ✅")
+        logger.info("[Orchestrator] Boot complete")
 
     def process(
         self,
