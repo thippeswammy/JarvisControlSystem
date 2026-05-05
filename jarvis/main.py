@@ -182,6 +182,16 @@ def main():
             chat_id = utterance.metadata.get("chat_id")
             text = utterance.text
             
+            # Auto-focus the Telegram Desktop app so the user sees the response
+            try:
+                from pywinauto import Desktop
+                # Try to find Telegram window
+                tg_win = Desktop(backend="uia").window(title_re="(?i).*Telegram.*")
+                if tg_win.exists():
+                    tg_win.set_focus()
+            except:
+                pass
+
             results = orch.process(
                 text, 
                 source="telegram", 

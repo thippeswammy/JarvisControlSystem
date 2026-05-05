@@ -39,6 +39,7 @@ class ContextSnapshot:
     state_sig: str = ""                          # NEW — short stable state ID
     state_origin: str = ""                       # NEW — USER | JARVIS
     prior_action: str = ""                       # NEW — last traceable action
+    interface: str = "text"                      # NEW — text | telegram | voice
 
 
 @dataclass

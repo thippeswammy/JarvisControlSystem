@@ -60,6 +60,8 @@ def system_status(params: dict) -> SkillResult:
     except:
         pass
 
+    interface = params.get("_interface", "Local CLI").title()
+
     msg = (
         f"🖥 **System Status Report**\n"
         f"• **Time**: `{now}`\n"
@@ -67,6 +69,7 @@ def system_status(params: dict) -> SkillResult:
         f"• **CPU**: `{cpu}%`\n"
         f"• **RAM**: `{ram.used // (1024**2)}MB / {ram.total // (1024**2)}MB`\n"
         f"• **Active**: `{active_app[:30]}`\n"
-        f"• **Status**: `ONLINE` ✅"
+        f"• **Interface**: `{interface}`\n"
+        f"• **Status**: `ONLINE`"
     )
     return SkillResult(success=True, message=msg, action_taken="Reported rich system status")

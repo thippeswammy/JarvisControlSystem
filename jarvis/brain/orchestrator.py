@@ -101,6 +101,7 @@ class Orchestrator:
 
         # Capture context
         snapshot = self._context.capture()
+        snapshot.interface = source # Track the source (telegram, text, etc.)
 
         # NLU
         packet = self._nlu.parse(utterance, app_context=snapshot.active_app)
@@ -146,6 +147,7 @@ class Orchestrator:
         has_unsafe_skill = False
         
         for call in plan:
+            call.params["_interface"] = snapshot.interface
             if getattr(call, "source", "") == "llm":
                 has_llm_source = True
             if self._bus.is_cognitive(call.skill):
