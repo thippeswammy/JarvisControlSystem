@@ -468,6 +468,11 @@ class MockTelegramAdapter(TelegramAdapter):
     def stop_typing(self, chat_id: int):
         pass
 
+    def stop(self):
+        """Stop the mock stream."""
+        self._running = False
+        self._input_queue.put(None)
+
     def get_replies(self):
         return self._replies
 
