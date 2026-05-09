@@ -193,8 +193,19 @@ class Orchestrator:
 
         # Auto-Learn Semantic Macro (The Reflex)
         if all_success and has_llm_source and plan:
-            if has_unsafe_skill:
-                logger.info("[Orchestrator] Skipping macro learning: plan contains dynamic cognitive skill")
+            # Heuristic: Check for dynamic payloads in physical skills
+            is_dynamic_payload = False
+            for call in plan:
+                if call.skill == "type_text":
+                    text_val = str(call.params.get("text", ""))
+                    # If text is long (>60 chars) or looks like multiple sentences, treat as dynamic
+                    if len(text_val) > 60 or (text_val.count(" ") > 10):
+                        is_dynamic_payload = True
+                        break
+
+            if has_unsafe_skill or is_dynamic_payload:
+                reason = "dynamic cognitive skill" if has_unsafe_skill else "dynamic payload content"
+                logger.info(f"[Orchestrator] Skipping macro learning: plan contains {reason}")
             else:
                 import json
                 import hashlib

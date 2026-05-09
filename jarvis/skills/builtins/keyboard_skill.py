@@ -36,6 +36,7 @@ def type_text(params: dict) -> SkillResult:
         import time
         time.sleep(0.5) # Allow focus to settle
         pyautogui.typewrite(text, interval=interval)
-        return SkillResult(success=True, action_taken=f"Typed: {text[:40]!r}")
+        display_text = text if len(text) <= 100 else text[:97] + "..."
+        return SkillResult(success=True, action_taken=f"Typed: {display_text!r}")
     except Exception as e:
         return SkillResult(success=False, message=str(e))
