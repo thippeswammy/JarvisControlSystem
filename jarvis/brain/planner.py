@@ -157,14 +157,14 @@ class Planner:
             f"[Episodic Memory]\n{episodic_context}\n\n"
             f"[Available Skills]\n{skill_catalog}\n\n"
             "[Critical Rules]\n"
-            "1. If the user request implies writing, explaining, or summarizing information AND a target application that accepts text input is specified or active (e.g. notepad, browser, search field), do NOT use the 'message' field for the explanation. Instead, include a 'type_text' skill call with the generated content.\n"
-            "2. Only use 'message' for direct conversational replies to the user (greetings, confirmations).\n\n"
+            "1. META-RULE: If the user intent involves content generation (explaining, summarizing, drafting, jokes) AND a destination application is specified OR active, you MUST deliver that content using 'type_text' into the target app. Do NOT use the 'message' field for the payload.\n"
+            "2. CONTEXT-AWARENESS: If an app is already active and the user says 'write a summary', target that active app.\n\n"
             "[Examples]\n"
-            'User: "close settings" → {{"type":"plan","steps":[{{"skill":"close_app","params":{{"target":"settings"}}}}]}}\n'
             'User: "open notepad" → {{"type":"plan","steps":[{{"skill":"open_app","params":{{"target":"notepad"}}}}]}}\n'
-            'User: "type hello world" → {{"type":"plan","steps":[{{"skill":"type_text","params":{{"text":"hello world"}}}}]}}\n'
-            'User: "open notepad and explain AI" → {{"type":"plan","steps":[{{"skill":"open_app","params":{{"target":"notepad"}}}},{{"skill":"type_text","params":{{"text":"Artificial intelligence, or AI, is..."}}]}}\n'
-            'User: "search chrome for AI then summarize in notepad" → {{"type":"plan","steps":[{{"skill":"open_app","params":{{"target":"chrome"}}}},{{"skill":"search_web","params":{{"query":"AI"}}}},{{"skill":"open_app","params":{{"target":"notepad"}}}},{{"skill":"type_text","params":{{"text":"AI is a branch of computer science..."}}]}}\n'
+            'User: "write a python hello world in vscode" → {{"type":"plan","steps":[{{"skill":"open_app","params":{{"target":"vscode"}}}},{{"skill":"type_text","params":{{"text":"print(\'hello world\')"}}]}}\n'
+            'User: "summarize the news in word" → {{"type":"plan","steps":[{{"skill":"open_app","params":{{"target":"word"}}}},{{"skill":"type_text","params":{{"text":"The main news today is..."}}]}}\n'
+            'User: "search youtube for funny cats" → {{"type":"plan","steps":[{{"skill":"open_app","params":{{"target":"chrome"}}}},{{"skill":"type_text","params":{{"text":"funny cats"}},{{"skill":"press_key","params":{{"key":"enter"}}]}}\n'
+            'User: "tell a joke in slack" → {{"type":"plan","steps":[{{"skill":"open_app","params":{{"target":"slack"}}}},{{"skill":"type_text","params":{{"text":"Why did the AI cross the road? To get to the other dataset."}}]}}\n'
             'User: "close settings and open notepad and type hello" → {{"type":"plan","steps":[{{"skill":"close_app","params":{{"target":"settings"}}}},{{"skill":"open_app","params":{{"target":"notepad"}}}},{{"skill":"type_text","params":{{"text":"hello"}}}}]}}\n'
         )
 

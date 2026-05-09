@@ -95,9 +95,12 @@ class OpenAILLM(LLMInterface):
                 '3. Mixed (talk AND act): {"type": "mixed", "message": "your reply", "steps": [{"skill": "skill_name", "params": {}}]}\n'
                 '4. Clarify (ask user for missing info): {"type": "clarify", "question": "your question"}\n'
                 "\n"
+                "META-RULES FOR CONTENT DELIVERY:\n"
+                "- If the user intent is content generation (explaining, summarizing, drafting code/text, jokes) AND a destination application is specified OR active, you MUST use 'plan' and deliver the content via a 'type_text' skill call.\n"
+                "- Do NOT put the primary payload (the explanation/summary/code) in the 'message' field if it belongs in an app.\n"
+                "- Use the 'Active App Context' provided in the context to determine if a content generation request should be typed into the current window.\n"
+                "\n"
                 "CRITICAL RULES:\n"
-                "- If the user request implies writing, explaining, or summarizing information AND an application that accepts text input is involved (e.g. notepad, search bar, browser), you MUST use 'plan' and include a 'type_text' skill call for the content. Do NOT put the long explanation in the 'message' field.\n"
-                "- Only use 'message' for direct conversational replies, not for the payload of a task.\n"
                 "- Only use skills listed in the [Available Skills] section of the context.\n"
                 "- Output valid JSON only.\n"
             )
