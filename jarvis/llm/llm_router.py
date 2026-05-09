@@ -135,7 +135,7 @@ class LLMRouter:
 
         primary = _build(primary_name) or MockLLM()
         fallback = _build(fallback_name) if fallback_name != primary_name else None
-        emergency = MockLLM()
+        emergency = _build("mock") or MockLLM()
 
         return cls(primary=primary, fallback=fallback, emergency=emergency)
 
@@ -170,10 +170,10 @@ class LLMRouter:
 
     def decide(self, prompt: str, context: str = "") -> LLMDecision:
         """
-        New unified LLM router path. Tries primary → fallback.
-        Falls back to emergency mock chat if everything fails.
+        New unified LLM router path. Tries primary → fallback → emergency mock.
+        Never crashes — mock is the safety net.
         """
-        for backend in [self._primary, self._fallback]:
+        for backend in [self._primary, self._fallback, self._emergency]:
             if not backend:
                 continue
             if not self._is_healthy(backend):
@@ -193,7 +193,7 @@ class LLMRouter:
                 with self._lock:
                     self._health[backend.name] = False
 
-        # Final fallback
+        # Final fallback (should never be reached as emergency is always healthy)
         logger.warning("[LLMRouter] All backends failed. Returning emergency offline chat.")
         return LLMDecision(type="chat", message="Sorry, my cognitive core is currently offline.")
 
