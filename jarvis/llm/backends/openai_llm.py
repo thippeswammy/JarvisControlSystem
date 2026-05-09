@@ -96,6 +96,8 @@ class OpenAILLM(LLMInterface):
                 '4. Clarify (ask user for missing info): {"type": "clarify", "question": "your question"}\n'
                 "\n"
                 "CRITICAL RULES:\n"
+                "- If the user request implies writing, explaining, or summarizing information AND an application that accepts text input is involved (e.g. notepad, search bar, browser), you MUST use 'plan' and include a 'type_text' skill call for the content. Do NOT put the long explanation in the 'message' field.\n"
+                "- Only use 'message' for direct conversational replies, not for the payload of a task.\n"
                 "- Only use skills listed in the [Available Skills] section of the context.\n"
                 "- Output valid JSON only.\n"
             )
