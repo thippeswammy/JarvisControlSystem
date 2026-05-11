@@ -1,7 +1,7 @@
 """
 Integration Smoke Test — Full Pipeline (No Hardware)
 ======================================================
-Tests the complete v2.1 stack end-to-end with mocked external I/O.
+Tests the complete stack end-to-end with mocked external I/O.
 Validates that: text → NLU → Planner → SkillBus → Result works for
 the 12 most critical command types Jarvis must handle.
 
