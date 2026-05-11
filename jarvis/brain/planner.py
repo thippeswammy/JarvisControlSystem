@@ -92,7 +92,7 @@ class Planner:
             return packet.raw_plan_override
 
         # 3. Unknown intent / all others → LLM Unified Router
-        logger.info(f"[Planner] Unified LLM routing for intent: {packet.intent!r}")
+        logger.info(f"[Brain] Routing to cognitive layer for intent: {packet.intent!r}")
         return self._plan_via_unified_llm(packet, snapshot=snapshot)
 
     def _plan_open_app(self, packet: PerceptionPacket) -> list[SkillCall]:
@@ -177,15 +177,17 @@ class Planner:
         # Use override prompt if compound command prepared one
         prompt = packet.override_prompt or packet.text
 
+        logger.info(f"[Cognitive] Requesting decision from LLM backend...")
         decision = self._router.decide(
             prompt=prompt,
             context=enriched_context,
         )
 
         if not decision:
-            logger.error("[Planner] LLM returned no decision.")
+            logger.error("[Cognitive] LLM failed to provide a valid response.")
             return [SkillCall(skill="chat_reply", params={"message": "I'm sorry, I failed to generate a response."})]
 
+        logger.info(f"[Decision] LLM response mode identified: {decision.type.upper()}")
         calls = []
         
         # 1. Chat

@@ -60,7 +60,7 @@ class ChannelManager:
                 if not self._running:
                     break
                 
-                logger.info(f"[ChannelManager] Received utterance from {name}: {utterance.text}")
+                logger.info(f"[Channel] {name} >> {utterance.text}")
                 
                 # Identify user and get session
                 user_id = utterance.metadata.get("user_id", "default")

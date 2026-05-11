@@ -181,11 +181,11 @@ class LLMRouter:
                 logger.info(f"[LLMRouter] Skipping unhealthy backend: {backend.name}")
                 continue
 
-            logger.info(f"[LLMRouter] Trying decide() on backend: {backend.name}")
+            logger.info(f"[Cognitive] Requesting decision from {backend.name}...")
             try:
                 decision = backend.decide(prompt, context)
                 if decision:
-                    logger.info(f"[LLMRouter] Decision from {backend.name}: {decision.type}")
+                    logger.info(f"[Decision] Mode identified: {decision.type.upper()}")
                     return decision
                 else:
                     logger.warning(f"[LLMRouter] {backend.name} returned empty decision — trying next.")
