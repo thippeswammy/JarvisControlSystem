@@ -44,8 +44,9 @@ class GatewayDaemon:
         """Initialize all shared components from config."""
         logger.info(f"[Gateway] Bootstrapping from {self._config_path}")
         
-        with open(self._config_path, encoding="utf-8") as f:
-            self._cfg = yaml.safe_load(f)
+        from jarvis.config.config_manager import ConfigManager
+        self._cm = ConfigManager(self._config_path)
+        self._cfg = self._cm.show(mask_secrets=False)
 
         # 1. Memory
         db_cfg = self._cfg.get("memory", {}).get("graph_db", {})
@@ -145,3 +146,12 @@ class GatewayDaemon:
             "sessions": len(self.session_mgr.list_sessions()) if self.session_mgr else 0,
             "memory": self.memory.get_db_path() if self.memory else "unknown"
         }
+
+    def reload(self):
+        """Reload configuration and refresh components."""
+        logger.info("[Gateway] Reloading configuration...")
+        self._cm.load()
+        self._cfg = self._cm.show(mask_secrets=False)
+        # In a real scenario, we'd selectively update components
+        # For now, just re-bootstrap (some components might not like double init)
+        self.bootstrap()

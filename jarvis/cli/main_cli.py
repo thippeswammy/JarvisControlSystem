@@ -48,6 +48,7 @@ Examples:
     config_subs.add_parser("unset", help="Unset a config value").add_argument("key")
     config_subs.add_parser("file", help="Print config file path")
     config_subs.add_parser("validate", help="Validate config schema")
+    config_subs.add_parser("show", help="Show current configuration")
 
     # --- Status/Health ---
     subparsers.add_parser("status", help="Show system snapshot")
@@ -174,6 +175,173 @@ Examples:
                 print(f"    {icon} {ch['name']} ({ch['status']})")
         else:
             print(f"Gateway subcommand '{args.subcommand}' not yet implemented.")
+
+    elif args.command == "config":
+        from jarvis.config.config_manager import ConfigManager
+        cm = ConfigManager(gateway._config_path)
+        
+        if args.subcommand == "get":
+            val = cm.get(args.key)
+            if val is not None:
+                rprint(f"[bold cyan]{args.key}[/bold cyan] = {val}")
+            else:
+                rprint(f"❌ Key '[bold]{args.key}[/bold]' not found.")
+                
+        elif args.subcommand == "set":
+            cm.set(args.key, args.value)
+            rprint(f"✅ Set [bold cyan]{args.key}[/bold cyan] to [bold]{args.value}[/bold]")
+            
+        elif args.subcommand == "unset":
+            if cm.unset(args.key):
+                rprint(f"✅ Unset [bold cyan]{args.key}[/bold cyan]")
+            else:
+                rprint(f"❌ Key '[bold]{args.key}[/bold]' not found.")
+                
+        elif args.subcommand == "file":
+            rprint(f"📁 Config File: [bold yellow]{cm.path}[/bold yellow]")
+            
+        elif args.subcommand == "validate":
+            issues = cm.validate()
+            if not issues:
+                rprint("✅ Config is valid.")
+            else:
+                rprint("⚠️  [bold yellow]Config Issues found:[/bold yellow]")
+                for issue in issues:
+                    rprint(f"  • {issue}")
+                    
+        elif args.subcommand == "show":
+            full_cfg = cm.show(mask_secrets=True)
+            # Use yaml for pretty print
+            import yaml
+            rprint(Panel(
+                yaml.dump(full_cfg, sort_keys=False),
+                title=f"⚙️  Current Config: {cm.path.name}",
+                border_style="cyan"
+            ))
+        else:
+            print(f"Config subcommand '{args.subcommand}' not yet implemented.")
+
+    elif args.command == "models":
+        if not gateway.router:
+            rprint("❌ Error: LLM Router not initialized.")
+            return
+            
+        if args.subcommand == "list":
+            table = Table(title="🤖 LLM Backends", border_style="magenta")
+            table.add_column("Name", style="bold")
+            table.add_column("Type")
+            table.add_column("Status")
+            
+            health = gateway.router.status()
+            
+            # Primary
+            p = gateway.router._primary
+            table.add_row(p.name, "Primary", "[green]✅ healthy[/green]" if health.get(p.name) else "[red]❌ unavailable[/red]")
+            
+            # Fallback
+            f = gateway.router._fallback
+            if f:
+                table.add_row(f.name, "Fallback", "[green]✅ healthy[/green]" if health.get(f.name) else "[red]❌ unavailable[/red]")
+                
+            # Emergency
+            e = gateway.router._emergency
+            table.add_row(e.name, "Emergency", "[green]✅ healthy[/green]" if health.get(e.name) else "[red]❌ unavailable[/red]")
+            
+            rprint(table)
+            
+        elif args.subcommand == "status":
+            health = gateway.router.status()
+            active = "Mock (Safety Net)"
+            if health.get(gateway.router._primary.name):
+                active = gateway.router._primary.name
+            elif gateway.router._fallback and health.get(gateway.router._fallback.name):
+                active = gateway.router._fallback.name
+                
+            rprint(f"📡 Active Model: [bold green]{active}[/bold green]")
+            
+        elif args.subcommand == "scan":
+            rprint("[dim]Scanning all backends...[/dim]")
+            gateway.router._check_all_backends()
+            rprint("✅ Scan complete.")
+            
+        elif args.subcommand == "set":
+            # Update config
+            from jarvis.config.config_manager import ConfigManager
+            cm = ConfigManager(gateway._config_path)
+            cm.set("llm.primary", args.name)
+            rprint(f"✅ Set primary model to [bold]{args.name}[/bold]. Restart gateway to apply.")
+        else:
+            print(f"Models subcommand '{args.subcommand}' not yet implemented.")
+
+    elif args.command == "channels":
+        if not gateway.channel_mgr:
+            rprint("❌ Error: Channel Manager not initialized.")
+            return
+            
+        if args.subcommand == "list":
+            table = Table(title="📡 Communication Channels", border_style="green")
+            table.add_column("Channel", style="bold")
+            table.add_column("Status")
+            
+            for channel in gateway.channel_mgr.list_channels():
+                status_color = "green" if channel["status"] == "running" else "yellow" if channel["status"] == "stopped" else "red"
+                table.add_row(channel["name"], f"[{status_color}]{channel['status']}[/{status_color}]")
+            
+            rprint(table)
+            
+        elif args.subcommand == "status":
+            chan_name = args.name
+            # Find channel status
+            status = next((c for c in gateway.channel_mgr.list_channels() if c["name"] == chan_name), None)
+            if not status:
+                rprint(f"❌ Channel '[bold]{chan_name}[/bold]' not found.")
+                return
+            
+            rprint(Panel(
+                f"Name: [bold]{chan_name}[/bold]\n"
+                f"Status: {status['status']}\n"
+                f"Threads: 1 (active)",
+                title=f"Channel: {chan_name}",
+                border_style="green"
+            ))
+        else:
+            print(f"Channels subcommand '{args.subcommand}' not yet implemented.")
+
+    elif args.command == "skills":
+        if not gateway.bus:
+            rprint("❌ Error: Skill Bus not initialized.")
+            return
+            
+        if args.subcommand == "list":
+            table = Table(title="🛠️  Jarvis Action Skills", border_style="yellow")
+            table.add_column("Skill Name", style="bold cyan")
+            table.add_column("Category")
+            table.add_column("Triggers")
+            
+            for skill in gateway.bus.get_all_skills():
+                trigs = ", ".join(skill.triggers[:3]) + ("..." if len(skill.triggers) > 3 else "")
+                table.add_row(skill.name, skill.category, trigs)
+            
+            rprint(table)
+            
+        elif args.subcommand == "info":
+            skill = gateway.bus.get_skill(args.name)
+            if not skill:
+                rprint(f"❌ Skill '[bold]{args.name}[/bold]' not found.")
+                return
+            
+            rprint(Panel(
+                f"Name: [bold cyan]{skill.name}[/bold cyan]\n"
+                f"Category: {skill.category}\n"
+                f"Cognitive: {'✅' if skill.is_cognitive else '❌'}\n"
+                f"Triggers: {', '.join(skill.triggers)}\n"
+                f"Settle Time: {skill.settle_ms}ms\n"
+                f"Docstring: {skill.fn.__doc__.strip() if skill.fn.__doc__ else 'No description'}",
+                title=f"Skill: {skill.name}",
+                border_style="yellow"
+            ))
+        else:
+            print(f"Skills subcommand '{args.subcommand}' not yet implemented.")
 
     elif args.command == "status":
         stat = gateway.status()
@@ -330,6 +498,13 @@ Examples:
         else:
             print(f"Logs subcommand '{args.subcommand}' not yet implemented.")
 
+    elif args.command == "doctor":
+        from jarvis.cli.commands.doctor_cmd import run_doctor
+        run_doctor(gateway)
+    
+    elif args.command == "cron":
+        rprint("[yellow]Cron scheduler is coming in Phase 9.[/yellow]")
+        
     elif args.command == "health":
         print("🏥 Jarvis Health Check:")
         print("  Checking subsystems...")
