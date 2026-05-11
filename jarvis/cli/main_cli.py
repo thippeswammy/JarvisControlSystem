@@ -2,6 +2,10 @@ import argparse
 import sys
 import logging
 from pathlib import Path
+from rich.console import Console
+from rich.table import Table
+from rich.panel import Panel
+from rich import print as rprint
 
 # Add project root to path so we can import jarvis modules
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -100,9 +104,11 @@ Examples:
     logs_parser = subparsers.add_parser("logs", help="Log management")
     logs_subs = logs_parser.add_subparsers(dest="subcommand")
     logs_subs.add_parser("tail").add_argument("n", type=int, default=50, nargs='?')
-    logs_subs.add_parser("analyze")
-    logs_subs.add_parser("export")
+    analyze_parser = logs_subs.add_parser("analyze")
+    analyze_parser.add_argument("--since", default="1h", help="Time window (e.g. 1h, 30m, 1d)")
+    logs_subs.add_parser("export").add_argument("output", help="Output file path")
     logs_subs.add_parser("clear")
+    logs_subs.add_parser("watch")
 
     # --- Skills ---
     skills_parser = subparsers.add_parser("skills", help="Skill management")
@@ -177,10 +183,6 @@ Examples:
         print(f"  Active Channels: {len([c for c in stat['channels'] if c['status'] == 'running'])}")
     
     elif args.command == "memory":
-        from rich.table import Table
-        from rich.panel import Panel
-        from rich import print as rprint
-        
         if not gateway.memory:
             rprint("❌ Error: Memory system not initialized. Check your configuration.")
             return
@@ -251,15 +253,80 @@ Examples:
             print(f"Memory subcommand '{args.subcommand}' not yet implemented.")
 
     elif args.command == "logs":
+        from jarvis.cli.commands.logs_cmd import LogAnalyzer
+        
+        analyzer = LogAnalyzer(_PROJECT_ROOT / "logs" / "jarvis.log")
+        
         if args.subcommand == "tail":
+            lines = analyzer.tail(n=args.n)
+            for line in lines:
+                rprint(line)
+        
+        elif args.subcommand == "analyze":
+            stats = analyzer.analyze(since=args.since)
+            if "error" in stats:
+                rprint(f"❌ {stats['error']}")
+                return
+            
+            table = Table(title="📊 Log Analysis", border_style="blue")
+            table.add_column("Metric", style="bold")
+            table.add_column("Value")
+            
+            table.add_row("Total Lines", str(stats["total_lines"]))
+            table.add_row("LLM: Ollama Hits", str(stats["ollama_hits"]))
+            table.add_row("LLM: Mock Hits", str(stats["mock_hits"]))
+            
+            # Subsystems
+            sub_str = "\n".join([f"{k}: {v}" for k, v in stats["subsystems"].most_common(5)])
+            table.add_row("Top Subsystems", sub_str)
+            
+            # Levels
+            level_str = "\n".join([f"{k}: {v}" for k, v in stats["levels"].items()])
+            table.add_row("Log Levels", level_str)
+            
+            rprint(Panel(table, border_style="blue"))
+            
+            if stats["errors"]:
+                rprint(Panel("\n".join(stats["errors"][:10]), title="❌ Recent Errors", border_style="red"))
+
+        elif args.subcommand == "export":
+            import shutil
+            try:
+                shutil.copy(_PROJECT_ROOT / "logs" / "jarvis.log", args.output)
+                rprint(f"✅ Logs exported to [bold]{args.output}[/bold]")
+            except Exception as e:
+                rprint(f"❌ Export failed: {e}")
+
+        elif args.subcommand == "clear":
+            if analyzer.clear():
+                rprint("✅ Logs cleared.")
+            else:
+                rprint("❌ Failed to clear logs.")
+
+        elif args.subcommand == "watch":
+            rprint("[dim]Starting live log watch (Ctrl+C to exit)...[/dim]")
+            import time
             log_file = _PROJECT_ROOT / "logs" / "jarvis.log"
             if not log_file.exists():
-                print(f"❌ Log file not found: {log_file}")
+                rprint(f"❌ Log file not found: {log_file}")
                 return
+            
             with open(log_file, "r", encoding="utf-8") as f:
-                lines = f.readlines()
-                for line in lines[-args.n:]:
-                    print(line.strip())
+                f.seek(0, 2) # Go to end
+                try:
+                    while True:
+                        line = f.readline()
+                        if not line:
+                            time.sleep(0.1)
+                            continue
+                        # Use rich for coloring
+                        from rich.text import Text
+                        text = Text(line.strip())
+                        if "[ERROR]" in line: text.stylize("bold red")
+                        elif "[WARNING]" in line: text.stylize("yellow")
+                        rprint(text)
+                except KeyboardInterrupt:
+                    rprint("\n[dim]Watch stopped.[/dim]")
         else:
             print(f"Logs subcommand '{args.subcommand}' not yet implemented.")
 

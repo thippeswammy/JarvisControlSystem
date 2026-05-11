@@ -42,6 +42,8 @@ class SlashHandler:
             return f"Session: `{self._session.id}`\nChannel: `{self._session.channel}`\nUser: `{self._session.user_id}`"
         elif cmd == "/memory":
             return self._cmd_memory(args)
+        elif cmd == "/logs":
+            return self._cmd_logs(args)
         else:
             return f"Unknown command: `{cmd}`. Type `/help` for list."
 
@@ -51,6 +53,7 @@ class SlashHandler:
             "  /status  - Show system status\n"
             "  /reset   - Reset current session\n"
             "  /memory  - status | search <q>\n"
+            "  /logs    - tail [n] | analyze\n"
             "  /whoami  - Show session info\n"
             "  /help    - Show this message"
         )
@@ -99,3 +102,34 @@ class SlashHandler:
             return "\n".join(resp)
         else:
             return f"Unknown memory subcommand: `{sub}`"
+
+    def _cmd_logs(self, args) -> str:
+        from jarvis.cli.commands.logs_cmd import LogAnalyzer
+        from pathlib import Path
+        
+        log_path = Path("logs/jarvis.log")
+        analyzer = LogAnalyzer(str(log_path))
+        
+        if not args or args[0].lower() == "tail":
+            n = 10
+            if len(args) > 1:
+                try: n = int(args[1])
+                except: pass
+            
+            lines = analyzer.tail(n=n, color=False)
+            return "📋 **Recent Logs:**\n```\n" + "\n".join(lines) + "\n```"
+        
+        elif args[0].lower() == "analyze":
+            stats = analyzer.analyze()
+            if "error" in stats: return f"❌ {stats['error']}"
+            
+            resp = [
+                "📊 **Log Analysis (Last 1h)**",
+                f"● Total Lines: {stats['total_lines']}",
+                f"● Errors: {stats['levels'].get('ERROR', 0)}",
+                f"● Warnings: {stats['levels'].get('WARNING', 0)}",
+                f"● LLM Hits: {stats['ollama_hits']} (Ollama) / {stats['mock_hits']} (Mock)"
+            ]
+            return "\n".join(resp)
+        else:
+            return "Usage: `/logs tail [n]` or `/logs analyze`"
