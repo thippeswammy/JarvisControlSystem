@@ -314,7 +314,9 @@ class TelegramAdapter(ChannelAdapter):
                     timeout=35
                 )
                 if resp.status_code != 200:
-                    time.sleep(5); continue
+                    logger.error(f"[TelegramAdapter] API Error {resp.status_code}: {resp.text}")
+                    time.sleep(5)
+                    continue
 
                 updates = resp.json().get("result", [])
                 for update in updates:
@@ -324,7 +326,11 @@ class TelegramAdapter(ChannelAdapter):
                     chat_id = msg.get("chat", {}).get("id")
                     username = msg.get("chat", {}).get("username", "unknown")
 
-                    if not text or (self._allowed_chat_ids and chat_id not in self._allowed_chat_ids):
+                    if not text:
+                        continue
+                    
+                    if self._allowed_chat_ids and chat_id not in self._allowed_chat_ids:
+                        logger.warning(f"[TelegramAdapter] Unauthorized chat {chat_id} (@{username}) tried to message.")
                         continue
 
                     self._logger.log_input(chat_id, username, text)
@@ -335,7 +341,7 @@ class TelegramAdapter(ChannelAdapter):
                         metadata={"chat_id": chat_id, "username": username, "user_id": str(chat_id)}
                     )
             except Exception as e:
-                logger.debug(f"[TelegramAdapter] Error: {e}")
+                logger.error(f"[TelegramAdapter] Poll Error: {e}")
                 time.sleep(5)
 
     def send(self, session_id: str, text: str) -> bool:

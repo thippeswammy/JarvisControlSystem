@@ -192,6 +192,16 @@ Examples:
             print("🛰 Starting Jarvis Gateway...")
             gateway.bootstrap()
             gateway.start()
+            
+            # Keep the process alive
+            import time
+            print("🛰 Gateway is online. Press Ctrl+C to stop.")
+            try:
+                while True:
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                gateway.stop()
+                print("\n🛰 Gateway stopped.")
         elif args.subcommand == "status":
             stat = gateway.status()
             print(f"🛰 Gateway Status: {'[green]Running[/green]' if stat['running'] else '[red]Stopped[/red]'}")
