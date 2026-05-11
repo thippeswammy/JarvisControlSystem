@@ -189,30 +189,84 @@ Examples:
     
     elif args.command == "gateway":
         if args.subcommand == "start":
+            pid_file = _PROJECT_ROOT / "logs" / "gateway.pid"
+            if pid_file.exists():
+                # Check if process is actually running
+                import psutil
+                try:
+                    old_pid = int(pid_file.read_text())
+                    if psutil.pid_exists(old_pid):
+                        proc = psutil.Process(old_pid)
+                        if "python" in proc.name().lower():
+                            rprint(f"[yellow]⚠️ Gateway is already running (PID: {old_pid}).[/yellow]")
+                            return
+                except: pass
+
             print("🛰 Starting Jarvis Gateway...")
             gateway.bootstrap()
-            gateway.start()
             
-            # Keep the process alive
-            import time
-            print("🛰 Gateway is online. Press Ctrl+C to stop.")
+            # Save PID
+            pid_file.parent.mkdir(parents=True, exist_ok=True)
+            pid_file.write_text(str(os.getpid()))
+            
             try:
+                gateway.start()
+                # Keep the process alive
+                import time
+                print("🛰 Gateway is online. Press Ctrl+C to stop.")
                 while True:
                     time.sleep(1)
             except KeyboardInterrupt:
+                pass
+            finally:
                 gateway.stop()
+                if pid_file.exists(): pid_file.unlink()
                 print("\n🛰 Gateway stopped.")
+
+        elif args.subcommand == "stop":
+            pid_file = _PROJECT_ROOT / "logs" / "gateway.pid"
+            if not pid_file.exists():
+                rprint("[yellow]Gateway is not running (no PID file found).[/yellow]")
+                return
+            
+            try:
+                pid = int(pid_file.read_text())
+                import psutil
+                if psutil.pid_exists(pid):
+                    print(f"🛰 Stopping Gateway (PID: {pid})...")
+                    proc = psutil.Process(pid)
+                    proc.terminate()
+                    # Wait a bit for it to clean up
+                    try:
+                        proc.wait(timeout=5)
+                    except:
+                        proc.kill()
+                    if pid_file.exists(): pid_file.unlink()
+                    rprint("[green]OK: Gateway stopped.[/green]")
+                else:
+                    rprint("[yellow]Gateway was not running. Cleaning up stale PID file.[/yellow]")
+                    pid_file.unlink()
+            except Exception as e:
+                rprint(f"[red]Error stopping gateway: {e}[/red]")
+
         elif args.subcommand == "status":
-            stat = gateway.status()
-            print(f"🛰 Gateway Status: {'[green]Running[/green]' if stat['running'] else '[red]Stopped[/red]'}")
-            print(f"  Sessions: {stat['sessions']}")
-            print(f"  Memory: {stat['memory']}")
-            print("  Channels:")
-            for ch in stat['channels']:
-                icon = "[green]RUN[/green]" if ch['status'] == "running" else "[dim]OFF[/dim]"
-                print(f"    {icon} {ch['name']} ({ch['status']})")
-        else:
-            print(f"Gateway subcommand '{args.subcommand}' not yet implemented.")
+            pid_file = _PROJECT_ROOT / "logs" / "gateway.pid"
+            is_running = False
+            pid = None
+            if pid_file.exists():
+                try:
+                    pid = int(pid_file.read_text())
+                    import psutil
+                    is_running = psutil.pid_exists(pid)
+                except: pass
+            
+            if is_running:
+                rprint(f"🛰 Gateway Status: [green]Running[/green] (PID: {pid})")
+                # We can't easily get channel status from another process without IPC
+                # but we can at least say it's alive.
+            else:
+                rprint("🛰 Gateway Status: [red]Stopped[/red]")
+                if pid_file.exists(): pid_file.unlink()
 
     elif args.command == "config":
         from jarvis.config.config_manager import ConfigManager
