@@ -79,6 +79,143 @@ class MemoryManager:
         """Return the absolute path to the graph database."""
         return os.path.abspath(self._db._db_path)
 
+    def get_stats(self) -> dict:
+        """Return aggregate statistics about the memory system."""
+        edges = self._db.get_all_edges()
+        nodes = self._db.get_all_nodes()
+        
+        # Calculate success rate
+        total_runs = sum(e.success_count + e.fail_count for e in edges)
+        total_success = sum(e.success_count for e in edges)
+        success_rate = (total_success / total_runs * 100) if total_runs > 0 else 0
+        
+        return {
+            "nodes": len(nodes),
+            "edges": len(edges),
+            "apps": len(self._db.list_apps()),
+            "total_runs": total_runs,
+            "success_rate": round(success_rate, 1),
+            "db_path": self.get_db_path(),
+            "db_size_kb": os.path.getsize(self.get_db_path()) // 1024 if os.path.exists(self.get_db_path()) else 0
+        }
+
+    def search_edges(self, query: str, limit: int = 20) -> list:
+        """
+        Search for edges matching a query using fuzzy and semantic matching.
+        Returns a list of matching GraphEdge objects with scores.
+        """
+        query_lower = query.lower().strip()
+        all_edges = self._db.get_all_edges()
+        results = []
+        
+        # 1. Exact/Fuzzy match on triggers
+        from fuzzywuzzy import fuzz
+        
+        for edge in all_edges:
+            best_score = 0
+            for trigger in edge.triggers:
+                score = fuzz.partial_ratio(query_lower, trigger.lower())
+                best_score = max(best_score, score)
+            
+            if best_score > 60:
+                results.append((edge, best_score))
+        
+        # 2. Semantic match (if embeddings are available)
+        query_vec = self._encoder.embed(query_lower)
+        if query_vec:
+            from jarvis.utils.math_utils import cosine_similarity
+            for edge in all_edges:
+                # Find best trigger embedding for this edge
+                best_sim = 0
+                for trigger in edge.triggers:
+                    trig_vec = self._trigger_embeddings.get(trigger.lower().strip())
+                    if trig_vec:
+                        sim = cosine_similarity(query_vec, trig_vec)
+                        best_sim = max(best_sim, sim)
+                
+                # Boost results that have high semantic similarity
+                semantic_score = int(best_sim * 100)
+                if semantic_score > 70:
+                    # Merge with fuzzy or add new
+                    existing = next((r for r in results if r[0].id == edge.id), None)
+                    if existing:
+                        idx = results.index(existing)
+                        results[idx] = (edge, max(existing[1], semantic_score))
+                    else:
+                        results.append((edge, semantic_score))
+        
+        # Sort by score descending
+        results.sort(key=lambda x: x[1], reverse=True)
+        return results[:limit]
+
+    def remove_edge(self, edge_id: str) -> bool:
+        """Delete an edge and clean up its embedding cache."""
+        edge = self._db.get_edge(edge_id)
+        if not edge:
+            return False
+            
+        success = self._db.delete_edge(edge_id)
+        if success:
+            for trigger in edge.triggers:
+                self._trigger_embeddings.pop(trigger.lower().strip(), None)
+        return success
+
+    def prune_edges(self, min_confidence: float) -> int:
+        """Remove edges below confidence. Returns count deleted."""
+        count = self._db.prune_edges(min_confidence)
+        if count > 0:
+            # Re-warm cache to be safe
+            self._trigger_embeddings = {}
+            self._warm_embedding_cache()
+        return count
+
+    def analyze_health(self) -> dict:
+        """Identify issues in the graph like dead-end nodes or low-confidence hotspots."""
+        edges = self._db.get_all_edges()
+        nodes = self._db.get_all_nodes()
+        
+        low_conf = [e for e in edges if e.confidence < 0.4]
+        high_fail = [e for e in edges if e.fail_count > 5 and e.fail_count > e.success_count]
+        
+        # Find orphan nodes (no incoming or outgoing edges)
+        edge_node_ids = set()
+        for e in edges:
+            edge_node_ids.add(e.from_id)
+            edge_node_ids.add(e.to_id)
+        
+        orphans = [n for n in nodes if n.id not in edge_node_ids]
+        
+        return {
+            "low_confidence_count": len(low_conf),
+            "high_failure_count": len(high_fail),
+            "orphan_nodes_count": len(orphans),
+            "suggestions": [
+                f"Prune {len(low_conf)} low-confidence edges." if low_conf else None,
+                f"Review {len(high_fail)} high-failure hotspots." if high_fail else None,
+                f"Remove {len(orphans)} orphan nodes." if orphans else None
+            ]
+        }
+
+    def export_json(self, path: str) -> bool:
+        """Export full graph state to JSON."""
+        stats = self.get_stats()
+        nodes = [vars(n) for n in self._db.get_all_nodes()]
+        edges = [vars(e) for e in self._db.get_all_edges()]
+        
+        data = {
+            "metadata": stats,
+            "nodes": nodes,
+            "edges": edges
+        }
+        
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2)
+            return True
+        except Exception as e:
+            logger.error(f"[MemoryManager] Export failed: {e}")
+            return False
+
     def _warm_embedding_cache(self) -> None:
         """Embed all known triggers at startup into RAM for zero-latency routing.
         Uses a short timeout per call so a busy Ollama doesn't block startup.

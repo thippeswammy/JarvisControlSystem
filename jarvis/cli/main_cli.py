@@ -169,11 +169,70 @@ Examples:
         print(f"  Active Channels: {len([c for c in stat['channels'] if c['status'] == 'running'])}")
     
     elif args.command == "memory":
+        from rich.table import Table
+        from rich.panel import Panel
+        
         if args.subcommand == "status":
-            stat = gateway.status()
-            print(f"🧠 Memory Status:")
-            print(f"  Graph DB: {stat['memory']}")
-            # In later phases, add more detailed node/edge counts
+            stat = gateway.session_mgr.memory.get_stats()
+            table = Table(title="🧠 Memory System Status", border_style="cyan")
+            table.add_column("Metric", style="bold")
+            table.add_column("Value")
+            
+            table.add_row("Nodes", str(stat["nodes"]))
+            table.add_row("Edges (Paths)", str(stat["edges"]))
+            table.add_row("Apps Registered", str(stat["apps"]))
+            table.add_row("Total Executions", str(stat["total_runs"]))
+            table.add_row("Success Rate", f"{stat['success_rate']}%")
+            table.add_row("DB Size", f"{stat['db_size_kb']} KB")
+            table.add_row("DB Path", stat["db_path"])
+            
+            print(Panel(table, border_style="cyan"))
+
+        elif args.subcommand == "search":
+            results = gateway.session_mgr.memory.search_edges(args.query)
+            if not results:
+                print(f"❌ No memory hits for '{args.query}'")
+                return
+            
+            table = Table(title=f"🔍 Memory Search: '{args.query}'", border_style="green")
+            table.add_column("ID", style="dim")
+            table.add_column("Triggers")
+            table.add_column("Confidence", justify="right")
+            table.add_column("Score", justify="right", style="bold yellow")
+            
+            for edge, score in results:
+                trigs = ", ".join(edge.triggers)
+                conf_color = "green" if edge.confidence > 0.7 else "yellow" if edge.confidence > 0.4 else "red"
+                table.add_row(
+                    edge.id, 
+                    trigs, 
+                    f"[{conf_color}]{edge.confidence:.2f}[/{conf_color}]", 
+                    str(score)
+                )
+            
+            print(table)
+
+        elif args.subcommand == "remove":
+            if gateway.session_mgr.memory.remove_edge(args.id):
+                print(f"✅ Removed edge: {args.id}")
+            else:
+                print(f"❌ Edge not found: {args.id}")
+
+        elif args.subcommand == "prune":
+            # In a real CLI we might ask for confirmation
+            count = gateway.session_mgr.memory.prune_edges(min_confidence=0.3)
+            print(f"🧹 Pruned {count} low-confidence edges from memory.")
+
+        elif args.subcommand == "analyze":
+            health = gateway.session_mgr.memory.analyze_health()
+            print(Panel(
+                f"Low Confidence: [bold yellow]{health['low_confidence_count']}[/bold yellow]\n"
+                f"High Failure: [bold red]{health['high_failure_count']}[/bold red]\n"
+                f"Orphan Nodes: [bold cyan]{health['orphan_nodes_count']}[/bold cyan]\n\n"
+                "Suggestions:\n" + "\n".join([f" • {s}" for s in health['suggestions'] if s]),
+                title="🩺 Memory Health Analysis",
+                border_style="magenta"
+            ))
         else:
             print(f"Memory subcommand '{args.subcommand}' not yet implemented.")
 

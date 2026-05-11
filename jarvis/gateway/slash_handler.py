@@ -40,6 +40,8 @@ class SlashHandler:
             return self._cmd_reset()
         elif cmd == "/whoami":
             return f"Session: `{self._session.id}`\nChannel: `{self._session.channel}`\nUser: `{self._session.user_id}`"
+        elif cmd == "/memory":
+            return self._cmd_memory(args)
         else:
             return f"Unknown command: `{cmd}`. Type `/help` for list."
 
@@ -48,6 +50,7 @@ class SlashHandler:
             "Available commands:\n"
             "  /status  - Show system status\n"
             "  /reset   - Reset current session\n"
+            "  /memory  - status | search <q>\n"
             "  /whoami  - Show session info\n"
             "  /help    - Show this message"
         )
@@ -66,3 +69,33 @@ class SlashHandler:
     def _cmd_reset(self) -> str:
         self._session.episodic.clear()
         return "✅ Session reset. Episodic memory cleared."
+
+    def _cmd_memory(self, args) -> str:
+        if not args:
+            return "Usage: `/memory status` or `/memory search <query>`"
+        
+        sub = args[0].lower()
+        mem = self._session.episodic._MEMORY_ROOT.parent # This is a bit hacky, better to use self._gateway.session_mgr.memory
+        # Actually, SlashHandler has access to self._gateway
+        memory = self._gateway.session_mgr.memory
+        
+        if sub == "status":
+            stat = memory.get_stats()
+            return (
+                f"🧠 **Memory Stats**\n"
+                f"● Nodes: {stat['nodes']}\n"
+                f"● Edges: {stat['edges']}\n"
+                f"● Success Rate: {stat['success_rate']}%"
+            )
+        elif sub == "search":
+            query = " ".join(args[1:])
+            if not query: return "Usage: `/memory search <query>`"
+            results = memory.search_edges(query, limit=5)
+            if not results: return f"No memory found for `{query}`"
+            
+            resp = [f"🔍 **Results for '{query}':**"]
+            for edge, score in results:
+                resp.append(f"● `{edge.id}` (Conf: {edge.confidence:.2f}, Score: {score})")
+            return "\n".join(resp)
+        else:
+            return f"Unknown memory subcommand: `{sub}`"
