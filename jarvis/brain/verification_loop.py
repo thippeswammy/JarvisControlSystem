@@ -118,14 +118,14 @@ class VerificationLoop:
             state_changed = before_hash != after_hash
 
             if state_changed:
-                # ✅ State changed — verified success
-                logger.info(f"[VerificationLoop] ✅ State changed: {call.skill} ({before_hash} -> {after_hash})")
+                # [OK] State changed — verified success
+                logger.info(f"[VerificationLoop] [OK] State changed: {call.skill} ({before_hash} -> {after_hash})")
                 self._maybe_learn(call, packet, learner, success=True)
                 result.action_taken = f"[Verified] {result.action_taken}"
                 return result
 
-            # ❌ No state change — unexpected
-            logger.warning(f"[VerificationLoop] ❌ No state change after: {call.skill} (Hash: {before_hash})")
+            # [FAIL] No state change — unexpected
+            logger.warning(f"[VerificationLoop] [FAIL] No state change after: {call.skill} (Hash: {before_hash})")
 
         # If we exhausted retries and still no state change, try alternative/ask user
         return self._handle_failure_post_retry(call, bus, packet, snapshot, pathfinder)

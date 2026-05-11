@@ -81,7 +81,7 @@ class Task:
             "## Steps",
         ]
         for i, step in enumerate(self.steps):
-            done_mark = "✅" if i < self.steps_done else "⬜"
+            done_mark = "[DONE]" if i < self.steps_done else "[TODO]"
             lines.append(f"- {done_mark} {step}")
         return "\n".join(lines)
 
@@ -111,7 +111,7 @@ class Task:
                 elif line == "## Steps":
                     in_steps = True
                 elif in_steps and line.startswith("- "):
-                    step_text = line[2:].lstrip("✅⬜ ").strip()
+                    step_text = line[2:].lstrip("[OK][FAIL] ").strip()
                     if step_text:
                         steps.append(step_text)
 

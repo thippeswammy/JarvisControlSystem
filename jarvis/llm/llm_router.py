@@ -72,9 +72,10 @@ class LLMRouter:
             name="LLMHealthMonitor",
         )
         self._monitor.start()
-        logger.info(f"[LLMRouter] Initialized. Primary: {primary.name} | "
+        logger.debug(f"[LLMRouter] Initialized. Primary: {primary.name} | "
                     f"Fallback: {fallback.name if fallback else 'none'} | "
                     f"Emergency: {self._emergency.name}")
+
 
     @classmethod
     def from_config(cls, config_path: Optional[str] = None) -> "LLMRouter":
@@ -180,11 +181,11 @@ class LLMRouter:
                 logger.info(f"[LLMRouter] Skipping unhealthy backend: {backend.name}")
                 continue
 
-            logger.info(f"[LLMRouter] Trying decide() on backend: {backend.name}")
+            logger.info(f"[Cognitive] Requesting decision from {backend.name}...")
             try:
                 decision = backend.decide(prompt, context)
                 if decision:
-                    logger.info(f"[LLMRouter] Decision from {backend.name}: {decision.type}")
+                    logger.info(f"[Decision] Mode identified: {decision.type.upper()}")
                     return decision
                 else:
                     logger.warning(f"[LLMRouter] {backend.name} returned empty decision — trying next.")
@@ -219,8 +220,9 @@ class LLMRouter:
                 ok = backend.health_check()
                 with self._lock:
                     self._health[backend.name] = ok
-                status = "✅ healthy" if ok else "❌ unavailable"
-                logger.info(f"[LLMRouter] {backend.name}: {status}")
+                status = "healthy" if ok else "unavailable"
+                logger.debug(f"[LLMRouter] {backend.name}: {status}")
+
             except Exception as e:
                 with self._lock:
                     self._health[backend.name] = False

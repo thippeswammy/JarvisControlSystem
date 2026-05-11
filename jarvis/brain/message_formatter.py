@@ -35,7 +35,7 @@ class MessageFormatter:
                 # Accumulate action feedback
                 action_text = res.message or res.action_taken
                 if action_text:
-                    status_icon = "✅" if res.success else "❌"
+                    status_icon = "[OK]" if res.success else "[FAIL]"
                     actions.append(f"{status_icon} *{action_text}*")
 
         # Start building the response
@@ -57,7 +57,7 @@ class MessageFormatter:
         # Safety fallback
         if not response_lines:
             last = results[-1]
-            icon = "✅" if last.success else "❌"
+            icon = "[OK]" if last.success else "[FAIL]"
             return f"{icon} {last.message or last.action_taken}"
 
         return "\n".join(response_lines)

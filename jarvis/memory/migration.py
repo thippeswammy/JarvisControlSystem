@@ -1,7 +1,7 @@
 """
 Memory Migration Script
 =======================
-Converts v1 memory/*.md recipe files into v2.1 SQLite graph entries.
+Converts v1 memory/*.md recipe files into SQLite graph entries.
 Idempotent — safe to re-run.
 
 What gets migrated:
@@ -33,7 +33,7 @@ _DB_DEFAULT = str(_MEMORY_V1_DIR / "jarvis.db")
 def migrate(db_path: str = _DB_DEFAULT, memory_dir: Path = _MEMORY_V1_DIR) -> None:
     """Main migration entry point."""
     db = GraphDB(db_path)
-    logger.info(f"[Migration] Starting v1 → v2.1 migration. DB: {db_path}")
+    logger.info(f"[Migration] Starting version. DB: {db_path}")
 
     _migrate_apps(db, memory_dir / "apps.md")
     _migrate_navigation(db, memory_dir / "navigation.md")

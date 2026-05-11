@@ -1,1 +1,1 @@
-# tests.unit package
+# tests/unit package

@@ -1,7 +1,5 @@
 """
-Jarvis v2 — Main Package
+Jarvis v3.0 — Main Package
 ========================
-State-aware autonomous assistant with 5-layer memory,
-A* pathfinding, and multi-modal input.
 """
-__version__ = "2.1.0"
+__version__ = "3.0.0"

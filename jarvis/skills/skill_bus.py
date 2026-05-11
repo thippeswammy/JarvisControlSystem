@@ -143,6 +143,14 @@ class SkillBus:
     def list_skills(self) -> list[str]:
         return sorted(self._registry.keys())
 
+    def get_all_skills(self) -> list:
+        """Return all registered skill entries."""
+        return list(self._registry.values())
+
+    def get_skill(self, name: str) -> Optional[_SkillEntry]:
+        """Return a specific skill entry by name."""
+        return self._registry.get(name)
+
     def is_cognitive(self, skill_name: str) -> bool:
         """Returns True if the skill is marked as cognitive/dynamic."""
         entry = self._find(skill_name)

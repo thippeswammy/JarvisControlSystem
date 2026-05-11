@@ -9,7 +9,7 @@ Schema:
           confidence, success_count, fail_count, triggers_json, fast_path, fast_path_value,
           steps_json, last_used)
 
-Design (v2.1):
+Design:
     - All writes are atomic (SQLite transactions)
     - NetworkX DiGraph is loaded per-app on demand (contextual pruning)
     - Edges carry confidence scores for A* pathfinding
@@ -254,6 +254,28 @@ class GraphDB:
                 "UPDATE edges SET confidence=?, success_count=?, fail_count=?, last_used=? WHERE id=?",
                 (conf, s_count, f_count, date.today().isoformat(), edge_id),
             )
+
+    def delete_edge(self, edge_id: str) -> bool:
+        """Delete an edge by ID."""
+        with self._conn:
+            cursor = self._conn.execute("DELETE FROM edges WHERE id=?", (edge_id,))
+            return cursor.rowcount > 0
+
+    def get_all_edges(self) -> list[GraphEdge]:
+        """Return all edges in the database."""
+        rows = self._conn.execute("SELECT * FROM edges").fetchall()
+        return [self._row_to_edge(r) for r in rows]
+
+    def get_all_nodes(self) -> list[GraphNode]:
+        """Return all nodes in the database."""
+        rows = self._conn.execute("SELECT * FROM nodes").fetchall()
+        return [self._row_to_node(r) for r in rows]
+
+    def prune_edges(self, min_confidence: float) -> int:
+        """Remove edges with confidence below the threshold. Returns count deleted."""
+        with self._conn:
+            cursor = self._conn.execute("DELETE FROM edges WHERE confidence < ?", (min_confidence,))
+            return cursor.rowcount
 
     # ── Graph export (NetworkX) ──────────────────────
 

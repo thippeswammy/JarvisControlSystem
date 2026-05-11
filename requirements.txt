@@ -1,0 +1,16 @@
+PyYAML>=6.0
+rich>=13.0
+prompt_toolkit>=3.0
+apscheduler>=3.10
+pytest>=8.0
+psutil>=5.9
+requests>=2.31
+mss>=9.0
+pyautogui>=0.9
+opencv-python>=4.8
+numpy>=1.24
+fuzzywuzzy>=0.18
+python-Levenshtein>=0.21
+openai>=1.0
+google-generativeai>=0.3
+python-telegram-bot>=20.0
