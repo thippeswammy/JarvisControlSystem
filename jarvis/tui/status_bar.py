@@ -11,7 +11,9 @@ from datetime import datetime
 
 import psutil
 import platform
+from jarvis import __version__
 from rich.panel import Panel
+
 from rich.columns import Columns
 from rich.text import Text
 from rich.table import Table
@@ -59,7 +61,8 @@ class TUIStatusBar:
         left = Text.assemble(
             (" 🛰  ", "#00d7ff"),
             ("JARVIS CORE ", "bold #00d7ff"),
-            (f"v2.1", "dim #00d7ff"),
+            (f"v{__version__}", "dim #00d7ff"),
+
             ("\n"),
             (" SESSIONS: ", "white"),
             (str(status.get("sessions", 0)), "bold #ffaf00")

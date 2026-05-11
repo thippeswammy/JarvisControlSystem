@@ -9,7 +9,7 @@ Schema:
           confidence, success_count, fail_count, triggers_json, fast_path, fast_path_value,
           steps_json, last_used)
 
-Design (v2.1):
+Design:
     - All writes are atomic (SQLite transactions)
     - NetworkX DiGraph is loaded per-app on demand (contextual pruning)
     - Edges carry confidence scores for A* pathfinding

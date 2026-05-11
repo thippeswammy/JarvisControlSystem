@@ -1,5 +1,5 @@
 """
-Memory Manager (v2.1)
+Memory Manager
 =====================
 Public API for all memory operations.
 Replaces the v1 MemoryManager (flat .md file approach).
@@ -49,7 +49,7 @@ class MemoryPath:
 
 class MemoryManager:
     """
-    Public API for Jarvis v2.1 memory.
+    Public API for Jarvis memory.
 
     Usage:
         mem = MemoryManager()

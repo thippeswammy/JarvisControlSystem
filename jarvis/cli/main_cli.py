@@ -18,7 +18,7 @@ logger = logging.getLogger("jarvis.cli")
 
 def cli_main():
     parser = argparse.ArgumentParser(
-        description="Jarvis v2.1 — Iron Man Architecture CLI",
+        description="Jarvis — Iron Man Architecture CLI",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -33,7 +33,8 @@ Examples:
     parser.add_argument("--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"], help="Set logging level")
     parser.add_argument("--no-color", action="store_true", help="Disable color output")
     parser.add_argument("--profile", default="default", help="Configuration profile to use")
-    parser.add_argument("-V", "--version", action="version", version="Jarvis v2.1.0")
+    parser.add_argument("-V", "--version", action="store_true", help="Show Jarvis version info and exit")
+
 
     subparsers = parser.add_subparsers(dest="command", help="Commands")
 
@@ -130,11 +131,37 @@ Examples:
     cron_subs.add_parser("disable").add_argument("id")
     cron_subs.add_parser("run").add_argument("id")
 
+    # --- System ---
+    subparsers.add_parser("status", help="Show system snapshot")
+    subparsers.add_parser("monitor", help="Live system resource monitor")
+    subparsers.add_parser("version", help="Show Jarvis version info")
+    subparsers.add_parser("health", help="Check subsystem health")
+    subparsers.add_parser("doctor", help="Diagnose and fix issues")
+
     # --- TUI ---
     subparsers.add_parser("tui", help="Launch interactive TUI")
     subparsers.add_parser("chat", help="Launch interactive TUI (alias)")
 
+
     args = parser.parse_args()
+
+    def show_version_info():
+        from jarvis import __version__
+        import platform
+        
+        table = Table(show_header=False, border_style="bold magenta")
+        table.add_row("Jarvis Version", f"[bold cyan]v{__version__}[/bold cyan]")
+        table.add_row("Codename", "Iron Man Architecture")
+        table.add_row("Python", sys.version.split()[0])
+        table.add_row("OS Platform", platform.platform())
+        table.add_row("Architecture", platform.machine())
+        table.add_row("Project Root", str(_PROJECT_ROOT))
+        
+        rprint(Panel(table, title="🛰 Jarvis Core Information", subtitle="Google DeepMind Advanced Agentic Coding", border_style="bold magenta"))
+
+    if args.version:
+        show_version_info()
+        return
 
     # Set log level
     logging.getLogger().setLevel(getattr(logging, args.log_level))
@@ -142,6 +169,7 @@ Examples:
     if not args.command:
         parser.print_help()
         return
+
 
     from jarvis.gateway.gateway import GatewayDaemon
     gateway = GatewayDaemon(profile=args.profile)
@@ -345,10 +373,57 @@ Examples:
 
     elif args.command == "status":
         stat = gateway.status()
-        print("📊 Jarvis System Snapshot:")
-        print(f"  Gateway: {'✅ Running' if stat['running'] else '❌ Offline'}")
-        print(f"  Active Sessions: {stat['sessions']}")
-        print(f"  Active Channels: {len([c for c in stat['channels'] if c['status'] == 'running'])}")
+        table = Table(show_header=False, border_style="cyan")
+        table.add_row("🛰 Gateway", "[green]✅ Running[/green]" if stat['running'] else "[red]❌ Offline[/red]")
+        table.add_row("💬 Sessions", str(stat['sessions']))
+        table.add_row("🧠 Memory", stat['memory'])
+        
+        active_channels = len([c for c in stat['channels'] if c['status'] == 'running'])
+        table.add_row("📡 Channels", f"{active_channels} active")
+        
+        rprint(Panel(table, title="📊 Jarvis System Snapshot", border_style="cyan"))
+
+    elif args.command == "monitor":
+        import psutil
+        import time
+        from rich.live import Live
+        
+        def make_monitor_table():
+            table = Table(title="🛰 Jarvis Live Monitor", border_style="spring_green3")
+            table.add_column("Subsystem", style="bold")
+            table.add_column("Status / Usage")
+            
+            # Resource usage
+            cpu = psutil.cpu_percent()
+            ram = psutil.virtual_memory().percent
+            table.add_row("💻 CPU Usage", f"{cpu}%")
+            table.add_row("📟 RAM Usage", f"{ram}%")
+            
+            # Gateway
+            stat = gateway.status()
+            table.add_row("🛰 Gateway Daemon", "[green]Online[/green]" if stat['running'] else "[red]Offline[/red]")
+            table.add_row("👥 Active Sessions", str(stat['sessions']))
+            
+            # Channels
+            for chan in stat['channels']:
+                status = "[green]RUNNING[/green]" if chan['status'] == "running" else "[yellow]STOPPED[/yellow]"
+                table.add_row(f"  └ {chan['name']}", status)
+            
+            return table
+
+        rprint("[dim]Starting monitor (Ctrl+C to exit)...[/dim]")
+        try:
+            with Live(make_monitor_table(), refresh_per_second=2) as live:
+                while True:
+                    time.sleep(0.5)
+                    live.update(make_monitor_table())
+        except KeyboardInterrupt:
+            rprint("\n[dim]Monitor stopped.[/dim]")
+
+    elif args.command == "version":
+        show_version_info()
+
+
     
     elif args.command == "memory":
         if not gateway.memory:

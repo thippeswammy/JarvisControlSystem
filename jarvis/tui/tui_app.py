@@ -81,7 +81,7 @@ class TUIApp:
         self._last_input = ""
         
         # Initial messages
-        self.history.add("SYSTEM", "[bold #00d7ff]🛰 JARVIS OS v2.1 LOADED[/bold #00d7ff]", style="#00d7ff")
+        self.history.add("SYSTEM", "[bold #00d7ff]🛰 JARVIS OS LOADED[/bold #00d7ff]", style="#00d7ff")
         
     def _setup_layout(self):
         self.layout.split_column(

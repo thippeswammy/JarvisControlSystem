@@ -19,6 +19,7 @@ import os
 from datetime import datetime
 
 from jarvis.memory.graph_db import GraphDB, GraphNode, GraphEdge
+from jarvis import __version__
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ class GraphExporter:
 
         lines = [
             f"# procedural/apps/{app_id} — Navigation Graph (DG)",
-            f"<!-- Jarvis v2.1 | Exported: {datetime.now().isoformat()[:19]} "
+            f"<!-- Jarvis v{__version__} | Exported: {datetime.now().isoformat()[:19]} "
             f"| {len(nodes)} nodes, {len(edges)} edges -->",
             "",
         ]
