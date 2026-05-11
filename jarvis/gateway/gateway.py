@@ -90,7 +90,7 @@ class GatewayDaemon:
         proc = ProceduralMemory(self.memory.get_db())
         proc.seed_settings_graph()
         
-        logger.info("[Gateway] Bootstrap complete ✅")
+        logger.info("[Gateway] Bootstrap complete")
 
     def _setup_channels(self):
         """Initialize channels based on config."""

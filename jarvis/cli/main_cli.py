@@ -20,7 +20,7 @@ def cli_main():
 Examples:
   jarvis tui
   jarvis status
-  jarvis memory search "open notepad"
+  jarvis memory status
   jarvis gateway start
         """
     )
@@ -139,6 +139,14 @@ Examples:
     from jarvis.gateway.gateway import GatewayDaemon
     gateway = GatewayDaemon(profile=args.profile)
 
+    # Bootstrap gateway for commands that need system access
+    if args.command not in ["tui", "chat", "config", "setup"]:
+        try:
+            gateway.bootstrap()
+        except Exception as e:
+            if args.command != "gateway":
+                logger.warning(f"⚠️ Gateway bootstrap failed: {e}. Some data may be unavailable.")
+
     # Basic command routing
     if args.command in ["tui", "chat"]:
         from jarvis.tui.tui_app import main as tui_main
@@ -172,8 +180,12 @@ Examples:
         from rich.table import Table
         from rich.panel import Panel
         
+        if not gateway.memory:
+            print("❌ Error: Memory system not initialized. Check your configuration.")
+            return
+
         if args.subcommand == "status":
-            stat = gateway.session_mgr.memory.get_stats()
+            stat = gateway.memory.get_stats()
             table = Table(title="🧠 Memory System Status", border_style="cyan")
             table.add_column("Metric", style="bold")
             table.add_column("Value")
@@ -186,12 +198,13 @@ Examples:
             table.add_row("DB Size", f"{stat['db_size_kb']} KB")
             table.add_row("DB Path", stat["db_path"])
             
-            print(Panel(table, border_style="cyan"))
+            from rich import print as rprint
+            rprint(Panel(table, border_style="cyan"))
 
         elif args.subcommand == "search":
-            results = gateway.session_mgr.memory.search_edges(args.query)
+            results = gateway.memory.search_edges(args.query)
             if not results:
-                print(f"❌ No memory hits for '{args.query}'")
+                rprint(f"❌ No memory hits for '{args.query}'")
                 return
             
             table = Table(title=f"🔍 Memory Search: '{args.query}'", border_style="green")
@@ -210,22 +223,21 @@ Examples:
                     str(score)
                 )
             
-            print(table)
+            rprint(table)
 
         elif args.subcommand == "remove":
-            if gateway.session_mgr.memory.remove_edge(args.id):
-                print(f"✅ Removed edge: {args.id}")
+            if gateway.memory.remove_edge(args.id):
+                rprint(f"✅ Removed edge: {args.id}")
             else:
-                print(f"❌ Edge not found: {args.id}")
+                rprint(f"❌ Edge not found: {args.id}")
 
         elif args.subcommand == "prune":
-            # In a real CLI we might ask for confirmation
-            count = gateway.session_mgr.memory.prune_edges(min_confidence=0.3)
-            print(f"🧹 Pruned {count} low-confidence edges from memory.")
+            count = gateway.memory.prune_edges(min_confidence=0.3)
+            rprint(f"🧹 Pruned {count} low-confidence edges from memory.")
 
         elif args.subcommand == "analyze":
-            health = gateway.session_mgr.memory.analyze_health()
-            print(Panel(
+            health = gateway.memory.analyze_health()
+            rprint(Panel(
                 f"Low Confidence: [bold yellow]{health['low_confidence_count']}[/bold yellow]\n"
                 f"High Failure: [bold red]{health['high_failure_count']}[/bold red]\n"
                 f"Orphan Nodes: [bold cyan]{health['orphan_nodes_count']}[/bold cyan]\n\n"
@@ -233,6 +245,7 @@ Examples:
                 title="🩺 Memory Health Analysis",
                 border_style="magenta"
             ))
+
         else:
             print(f"Memory subcommand '{args.subcommand}' not yet implemented.")
 
@@ -251,7 +264,6 @@ Examples:
 
     elif args.command == "health":
         print("🏥 Jarvis Health Check:")
-        # In later phases, call gateway.health()
         print("  Checking subsystems...")
     
     else:
