@@ -211,9 +211,9 @@ class PreferenceAnalyzer:
 
         for log_path in sorted(target_dir.glob("*.md")):
             for line in log_path.read_text(encoding="utf-8").splitlines():
-                if not line.startswith("- ") or "✅" not in line:
+                if not line.startswith("- ") or "[OK]" not in line:
                     continue
-                # Parse: "- TIMESTAMP ✅ `CMD` (app=APP, skill=SKILL)"
+                # Parse: "- TIMESTAMP [OK] `CMD` (app=APP, skill=SKILL)"
                 parts = line.split("`")
                 if len(parts) < 3:
                     continue

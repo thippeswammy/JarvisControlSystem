@@ -63,7 +63,7 @@ class SlashHandler:
         channels_str = ", ".join([f"{c['name']} ({c['status']})" for c in s['channels']])
         return (
             f"🤖 **JARVIS Status**\n"
-            f"● Running: {'✅' if s['running'] else '❌'}\n"
+            f"● Running: {'[OK]' if s['running'] else '[FAIL]'}\n"
             f"● Active Channels: {channels_str}\n"
             f"● Total Sessions: {s['sessions']}\n"
             f"● Memory DB: `{s['memory']}`"
@@ -71,15 +71,13 @@ class SlashHandler:
 
     def _cmd_reset(self) -> str:
         self._session.episodic.clear()
-        return "✅ Session reset. Episodic memory cleared."
+        return "[OK] Session reset. Episodic memory cleared."
 
     def _cmd_memory(self, args) -> str:
         if not args:
             return "Usage: `/memory status` or `/memory search <query>`"
         
         sub = args[0].lower()
-        mem = self._session.episodic._MEMORY_ROOT.parent # This is a bit hacky, better to use self._gateway.session_mgr.memory
-        # Actually, SlashHandler has access to self._gateway
         memory = self._gateway.session_mgr.memory
         
         if sub == "status":
@@ -121,7 +119,7 @@ class SlashHandler:
         
         elif args[0].lower() == "analyze":
             stats = analyzer.analyze()
-            if "error" in stats: return f"❌ {stats['error']}"
+            if "error" in stats: return f"[red]ERR:[/red] {stats['error']}"
             
             resp = [
                 "📊 **Log Analysis (Last 1h)**",

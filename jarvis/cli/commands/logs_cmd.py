@@ -21,7 +21,7 @@ class LogAnalyzer:
     def tail(self, n: int = 50, color: bool = True):
         """Read last N lines of logs."""
         if not self.log_path.exists():
-            return [f"❌ Log file not found: {self.log_path}"]
+            return [f"[red]ERR:[/red] Log file not found: {self.log_path}"]
         
         with open(self.log_path, "r", encoding="utf-8") as f:
             # Efficiently read last N lines

@@ -194,12 +194,12 @@ Examples:
             gateway.start()
         elif args.subcommand == "status":
             stat = gateway.status()
-            print(f"🛰 Gateway Status: {'✅ Running' if stat['running'] else '❌ Stopped'}")
+            print(f"🛰 Gateway Status: {'[green]Running[/green]' if stat['running'] else '[red]Stopped[/red]'}")
             print(f"  Sessions: {stat['sessions']}")
             print(f"  Memory: {stat['memory']}")
             print("  Channels:")
             for ch in stat['channels']:
-                icon = "✅" if ch['status'] == "running" else "⚪"
+                icon = "[green]RUN[/green]" if ch['status'] == "running" else "[dim]OFF[/dim]"
                 print(f"    {icon} {ch['name']} ({ch['status']})")
         else:
             print(f"Gateway subcommand '{args.subcommand}' not yet implemented.")
@@ -213,17 +213,17 @@ Examples:
             if val is not None:
                 rprint(f"[bold cyan]{args.key}[/bold cyan] = {val}")
             else:
-                rprint(f"❌ Key '[bold]{args.key}[/bold]' not found.")
+                rprint(f"[red]Error:[/red] Key '[bold]{args.key}[/bold]' not found.")
                 
         elif args.subcommand == "set":
             cm.set(args.key, args.value)
-            rprint(f"✅ Set [bold cyan]{args.key}[/bold cyan] to [bold]{args.value}[/bold]")
+            rprint(f"[green]OK:[/green] Set [bold cyan]{args.key}[/bold cyan] to [bold]{args.value}[/bold]")
             
         elif args.subcommand == "unset":
             if cm.unset(args.key):
-                rprint(f"✅ Unset [bold cyan]{args.key}[/bold cyan]")
+                rprint(f"[green]OK:[/green] Unset [bold cyan]{args.key}[/bold cyan]")
             else:
-                rprint(f"❌ Key '[bold]{args.key}[/bold]' not found.")
+                rprint(f"[red]Error:[/red] Key '[bold]{args.key}[/bold]' not found.")
                 
         elif args.subcommand == "file":
             rprint(f"📁 Config File: [bold yellow]{cm.path}[/bold yellow]")
@@ -231,7 +231,7 @@ Examples:
         elif args.subcommand == "validate":
             issues = cm.validate()
             if not issues:
-                rprint("✅ Config is valid.")
+                rprint("[green]OK:[/green] Config is valid.")
             else:
                 rprint("⚠️  [bold yellow]Config Issues found:[/bold yellow]")
                 for issue in issues:
@@ -251,7 +251,7 @@ Examples:
 
     elif args.command == "models":
         if not gateway.router:
-            rprint("❌ Error: LLM Router not initialized.")
+            rprint("[red]Error:[/red] LLM Router not initialized.")
             return
             
         if args.subcommand == "list":
@@ -264,16 +264,16 @@ Examples:
             
             # Primary
             p = gateway.router._primary
-            table.add_row(p.name, "Primary", "[green]✅ healthy[/green]" if health.get(p.name) else "[red]❌ unavailable[/red]")
+            table.add_row(p.name, "Primary", "[green]healthy[/green]" if health.get(p.name) else "[red]unavailable[/red]")
             
             # Fallback
             f = gateway.router._fallback
             if f:
-                table.add_row(f.name, "Fallback", "[green]✅ healthy[/green]" if health.get(f.name) else "[red]❌ unavailable[/red]")
+                table.add_row(f.name, "Fallback", "[green]healthy[/green]" if health.get(f.name) else "[red]unavailable[/red]")
                 
             # Emergency
             e = gateway.router._emergency
-            table.add_row(e.name, "Emergency", "[green]✅ healthy[/green]" if health.get(e.name) else "[red]❌ unavailable[/red]")
+            table.add_row(e.name, "Emergency", "[green]healthy[/green]" if health.get(e.name) else "[red]unavailable[/red]")
             
             rprint(table)
             
@@ -290,20 +290,20 @@ Examples:
         elif args.subcommand == "scan":
             rprint("[dim]Scanning all backends...[/dim]")
             gateway.router._check_all_backends()
-            rprint("✅ Scan complete.")
+            rprint("[green]OK:[/green] Scan complete.")
             
         elif args.subcommand == "set":
             # Update config
             from jarvis.config.config_manager import ConfigManager
             cm = ConfigManager(gateway._config_path)
             cm.set("llm.primary", args.name)
-            rprint(f"✅ Set primary model to [bold]{args.name}[/bold]. Restart gateway to apply.")
+            rprint(f"[green]OK:[/green] Set primary model to [bold]{args.name}[/bold]. Restart gateway to apply.")
         else:
             print(f"Models subcommand '{args.subcommand}' not yet implemented.")
 
     elif args.command == "channels":
         if not gateway.channel_mgr:
-            rprint("❌ Error: Channel Manager not initialized.")
+            rprint("[red]Error:[/red] Channel Manager not initialized.")
             return
             
         if args.subcommand == "list":
@@ -322,7 +322,7 @@ Examples:
             # Find channel status
             status = next((c for c in gateway.channel_mgr.list_channels() if c["name"] == chan_name), None)
             if not status:
-                rprint(f"❌ Channel '[bold]{chan_name}[/bold]' not found.")
+                rprint(f"[red]Error:[/red] Channel '[bold]{chan_name}[/bold]' not found.")
                 return
             
             rprint(Panel(
@@ -337,7 +337,7 @@ Examples:
 
     elif args.command == "skills":
         if not gateway.bus:
-            rprint("❌ Error: Skill Bus not initialized.")
+            rprint("[red]Error:[/red] Skill Bus not initialized.")
             return
             
         if args.subcommand == "list":
@@ -355,13 +355,13 @@ Examples:
         elif args.subcommand == "info":
             skill = gateway.bus.get_skill(args.name)
             if not skill:
-                rprint(f"❌ Skill '[bold]{args.name}[/bold]' not found.")
+                rprint(f"[red]Error:[/red] Skill '[bold]{args.name}[/bold]' not found.")
                 return
             
             rprint(Panel(
                 f"Name: [bold cyan]{skill.name}[/bold cyan]\n"
                 f"Category: {skill.category}\n"
-                f"Cognitive: {'✅' if skill.is_cognitive else '❌'}\n"
+                f"Cognitive: {'[green]YES[/green]' if skill.is_cognitive else '[red]NO[/red]'}\n"
                 f"Triggers: {', '.join(skill.triggers)}\n"
                 f"Settle Time: {skill.settle_ms}ms\n"
                 f"Docstring: {skill.fn.__doc__.strip() if skill.fn.__doc__ else 'No description'}",
@@ -374,7 +374,7 @@ Examples:
     elif args.command == "status":
         stat = gateway.status()
         table = Table(show_header=False, border_style="cyan")
-        table.add_row("🛰 Gateway", "[green]✅ Running[/green]" if stat['running'] else "[red]❌ Offline[/red]")
+        table.add_row("🛰 Gateway", "[green]Online[/green]" if stat['running'] else "[red]Offline[/red]")
         table.add_row("💬 Sessions", str(stat['sessions']))
         table.add_row("🧠 Memory", stat['memory'])
         
@@ -427,7 +427,7 @@ Examples:
     
     elif args.command == "memory":
         if not gateway.memory:
-            rprint("❌ Error: Memory system not initialized. Check your configuration.")
+            rprint("[red]Error:[/red] Memory system not initialized. Check your configuration.")
             return
 
         if args.subcommand == "status":
@@ -449,7 +449,7 @@ Examples:
         elif args.subcommand == "search":
             results = gateway.memory.search_edges(args.query)
             if not results:
-                rprint(f"❌ No memory hits for '{args.query}'")
+                rprint(f"[red]Error:[/red] No memory hits for '{args.query}'")
                 return
             
             table = Table(title=f"🔍 Memory Search: '{args.query}'", border_style="green")
@@ -472,9 +472,9 @@ Examples:
 
         elif args.subcommand == "remove":
             if gateway.memory.remove_edge(args.id):
-                rprint(f"✅ Removed edge: {args.id}")
+                rprint(f"[green]OK:[/green] Removed edge: {args.id}")
             else:
-                rprint(f"❌ Edge not found: {args.id}")
+                rprint(f"[red]Error:[/red] Edge not found: {args.id}")
 
         elif args.subcommand == "prune":
             count = gateway.memory.prune_edges(min_confidence=0.3)
@@ -508,7 +508,7 @@ Examples:
         elif args.subcommand == "analyze":
             stats = analyzer.analyze(since=args.since)
             if "error" in stats:
-                rprint(f"❌ {stats['error']}")
+                rprint(f"[red]Error:[/red] {stats['error']}")
                 return
             
             table = Table(title="📊 Log Analysis", border_style="blue")
@@ -530,28 +530,28 @@ Examples:
             rprint(Panel(table, border_style="blue"))
             
             if stats["errors"]:
-                rprint(Panel("\n".join(stats["errors"][:10]), title="❌ Recent Errors", border_style="red"))
+                rprint(Panel("\n".join(stats["errors"][:10]), title="Recent Errors", border_style="red"))
 
         elif args.subcommand == "export":
             import shutil
             try:
                 shutil.copy(_PROJECT_ROOT / "logs" / "jarvis.log", args.output)
-                rprint(f"✅ Logs exported to [bold]{args.output}[/bold]")
+                rprint(f"[green]OK:[/green] Logs exported to [bold]{args.output}[/bold]")
             except Exception as e:
-                rprint(f"❌ Export failed: {e}")
+                rprint(f"[red]Error:[/red] Export failed: {e}")
 
         elif args.subcommand == "clear":
             if analyzer.clear():
-                rprint("✅ Logs cleared.")
+                rprint("[green]OK:[/green] Logs cleared.")
             else:
-                rprint("❌ Failed to clear logs.")
+                rprint("[red]Error:[/red] Failed to clear logs.")
 
         elif args.subcommand == "watch":
             rprint("[dim]Starting live log watch (Ctrl+C to exit)...[/dim]")
             import time
             log_file = _PROJECT_ROOT / "logs" / "jarvis.log"
             if not log_file.exists():
-                rprint(f"❌ Log file not found: {log_file}")
+                rprint(f"[red]Error:[/red] Log file not found: {log_file}")
                 return
             
             with open(log_file, "r", encoding="utf-8") as f:

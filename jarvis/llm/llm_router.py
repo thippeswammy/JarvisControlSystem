@@ -220,7 +220,7 @@ class LLMRouter:
                 ok = backend.health_check()
                 with self._lock:
                     self._health[backend.name] = ok
-                status = "✅ healthy" if ok else "❌ unavailable"
+                status = "healthy" if ok else "unavailable"
                 logger.debug(f"[LLMRouter] {backend.name}: {status}")
 
             except Exception as e:

@@ -141,7 +141,7 @@ class EpisodicMemory:
             "",
         ]
         for entry in self._log:
-            icon = "✅" if entry["ok"] else "❌"
+            icon = "[OK]" if entry["ok"] else "[FAIL]"
             mem_tag = " [memory]" if entry.get("from_memory") else ""
             lines.append(
                 f"- {entry['ts']} {icon} `{entry['cmd']}` "
@@ -180,7 +180,7 @@ class EpisodicMemory:
                 if not line.startswith("- "):
                     continue
                 total_commands += 1
-                if "✅" in line:
+                if "[OK]" in line:
                     total_success += 1
                 # Extract backtick-quoted command
                 parts = line.split("`")
@@ -231,7 +231,7 @@ class EpisodicMemory:
         recent_logs = logs[-max_sessions:] if logs else []
         for log_path in recent_logs:
             for line in log_path.read_text(encoding="utf-8").splitlines():
-                if not line.startswith("- ") or "✅" not in line:
+                if not line.startswith("- ") or "[OK]" not in line:
                     continue
                 parts = line.split("`")
                 if len(parts) >= 3:
