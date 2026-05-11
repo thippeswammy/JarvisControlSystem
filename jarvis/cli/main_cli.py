@@ -179,9 +179,10 @@ Examples:
     elif args.command == "memory":
         from rich.table import Table
         from rich.panel import Panel
+        from rich import print as rprint
         
         if not gateway.memory:
-            print("❌ Error: Memory system not initialized. Check your configuration.")
+            rprint("❌ Error: Memory system not initialized. Check your configuration.")
             return
 
         if args.subcommand == "status":
@@ -198,7 +199,6 @@ Examples:
             table.add_row("DB Size", f"{stat['db_size_kb']} KB")
             table.add_row("DB Path", stat["db_path"])
             
-            from rich import print as rprint
             rprint(Panel(table, border_style="cyan"))
 
         elif args.subcommand == "search":
@@ -245,6 +245,7 @@ Examples:
                 title="🩺 Memory Health Analysis",
                 border_style="magenta"
             ))
+
 
         else:
             print(f"Memory subcommand '{args.subcommand}' not yet implemented.")
