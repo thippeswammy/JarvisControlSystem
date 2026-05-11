@@ -9,6 +9,7 @@ Pathfinding is delegated to graph_pathfinder (Phase 4).
 For Phase 2, recall falls back to fuzzy string matching on edge triggers.
 """
 
+import json
 import logging
 import os
 from dataclasses import dataclass, field
