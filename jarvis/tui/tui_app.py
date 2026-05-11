@@ -60,7 +60,7 @@ class TUIApp:
         self.gateway.bootstrap()
         
         # 2. Inject TUI adapter
-        self.gateway.channel_mgr.add_channel("tui", self.adapter)
+        self.gateway.channel_mgr.add_channel(self.adapter)
         
         # 3. Start gateway
         self.gateway.start()
