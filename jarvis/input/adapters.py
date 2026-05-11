@@ -109,6 +109,48 @@ class CLIAdapter(ChannelAdapter):
         self._running = False
 
 
+class TUIAdapter(ChannelAdapter):
+    """
+    Adapter for the Rich/PromptToolkit TUI.
+    Uses queues to communicate with the TUI event loop.
+    """
+    name = "tui"
+
+    def __init__(self):
+        self._input_queue = queue.Queue()
+        self._output_queue = queue.Queue()
+        self._running = False
+
+    def is_available(self) -> bool:
+        return True
+
+    def simulate_input(self, text: str):
+        """Called by TUIApp to inject text into the gateway."""
+        self._input_queue.put(text)
+
+    def get_output_queue(self) -> queue.Queue:
+        """Called by TUIApp to receive messages from the gateway."""
+        return self._output_queue
+
+    def stream(self) -> Iterator[Utterance]:
+        self._running = True
+        while self._running:
+            try:
+                text = self._input_queue.get(timeout=1.0)
+                if text is None: break
+                yield Utterance(text=text, source="tui", confidence=1.0, metadata={"user_id": "tui_user"})
+            except queue.Empty:
+                continue
+
+    def send(self, session_id: str, text: str) -> bool:
+        self._output_queue.put(text)
+        return True
+
+    def stop(self) -> None:
+        self._running = False
+        self._input_queue.put(None)
+
+
 # ── Voice Adapter ─────────────────────────────────────────────
 
 class VoiceAdapter(ChannelAdapter):

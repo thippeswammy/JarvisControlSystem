@@ -141,8 +141,8 @@ Examples:
 
     # Basic command routing
     if args.command in ["tui", "chat"]:
-        print("🚀 Launching Jarvis TUI... (Not yet implemented)")
-        # In later phases, this will call jarvis.tui.tui_app.main()
+        from jarvis.tui.tui_app import main as tui_main
+        tui_main()
     
     elif args.command == "gateway":
         if args.subcommand == "start":

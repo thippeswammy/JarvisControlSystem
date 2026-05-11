@@ -58,6 +58,12 @@ class EpisodicMemory:
         self._lineage: list[StateTransition] = [] # Memory-only for now
         self._start_time = datetime.now()
 
+    def clear(self):
+        """Reset the current session memory."""
+        self._log = []
+        self._lineage = []
+        logger.info("[Episodic] Session memory cleared.")
+
     # ── Recording ────────────────────────────────────────────────────────────
 
     def log_command(

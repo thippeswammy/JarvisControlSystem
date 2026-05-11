@@ -8,28 +8,24 @@ jarvis:
 
 # ── LLM Router ──────────────────────────────────────────────
 llm:
-  primary: local                     # try Ollama first (always running locally)
+  primary: local                     # try Ollama first
   fallback: tunneled                 # if Ollama is down
-  emergency_fallback: mock           # always works — never disabled
+  emergency_fallback: mock           # always works
 
   backends:
-
-    # Local: Ollama running on localhost
-    # Model: qwen2.5:0.5b-instruct  (<2B, ~900MB VRAM, fits 4GB GPU)
-    # Pull:  ollama pull qwen2.5:0.5b-instruct
     local:
       engine: ollama
       api_url: "http://localhost:11434/v1"
       model: "gemma3:4b"
       fallback_model: "gemma3:4b"   # stable for 4GB VRAM
       max_tokens: 300
-      temperature: 0.1               # deterministic — no hallucination on action names
+      temperature: 0.1
       timeout_seconds: 15
-      auto_pull: true                # pull model on first use if not present
+      auto_pull: true
 
     # Cloud: OpenAI or Anthropic
     openai:
-      provider: openai               # openai | anthropic | azure
+      provider: openai
       api_key: "${OPENAI_API_KEY}"
       model: gpt-4o-mini
       max_tokens: 300
@@ -43,7 +39,6 @@ llm:
       model: "${JARVIS_TUNNEL_MODEL}"
       timeout_seconds: 10
 
-    # Mock: heuristic fallback — always available
     mock:
       enabled: true
 
@@ -51,12 +46,15 @@ llm:
 channels:
   cli:
     enabled: true
+  
   telegram:
     enabled: true
     token: "8693706700:AAERwET5RcROo91AbQ9K2-yv1DPx_VwhH40"
-    allowed_chat_ids: []               # list of chat IDs to respond to. empty = all.
+    allowed_chat_ids: []               # empty = all
+
   telegram_test:
     enabled: false
+  
   voice:
     enabled: false
 
@@ -67,4 +65,4 @@ memory:
   episodic_per_channel: true          # isolate episodic memory per channel
   confidence_decay_per_fail: 0.05
   confidence_boost_per_success: 0.02
-  min_confidence_threshold: 0.30    # edges below this weight are pruned in pathfinding
+  min_confidence_threshold: 0.30
