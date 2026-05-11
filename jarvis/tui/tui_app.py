@@ -48,6 +48,8 @@ class TUIApp:
             try:
                 # Use a short timeout to check for shutdown
                 msg = out_queue.get(timeout=0.5)
+                if not self._running: break
+                
                 with patch_stdout():
                     self.console.print(f"\n[bold green]🤖 JARVIS:[/bold green] {msg}")
             except:
@@ -56,55 +58,72 @@ class TUIApp:
     def run(self):
         self._running = True
         
-        # 1. Bootstrap gateway
-        self.gateway.bootstrap()
-        
-        # 2. Inject TUI adapter
-        self.gateway.channel_mgr.add_channel(self.adapter)
-        
-        # 3. Start gateway
-        self.gateway.start()
-        
-        # 4. Start output listener thread
-        threading.Thread(target=self._output_loop, daemon=True).start()
-        
-        self.console.print("[bold cyan]🛰 Systems Online.[/bold cyan] Gateway active with TUI adapter.")
-        
-        # 5. Input loop
-        session = PromptSession(
-            history=FileHistory(".jarvis_history"),
-            auto_suggest=AutoSuggestFromHistory()
-        )
-        
-        try:
-            while self._running:
-                # Render header periodically?
-                # For now, just a static header or printed once
-                
-                with patch_stdout():
+        with patch_stdout():
+            self._silence_terminal_logging()
+            
+            # 1. Bootstrap gateway
+            self.gateway.bootstrap()
+            
+            # 2. Inject TUI adapter
+            self.gateway.channel_mgr.add_channel(self.adapter)
+            
+            # 3. Start gateway
+            self.gateway.start()
+            
+            # 4. Start output listener thread
+            threading.Thread(target=self._output_loop, daemon=True).start()
+            
+            self.console.print("[bold cyan]🛰 Systems Online.[/bold cyan] Gateway active with TUI adapter.")
+            
+            # 5. Input loop
+            session = PromptSession(
+                history=FileHistory(".jarvis_history"),
+                auto_suggest=AutoSuggestFromHistory()
+            )
+            
+            try:
+                while self._running:
                     # Show status summary before prompt
                     stat = self.gateway.status()
                     chans = ", ".join([c['name'] for c in stat['channels'] if c['status'] == 'running'])
                     self.console.print(f"[dim]Sessions: {stat['sessions']} | Channels: {chans}[/dim]", style="grey50")
                     
                     text = session.prompt("Jarvis› ").strip()
-                
-                if not text:
-                    continue
-                
-                if text.lower() in ("/exit", "/quit", "exit", "quit"):
-                    break
-                
-                # Send to gateway
-                self.adapter.simulate_input(text)
-                
-                # Small sleep to let logs/output settle if needed
-                time.sleep(0.1)
-                
-        except (KeyboardInterrupt, EOFError):
-            pass
-        finally:
-            self.stop()
+                    
+                    if not text:
+                        continue
+                    
+                    if text.lower() in ("/exit", "/quit"):
+                        break
+                    
+                    # Send to gateway
+                    self.adapter.simulate_input(text)
+                    
+                    # Small sleep to let logs/output settle if needed
+                    time.sleep(0.1)
+                    
+            except (KeyboardInterrupt, EOFError):
+                pass
+            finally:
+                self.stop()
+                self._restore_terminal_logging()
+
+    def _silence_terminal_logging(self):
+        """Remove StreamHandlers from the root logger to prevent UI corruption."""
+        import logging
+        root = logging.getLogger()
+        self._old_handlers = []
+        for h in root.handlers[:]:
+            if isinstance(h, logging.StreamHandler):
+                root.removeHandler(h)
+                self._old_handlers.append(h)
+
+    def _restore_terminal_logging(self):
+        """Restore previous logging handlers."""
+        import logging
+        root = logging.getLogger()
+        for h in self._old_handlers:
+            root.addHandler(h)
 
     def stop(self):
         self._running = False
