@@ -58,53 +58,44 @@ class TestNLU(unittest.TestCase):
 
     def test_volume_set(self):
         p = self._parse("set volume to 50")
-        self.assertEqual(p.intent, "set_volume")
-        self.assertEqual(p.entities.get("level"), "50")
+        self.assertEqual(p.intent, "llm_route")
+        self.assertEqual(p.entities.get("raw"), "set volume to 50")
 
     def test_mute(self):
         p = self._parse("mute")
-        self.assertEqual(p.intent, "set_volume")
-        self.assertTrue(p.entities.get("mute"))
+        self.assertEqual(p.intent, "llm_route")
 
     def test_open_app(self):
         p = self._parse("open notepad")
-        self.assertEqual(p.intent, "open_app")
-        self.assertEqual(p.entities.get("target"), "notepad")
+        self.assertEqual(p.intent, "llm_route")
 
     def test_open_settings_with_sub(self):
         p = self._parse("open settings wifi")
-        self.assertEqual(p.intent, "open_app")
-        self.assertEqual(p.entities.get("target"), "settings")
-        self.assertIn("wifi", p.sub_location)
+        self.assertEqual(p.intent, "llm_route")
 
     def test_open_display_settings(self):
         p = self._parse("open display settings")
-        self.assertEqual(p.intent, "open_app")
-        self.assertEqual(p.entities.get("target"), "settings")
-        self.assertIn("display", p.sub_location)
+        self.assertEqual(p.intent, "llm_route")
 
     def test_navigate_to(self):
         p = self._parse("navigate to bluetooth")
-        self.assertEqual(p.intent, "navigate_location")
-        self.assertIn("bluetooth", p.entities.get("target", ""))
+        self.assertEqual(p.intent, "llm_route")
 
     def test_minimize(self):
         p = self._parse("minimize")
-        self.assertEqual(p.intent, "minimize_window")
+        self.assertEqual(p.intent, "llm_route")
 
     def test_maximize(self):
         p = self._parse("maximize")
-        self.assertEqual(p.intent, "maximize_window")
+        self.assertEqual(p.intent, "llm_route")
 
     def test_press_key(self):
         p = self._parse("press ctrl+s")
-        self.assertEqual(p.intent, "press_key")
-        self.assertIn("ctrl", p.entities.get("key", "").lower())
+        self.assertEqual(p.intent, "llm_route")
 
     def test_type_text(self):
         p = self._parse("type hello world")
-        self.assertEqual(p.intent, "type_text")
-        self.assertIn("hello", p.entities.get("text", ""))
+        self.assertEqual(p.intent, "llm_route")
 
     def test_shutdown(self):
         p = self._parse("shutdown")
@@ -112,20 +103,18 @@ class TestNLU(unittest.TestCase):
 
     def test_search_web(self):
         p = self._parse("search for python tutorials")
-        self.assertEqual(p.intent, "search_web")
-        self.assertIn("python", p.entities.get("query", "").lower())
+        self.assertEqual(p.intent, "llm_route")
 
     def test_unknown(self):
         p = self._parse("xyzzy frobnicate quux")
-        self.assertEqual(p.intent, "unknown")
+        self.assertEqual(p.intent, "llm_route")
 
     def test_compound_command(self):
         p = self._parse("open notepad and then type hello world")
         self.assertTrue(p.compound)
         self.assertGreater(len(p.sub_commands), 1)
         intents = [s["intent"] for s in p.sub_commands]
-        self.assertIn("open_app", intents)
-        self.assertIn("type_text", intents)
+        self.assertIn("llm_route", intents)
 
     def test_voice_low_confidence_needs_confirmation(self):
         p = self._parse("open chrome", source="voice", conf=0.50)
@@ -148,14 +137,24 @@ class TestPlanner(unittest.TestCase):
         self.memory.recall.return_value = None
         self.memory.get_relevant_context.return_value = ""
         self.router = MagicMock()
-        self.router.route.return_value = []
-        self.planner = Planner(self.memory, self.router)
+        # Mock LLMDecision return value
+        from jarvis.llm.llm_interface import LLMDecision
+        self.router.decide.return_value = LLMDecision(type="plan", steps=[])
+        self.bus = MagicMock()
+        self.planner = Planner(self.memory, self.router, self.bus)
 
     def test_direct_map_volume(self):
+        # volume is no longer in direct map, it's llm_route
         packet = PerceptionPacket(
             utterance=Utterance("set volume to 80"),
-            intent="set_volume",
-            entities={"level": "80"},
+            intent="llm_route",
+            entities={"raw": "set volume to 80"},
+        )
+        # Mock router to return volume plan
+        from jarvis.llm.llm_interface import LLMDecision, SkillCallSpec
+        self.router.decide.return_value = LLMDecision(
+            type="plan", 
+            steps=[SkillCallSpec(skill="set_volume", params={"level": "80"})]
         )
         plan = self.planner.plan(packet)
         self.assertEqual(len(plan), 1)
@@ -163,10 +162,16 @@ class TestPlanner(unittest.TestCase):
         self.assertEqual(plan[0].params["level"], "80")
 
     def test_direct_map_minimize(self):
+        # minimize is no longer in direct map
         packet = PerceptionPacket(
             utterance=Utterance("minimize"),
-            intent="minimize_window",
-            entities={},
+            intent="llm_route",
+            entities={"raw": "minimize"},
+        )
+        from jarvis.llm.llm_interface import LLMDecision, SkillCallSpec
+        self.router.decide.return_value = LLMDecision(
+            type="plan", 
+            steps=[SkillCallSpec(skill="minimize_window", params={})]
         )
         plan = self.planner.plan(packet)
         self.assertEqual(plan[0].skill, "minimize_window")
@@ -174,8 +179,13 @@ class TestPlanner(unittest.TestCase):
     def test_open_app_no_sub(self):
         packet = PerceptionPacket(
             utterance=Utterance("open notepad"),
-            intent="open_app",
-            entities={"target": "notepad"},
+            intent="llm_route",
+            entities={"raw": "open notepad"},
+        )
+        from jarvis.llm.llm_interface import LLMDecision, SkillCallSpec
+        self.router.decide.return_value = LLMDecision(
+            type="plan", 
+            steps=[SkillCallSpec(skill="open_app", params={"target": "notepad"})]
         )
         plan = self.planner.plan(packet)
         self.assertEqual(len(plan), 1)
@@ -184,14 +194,17 @@ class TestPlanner(unittest.TestCase):
     def test_open_app_with_sub_location(self):
         packet = PerceptionPacket(
             utterance=Utterance("open settings wifi"),
-            intent="open_app",
-            entities={"target": "settings"},
-            sub_location="wifi",
+            intent="llm_route",
+            entities={"raw": "open settings wifi"},
         )
-        # Mock the router to return navigate_location for the sub_location
-        self.router.route.return_value = [
-            MagicMock(skill="navigate_location", params={"target": "wifi"})
-        ]
+        from jarvis.llm.llm_interface import LLMDecision, SkillCallSpec
+        self.router.decide.return_value = LLMDecision(
+            type="plan", 
+            steps=[
+                SkillCallSpec(skill="open_app", params={"target": "settings"}),
+                SkillCallSpec(skill="navigate_location", params={"target": "wifi"})
+            ]
+        )
         plan = self.planner.plan(packet)
         # Should have open_app + navigate_location
         skills = [c.skill for c in plan]
@@ -199,27 +212,32 @@ class TestPlanner(unittest.TestCase):
         self.assertIn("navigate_location", skills)
 
     def test_unknown_intent_calls_llm(self):
-        self.router.route.return_value = [
-            MagicMock(skill="open_app", params={"target": "chrome"})
-        ]
         packet = PerceptionPacket(
             utterance=Utterance("do something weird"),
-            intent="unknown",
-            entities={},
+            intent="llm_route",
+            entities={"raw": "do something weird"},
         )
         plan = self.planner.plan(packet)
-        self.assertTrue(self.router.route.called)
+        self.assertTrue(self.router.decide.called)
 
     def test_compound_planning(self):
         packet = PerceptionPacket(
             utterance=Utterance("minimize and then type hello"),
-            intent="minimize_window",
-            entities={},
+            intent="llm_route",
+            entities={"raw": "minimize and then type hello"},
             compound=True,
             sub_commands=[
-                {"intent": "minimize_window", "entities": {}, "text": "minimize"},
-                {"intent": "type_text", "entities": {"text": "hello"}, "text": "type hello"},
+                {"intent": "llm_route", "entities": {"raw": "minimize"}, "text": "minimize"},
+                {"intent": "llm_route", "entities": {"raw": "type hello"}, "text": "type hello"},
             ],
+        )
+        from jarvis.llm.llm_interface import LLMDecision, SkillCallSpec
+        self.router.decide.return_value = LLMDecision(
+            type="plan", 
+            steps=[
+                SkillCallSpec(skill="minimize_window", params={}),
+                SkillCallSpec(skill="type_text", params={"text": "hello"})
+            ]
         )
         plan = self.planner.plan(packet)
         self.assertEqual(len(plan), 2)
@@ -251,10 +269,15 @@ class TestOrchestratorPipeline(unittest.TestCase):
         def mock_ask(params):
             return SkillResult(success=True, message=params.get("reason", "?"))
 
+        @skill(triggers=["reply"], name="chat_reply", category="session")
+        def mock_reply(params):
+            return SkillResult(success=True, message=params.get("message", "OK"))
+
         bus.register(mock_open)
         bus.register(mock_min)
         bus.register(mock_activate)
         bus.register(mock_ask)
+        bus.register(mock_reply)
         bus._discovered = True
         return bus
 
@@ -265,7 +288,8 @@ class TestOrchestratorPipeline(unittest.TestCase):
         memory.get_relevant_context.return_value = ""
         memory.get_db.return_value = MagicMock()
         router = MagicMock()
-        router.route.return_value = []
+        from jarvis.llm.llm_interface import LLMDecision, SkillCallSpec
+        router.decide.return_value = LLMDecision(type="chat", message="OK")
         bus = self._make_bus(success)
         orch = Orchestrator(memory=memory, router=router, bus=bus)
         # Bypass boot (no DB needed)
@@ -275,18 +299,18 @@ class TestOrchestratorPipeline(unittest.TestCase):
     def test_session_activate_full_pipeline(self):
         orch = self._make_orch()
         result = orch.process("hi jarvis")
-        self.assertTrue(result.success)
-        self.assertIn("Hello", result.message)
+        self.assertTrue(result[0].success)
+        self.assertIn("Hello", result[0].message)
 
     def test_minimize_pipeline(self):
         orch = self._make_orch()
         result = orch.process("minimize")
-        self.assertTrue(result.success)
+        self.assertTrue(result[0].success)
 
     def test_open_app_pipeline(self):
         orch = self._make_orch()
         result = orch.process("open notepad")
-        self.assertTrue(result.success)
+        self.assertTrue(result[0].success)
 
     def test_failed_skill_halts_plan(self):
         orch = self._make_orch(success=False)
@@ -305,8 +329,8 @@ class TestOrchestratorPipeline(unittest.TestCase):
         orch = self._make_orch()
         result = orch.process("open chrome", source="voice", confidence=0.40)
         # Should trigger ask_user
-        self.assertTrue(result.success)
-        self.assertIn("heard", result.message.lower())
+        self.assertTrue(result[0].success)
+        self.assertIn("heard", result[0].message.lower())
 
 
 # ── VerificationLoop Tests ─────────────────────────────────────
@@ -346,6 +370,7 @@ class TestVerificationLoop(unittest.TestCase):
         """When hash changes, result is marked [Verified]."""
         vloop = self._make_vloop(before_hash="hash1", after_hash="hash2")
         bus = MagicMock()
+        bus.get_settle_ms.return_value = 0
         bus.dispatch.return_value = SkillResult(success=True, action_taken="navigated")
         packet = PerceptionPacket(utterance=Utterance("navigate to settings"), intent="navigate_location",
                                   app_context="settings")
@@ -373,6 +398,7 @@ class TestVerificationLoop(unittest.TestCase):
         vloop = VerificationLoop(harvester, comparator, recovery)
 
         bus = MagicMock()
+        bus.get_settle_ms.return_value = 0
         bus.dispatch.return_value = SkillResult(success=True, action_taken="navigated")
         packet = PerceptionPacket(utterance=Utterance("navigate to settings"), intent="navigate_location",
                                   app_context="settings")

@@ -441,19 +441,26 @@ class MemoryManager:
                 if cmd_vec:
                     trigger_scores = []
                     for t in edge.triggers:
-                        t_vec = self._trigger_embeddings.get(t.lower().strip())
+                        t_clean = t.lower().strip()
+                        # Exact match always gets 1.0
+                        if cmd_lower == t_clean:
+                            trigger_scores.append(1.0)
+                            continue
+                            
+                        t_vec = self._trigger_embeddings.get(t_clean)
                         if t_vec:
                             trigger_scores.append(self._encoder.cosine_similarity(cmd_vec, t_vec))
                         else:
-                            trigger_scores.append(0.0)
+                            # Fallback to SequenceMatcher if embedding is missing
+                            trigger_scores.append(SequenceMatcher(None, cmd_lower, t_clean).ratio())
                 else:
                     trigger_scores = [
-                        SequenceMatcher(None, cmd_lower, t.lower()).ratio()
+                        SequenceMatcher(None, cmd_lower, t.lower().strip()).ratio()
                         for t in edge.triggers
                     ]
 
                 best_trigger = max(trigger_scores) if trigger_scores else 0.0
-                if best_trigger < 0.30:  # raised slightly for cosine sim
+                if best_trigger < 0.35:  # Slightly higher threshold for context
                     continue
                 
                 # Base score: trigger similarity + confidence

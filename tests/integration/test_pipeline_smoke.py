@@ -35,7 +35,8 @@ def _build_test_orchestrator(db_path: str):
 
     # Force mock LLM (no Ollama needed)
     router = MagicMock()
-    router.route.return_value = []
+    from jarvis.llm.llm_interface import LLMDecision
+    router.decide.return_value = LLMDecision(type="chat", message="mocked")
 
     bus = SkillBus()
     bus.discover(include_external=False)
@@ -70,33 +71,33 @@ class TestIntegrationPipeline(unittest.TestCase):
 
     def test_01_session_activate(self):
         result = self._run("hi jarvis")
-        self.assertTrue(result.success, f"Failed: {result.message}")
-        self.assertIn("jarvis", result.message.lower())
+        self.assertTrue(result[0].success, f"Failed: {result[0].message}")
+        self.assertIn("jarvis", result[0].message.lower())
 
     def test_02_session_deactivate(self):
         result = self._run("bye jarvis")
-        self.assertTrue(result.success)
+        self.assertTrue(result[0].success)
 
     def test_03_system_status(self):
         result = self._run("system status")
-        self.assertTrue(result.success)
+        self.assertTrue(result[0].success)
 
     # ── Window management ────────────────────────────────
 
     def test_04_minimize(self):
         with patch("pyautogui.hotkey") as mock_hk:
             result = self._run("minimize")
-        self.assertTrue(result.success)
+        self.assertTrue(result[0].success)
 
     def test_05_maximize(self):
         with patch("pyautogui.hotkey") as mock_hk:
             result = self._run("maximize")
-        self.assertTrue(result.success)
+        self.assertTrue(result[0].success)
 
     def test_06_switch_window(self):
         with patch("pyautogui.hotkey") as mock_hk:
             result = self._run("switch window")
-        self.assertTrue(result.success)
+        self.assertTrue(result[0].success)
 
     # ── Settings navigation ──────────────────────────────
 
@@ -106,7 +107,7 @@ class TestIntegrationPipeline(unittest.TestCase):
              patch("pyautogui.hotkey"), patch("pyautogui.press"):
             result = self._run("open display settings")
         # Should have tried open_app for settings
-        self.assertTrue(result.success or result.message != "")
+        self.assertTrue(result[0].success or result[0].message != "")
 
     def test_08_settings_wifi_fast_path(self):
         """Recall wi-fi settings from seeded graph."""
@@ -129,12 +130,12 @@ class TestIntegrationPipeline(unittest.TestCase):
         with patch("pyautogui.hotkey") as mock_hk, \
              patch("pyautogui.press") as mock_press:
             result = self._run("press ctrl+s")
-        self.assertTrue(result.success)
+        self.assertTrue(result[0].success)
 
     def test_12_type_text(self):
         with patch("pyautogui.typewrite") as mock_tw:
             result = self._run("type hello world")
-        self.assertTrue(result.success)
+        self.assertTrue(result[0].success)
 
     # ── Volume ───────────────────────────────────────────
 
@@ -151,7 +152,7 @@ class TestIntegrationPipeline(unittest.TestCase):
         self.orch._bus.dispatch = _patched
         try:
             result = self._run("mute")
-            self.assertTrue(result.success)
+            self.assertTrue(result[0].success)
         finally:
             self.orch._bus.dispatch = orig
 
@@ -160,22 +161,22 @@ class TestIntegrationPipeline(unittest.TestCase):
     def test_14_search_web(self):
         with patch("webbrowser.open") as mock_wb:
             result = self._run("search for python tutorials")
-        self.assertTrue(result.success)
+        self.assertTrue(result[0].success)
 
     # ── Compound ─────────────────────────────────────────
 
     def test_15_compound_command(self):
         with patch("pyautogui.hotkey"), patch("pyautogui.typewrite"):
             result = self._run("minimize and then type hello")
-        self.assertTrue(result.success)
+        self.assertTrue(result[0].success)
 
     # ── Low confidence voice ─────────────────────────────
 
     def test_16_low_confidence_asks_user(self):
         result = self.orch.process("open chrome", source="voice", confidence=0.30)
-        self.assertTrue(result.success)
+        self.assertTrue(result[0].success)
         self.assertTrue(
-            result.data is not None or len(result.message) > 0,
+            result[0].data is not None or len(result[0].message) > 0,
             "Should return a message asking for confirmation"
         )
 
