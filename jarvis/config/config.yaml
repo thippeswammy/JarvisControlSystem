@@ -47,32 +47,24 @@ llm:
     mock:
       enabled: true
 
+# ── Channels ────────────────────────────────────────────────
+channels:
+  cli:
+    enabled: true
+  telegram:
+    enabled: true
+    token: "8693706700:AAERwET5RcROo91AbQ9K2-yv1DPx_VwhH40"
+    allowed_chat_ids: []               # list of chat IDs to respond to. empty = all.
+  telegram_test:
+    enabled: false
+  voice:
+    enabled: false
+
 # ── Memory ──────────────────────────────────────────────────
 memory:
   root_dir: ./memory
   db_path: ./memory/jarvis_v2.db
+  episodic_per_channel: true          # isolate episodic memory per channel
   confidence_decay_per_fail: 0.05
   confidence_boost_per_success: 0.02
   min_confidence_threshold: 0.30    # edges below this weight are pruned in pathfinding
-
-# ── Navigator ───────────────────────────────────────────────
-navigator:
-  ocr_fallback: true
-  strategy_detection: auto           # auto | uri | path | search | graph_traversal
-
-# ── Voice ───────────────────────────────────────────────────
-voice:
-  # faster-whisper model size: tiny.en | base.en | small.en
-  # base.en: 142MB download, ~100ms transcription on GPU — good for 4GB VRAM
-  model_size: base.en
-  device: cuda                       # cuda | cpu
-  compute_type: float16              # float16 for GPU, int8 for CPU
-  wake_word: jarvis
-  # CUDA note: faster-whisper uses CTranslate2 which bundles its own CUDA libs.
-  # No manual cuBLAS/cuDNN install needed. Just: pip install faster-whisper
-
-# ── Telegram ────────────────────────────────────────────────
-telegram:
-  enabled: true
-  token: "8693706700:AAERwET5RcROo91AbQ9K2-yv1DPx_VwhH40"
-  allowed_chat_ids: []               # list of chat IDs to respond to. empty = all.

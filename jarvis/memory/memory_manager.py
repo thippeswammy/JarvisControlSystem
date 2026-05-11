@@ -75,6 +75,10 @@ class MemoryManager:
         import threading
         threading.Thread(target=self._warm_embedding_cache, daemon=True).start()
 
+    def get_db_path(self) -> str:
+        """Return the absolute path to the graph database."""
+        return os.path.abspath(self._db._db_path)
+
     def _warm_embedding_cache(self) -> None:
         """Embed all known triggers at startup into RAM for zero-latency routing.
         Uses a short timeout per call so a busy Ollama doesn't block startup.

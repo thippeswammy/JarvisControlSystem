@@ -80,12 +80,18 @@ class Planner:
         return self._plan_single(packet, snapshot=packet.context_snapshot)
 
     def _plan_single(self, packet: PerceptionPacket, snapshot=None) -> list[SkillCall]:
-        # 1. Pre-built plan from memory recall (pathfinder result)
+        # 1. Direct map (safety/session intents)
+        if packet.intent in _DIRECT_MAP:
+            skill_name = _DIRECT_MAP[packet.intent]
+            logger.info(f"[Planner] Direct map bypass for intent: {packet.intent}")
+            return [SkillCall(skill=skill_name, params=packet.entities)]
+
+        # 2. Pre-built plan from memory recall (pathfinder result)
         if packet.raw_plan_override:
             logger.info("[Planner] Using memory recall plan")
             return packet.raw_plan_override
 
-        # 2. Unknown intent / all others → LLM Unified Router
+        # 3. Unknown intent / all others → LLM Unified Router
         logger.info(f"[Planner] Unified LLM routing for intent: {packet.intent!r}")
         return self._plan_via_unified_llm(packet, snapshot=snapshot)
 

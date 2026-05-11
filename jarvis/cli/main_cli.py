@@ -136,18 +136,65 @@ Examples:
         parser.print_help()
         return
 
-    # Basic command routing (to be expanded in further phases)
+    from jarvis.gateway.gateway import GatewayDaemon
+    gateway = GatewayDaemon(profile=args.profile)
+
+    # Basic command routing
     if args.command in ["tui", "chat"]:
         print("🚀 Launching Jarvis TUI... (Not yet implemented)")
         # In later phases, this will call jarvis.tui.tui_app.main()
+    
+    elif args.command == "gateway":
+        if args.subcommand == "start":
+            print("🛰 Starting Jarvis Gateway...")
+            gateway.bootstrap()
+            gateway.start()
+        elif args.subcommand == "status":
+            stat = gateway.status()
+            print(f"🛰 Gateway Status: {'✅ Running' if stat['running'] else '❌ Stopped'}")
+            print(f"  Sessions: {stat['sessions']}")
+            print(f"  Memory: {stat['memory']}")
+            print("  Channels:")
+            for ch in stat['channels']:
+                icon = "✅" if ch['status'] == "running" else "⚪"
+                print(f"    {icon} {ch['name']} ({ch['status']})")
+        else:
+            print(f"Gateway subcommand '{args.subcommand}' not yet implemented.")
+
     elif args.command == "status":
-        print("📊 Jarvis System Status:")
-        print("  - Gateway: Offline")
-        print("  - Channels: None")
-        print("  - Models: Unknown")
+        stat = gateway.status()
+        print("📊 Jarvis System Snapshot:")
+        print(f"  Gateway: {'✅ Running' if stat['running'] else '❌ Offline'}")
+        print(f"  Active Sessions: {stat['sessions']}")
+        print(f"  Active Channels: {len([c for c in stat['channels'] if c['status'] == 'running'])}")
+    
+    elif args.command == "memory":
+        if args.subcommand == "status":
+            stat = gateway.status()
+            print(f"🧠 Memory Status:")
+            print(f"  Graph DB: {stat['memory']}")
+            # In later phases, add more detailed node/edge counts
+        else:
+            print(f"Memory subcommand '{args.subcommand}' not yet implemented.")
+
+    elif args.command == "logs":
+        if args.subcommand == "tail":
+            log_file = _PROJECT_ROOT / "logs" / "jarvis.log"
+            if not log_file.exists():
+                print(f"❌ Log file not found: {log_file}")
+                return
+            with open(log_file, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+                for line in lines[-args.n:]:
+                    print(line.strip())
+        else:
+            print(f"Logs subcommand '{args.subcommand}' not yet implemented.")
+
     elif args.command == "health":
         print("🏥 Jarvis Health Check:")
+        # In later phases, call gateway.health()
         print("  Checking subsystems...")
+    
     else:
         print(f"Command '{args.command}' is registered but not yet implemented in this phase.")
 

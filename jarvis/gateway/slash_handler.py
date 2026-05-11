@@ -1,0 +1,68 @@
+"""
+Slash Handler
+=============
+Parses and executes /commands from any channel.
+Shared logic between TUI, Telegram, and CLI.
+"""
+
+import logging
+from typing import Optional
+
+logger = logging.getLogger(__name__)
+
+class SlashHandler:
+    """
+    Handles /status, /reset, /memory, /logs etc.
+    Each Session owns one instance of this.
+    """
+    def __init__(self, session, gateway):
+        self._session = session
+        self._gateway = gateway
+
+    def is_slash(self, text: str) -> bool:
+        return text.strip().startswith("/")
+
+    def handle(self, text: str) -> Optional[str]:
+        if not self.is_slash(text):
+            return None
+            
+        parts = text.strip().split()
+        cmd = parts[0].lower()
+        args = parts[1:]
+        
+        logger.info(f"[SlashHandler] Executing {cmd} for session {self._session.id}")
+        
+        if cmd == "/help":
+            return self._cmd_help()
+        elif cmd == "/status":
+            return self._cmd_status()
+        elif cmd == "/reset":
+            return self._cmd_reset()
+        elif cmd == "/whoami":
+            return f"Session: `{self._session.id}`\nChannel: `{self._session.channel}`\nUser: `{self._session.user_id}`"
+        else:
+            return f"Unknown command: `{cmd}`. Type `/help` for list."
+
+    def _cmd_help(self) -> str:
+        return (
+            "Available commands:\n"
+            "  /status  - Show system status\n"
+            "  /reset   - Reset current session\n"
+            "  /whoami  - Show session info\n"
+            "  /help    - Show this message"
+        )
+
+    def _cmd_status(self) -> str:
+        s = self._gateway.status()
+        channels_str = ", ".join([f"{c['name']} ({c['status']})" for c in s['channels']])
+        return (
+            f"🤖 **JARVIS Status**\n"
+            f"● Running: {'✅' if s['running'] else '❌'}\n"
+            f"● Active Channels: {channels_str}\n"
+            f"● Total Sessions: {s['sessions']}\n"
+            f"● Memory DB: `{s['memory']}`"
+        )
+
+    def _cmd_reset(self) -> str:
+        self._session.episodic.clear()
+        return "✅ Session reset. Episodic memory cleared."
