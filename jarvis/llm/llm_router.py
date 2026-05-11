@@ -72,9 +72,10 @@ class LLMRouter:
             name="LLMHealthMonitor",
         )
         self._monitor.start()
-        logger.info(f"[LLMRouter] Initialized. Primary: {primary.name} | "
+        logger.debug(f"[LLMRouter] Initialized. Primary: {primary.name} | "
                     f"Fallback: {fallback.name if fallback else 'none'} | "
                     f"Emergency: {self._emergency.name}")
+
 
     @classmethod
     def from_config(cls, config_path: Optional[str] = None) -> "LLMRouter":
@@ -220,7 +221,8 @@ class LLMRouter:
                 with self._lock:
                     self._health[backend.name] = ok
                 status = "✅ healthy" if ok else "❌ unavailable"
-                logger.info(f"[LLMRouter] {backend.name}: {status}")
+                logger.debug(f"[LLMRouter] {backend.name}: {status}")
+
             except Exception as e:
                 with self._lock:
                     self._health[backend.name] = False
