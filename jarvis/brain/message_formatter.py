@@ -45,8 +45,14 @@ class MessageFormatter:
         # response_lines.append("🤖 **JARVIS**")
 
         if primary_msg:
-            response_lines.append(f"🤖 {primary_msg}")
-        
+            import re
+            # Strip out markdown JSON blocks that might contain leaked planner output
+            primary_msg = re.sub(r'```(?:json)?\s*\{.*?"type"\s*:\s*"plan".*?\}\s*```', '', primary_msg, flags=re.DOTALL | re.IGNORECASE).strip()
+            # Also strip raw JSON without markdown formatting if it starts with {"type":"plan"
+            primary_msg = re.sub(r'^\s*\{.*?"type"\s*:\s*"plan".*?\}\s*$', '', primary_msg, flags=re.DOTALL | re.IGNORECASE).strip()
+            
+            if primary_msg:
+                response_lines.append(f"🤖 {primary_msg}")
         if actions:
             # If we have a primary message, add a small gap
             if primary_msg:

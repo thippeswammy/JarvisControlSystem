@@ -29,6 +29,13 @@ _INTENT_PATTERNS = [
     (r"\b(shutdown|shut down|power off)\b",                    "power_action",  {"action": "shutdown"}),
     (r"\b(restart|reboot)\b",                                  "power_action",  {"action": "restart"}),
     (r"\b(sleep|hibernate)\b",                                 "power_action",  {"action": "sleep"}),
+
+    # Applications
+    (r"\b(?:open|launch|start)\s+(.+)\b",                      "open_app",      {"target": 1}),
+    (r"\b(?:close|quit|exit)\s+(.+)\b",                        "close_app",     {"target": 1}),
+    
+    # System
+    (r"\b(?:analyze|check|read)\s+(?:the\s+)?logs?\b",         "log_analysis",  {}),
 ]
 
 # Words and symbols that signal compound commands
@@ -60,15 +67,28 @@ class NLU:
         text = utterance.text.strip()
         text_lower = text.lower()
 
-        # Detect compound commands first
-        parts = _COMPOUND_SEPARATORS.split(text_lower)
+        # Detect compound commands first, respecting quotes
+        quotes = []
+        def quote_replacer(m):
+            quotes.append(m.group(0))
+            return f"__QUOTE_{len(quotes)-1}__"
+        
+        # Replace quoted blocks temporarily
+        text_safe = re.sub(r'("[^"]*"|\'[^\']*\')', quote_replacer, text_lower)
+        parts_safe = _COMPOUND_SEPARATORS.split(text_safe)
+        
+        parts = []
+        for p in parts_safe:
+            for i, q in enumerate(quotes):
+                p = p.replace(f"__QUOTE_{i}__", q)
+            if p.strip():
+                parts.append(p.strip())
+
         if len(parts) > 1:
             sub_commands = []
             for part in parts:
-                part = part.strip()
-                if part:
-                    intent, entities = self._match_intent(part)
-                    sub_commands.append({"intent": intent, "entities": entities, "text": part})
+                intent, entities = self._match_intent(part)
+                sub_commands.append({"intent": intent, "entities": entities, "text": part})
 
             packet = PerceptionPacket(
                 utterance=utterance,

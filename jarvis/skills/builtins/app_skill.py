@@ -26,6 +26,11 @@ KNOWN_APPS = {
     "device manager": "devmgmt.msc",
     "snipping tool": "SnippingTool.exe",
     "magnifier": "magnify.exe",
+    "notebook": "notepad.exe",
+    "windows settings": "SystemSettings.exe",
+    "word": "winword.exe",
+    "excel": "excel.exe",
+    "powerpoint": "powerpnt.exe",
 }
 
 @skill(triggers=["open app", "launch app", "start app", "run app"], name="open_app", category="app")

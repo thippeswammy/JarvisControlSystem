@@ -35,6 +35,12 @@ def type_text(params: dict) -> SkillResult:
         import pyautogui
         import time
         time.sleep(0.5) # Allow focus to settle
+        
+        # Safe Automation Check
+        active_title = pyautogui.getActiveWindowTitle()
+        if not active_title:
+            return SkillResult(success=False, message="Safety aborted: No active window found to type into. Please focus an app first.")
+            
         pyautogui.typewrite(text, interval=interval)
         display_text = text if len(text) <= 100 else text[:97] + "..."
         return SkillResult(success=True, action_taken=f"Typed: {display_text!r}")

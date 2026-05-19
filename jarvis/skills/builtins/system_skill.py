@@ -98,3 +98,29 @@ def power_action(params: dict) -> SkillResult:
         return SkillResult(success=True, action_taken=f"Power: {action}")
     except Exception as e:
         return SkillResult(success=False, message=str(e))
+
+
+@skill(triggers=["analyze logs", "check logs"], name="log_analysis", category="system")
+def log_analysis(params: dict) -> SkillResult:
+    try:
+        from jarvis.cli.commands.logs_cmd import LogAnalyzer
+        from pathlib import Path
+        log_path = Path("logs/jarvis.log")
+        if not log_path.exists():
+            return SkillResult(success=False, message="Log file not found.")
+            
+        analyzer = LogAnalyzer(str(log_path))
+        stats = analyzer.analyze()
+        if "error" in stats:
+            return SkillResult(success=False, message=stats["error"])
+            
+        msg = (
+            f"Log Analysis (Last 1h):\n"
+            f"- Total Lines: {stats.get('total_lines', 0)}\n"
+            f"- Errors: {stats.get('levels', {}).get('ERROR', 0)}\n"
+            f"- Warnings: {stats.get('levels', {}).get('WARNING', 0)}\n"
+            f"- LLM Hits: {stats.get('ollama_hits', 0)} (Ollama) / {stats.get('mock_hits', 0)} (Mock)"
+        )
+        return SkillResult(success=True, action_taken="Analyzed recent logs", message=msg)
+    except Exception as e:
+        return SkillResult(success=False, message=f"Log analysis failed: {e}")

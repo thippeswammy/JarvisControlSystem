@@ -28,6 +28,9 @@ _DIRECT_MAP: dict[str, str] = {
     "power_action":     "power_action",
     "session_activate": "session_activate",
     "session_deactivate":"session_deactivate",
+    "open_app":         "open_app",
+    "close_app":        "close_app",
+    "log_analysis":     "log_analysis",
 }
 
 
@@ -164,7 +167,9 @@ class Planner:
             f"[Available Skills]\n{skill_catalog}\n\n"
             "[Critical Rules]\n"
             "1. META-RULE: If the user intent involves content generation (explaining, summarizing, drafting, jokes) AND a destination application is specified OR active, you MUST deliver that content using 'type_text' into the target app. Do NOT use the 'message' field for the payload.\n"
-            "2. CONTEXT-AWARENESS: If an app is already active and the user says 'write a summary', target that active app.\n\n"
+            "2. CONTEXT-AWARENESS: If an app is already active and the user says 'write a summary', target that active app.\n"
+            "3. CONVERSATIONAL: If the input is conversational (e.g. 'Ok can open apps', 'thanks'), respond conversationally and do NOT assume app launching or actions.\n"
+            "4. CAPABILITY: If asked about capabilities, list the [Available Skills] concisely.\n\n"
             "[Examples]\n"
             'User: "open notepad" → {{"type":"plan","steps":[{{"skill":"open_app","params":{{"target":"notepad"}}}}]}}\n'
             'User: "write a python hello world in vscode" → {{"type":"plan","steps":[{{"skill":"open_app","params":{{"target":"vscode"}}}},{{"skill":"type_text","params":{{"text":"print(\'hello world\')"}}]}}\n'
@@ -217,7 +222,11 @@ class Planner:
         # Safety fallback
         if not calls:
             logger.warning(f"[Planner] Decision generated no calls: {decision}")
-            calls.append(SkillCall(skill="chat_reply", params={"message": "I'm not quite sure how to do that."}))
+            if packet.intent == "log_analysis":
+                fallback_msg = "Log analysis module not connected yet."
+            else:
+                fallback_msg = "I'm not quite sure how to handle that context right now."
+            calls.append(SkillCall(skill="chat_reply", params={"message": fallback_msg}))
             
         return calls
 
