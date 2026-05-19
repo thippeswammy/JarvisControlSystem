@@ -158,3 +158,26 @@ Open system settings and then create a note on AI advantages
 
 * full pipeline planning
 * stable execution order
+
+---
+
+## 🟤 9. LOG REPORT REGRESSIONS
+
+These test the specific fixes implemented from the log report.
+
+```
+Open notebook
+Close notepad
+Analyze the logs
+Summarize this: "hello and then goodbye"
+Ok can open apps
+Type hello world into notepad
+```
+
+✔ Expected:
+
+* Synonym mapping (`notebook` -> `notepad.exe`)
+* Strict verb handling (no LLM hallucination for close)
+* Subsystem routing for logs
+* Quoted block protection
+* Safe keyboard automation aborted if no focus

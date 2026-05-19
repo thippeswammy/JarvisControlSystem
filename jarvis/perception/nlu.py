@@ -30,12 +30,12 @@ _INTENT_PATTERNS = [
     (r"\b(restart|reboot)\b",                                  "power_action",  {"action": "restart"}),
     (r"\b(sleep|hibernate)\b",                                 "power_action",  {"action": "sleep"}),
 
-    # Applications
-    (r"\b(?:open|launch|start)\s+(.+)\b",                      "open_app",      {"target": 1}),
-    (r"\b(?:close|quit|exit)\s+(.+)\b",                        "close_app",     {"target": 1}),
+    # Applications (Anchored to prevent matching inside quotes/sentences)
+    (r"^\s*(?:please\s+)?(?:can\s+you\s+)?(?:open|launch|start)\s+(.+)\b",                      "open_app",      {"target": 1}),
+    (r"^\s*(?:please\s+)?(?:can\s+you\s+)?(?:close|quit|exit)\s+(.+)\b",                        "close_app",     {"target": 1}),
     
     # System
-    (r"\b(?:analyze|check|read)\s+(?:the\s+)?logs?\b",         "log_analysis",  {}),
+    (r"^\s*(?:please\s+)?(?:can\s+you\s+)?(?:analyze|check|read)\s+(?:the\s+)?logs?\b",         "log_analysis",  {}),
 ]
 
 # Words and symbols that signal compound commands
