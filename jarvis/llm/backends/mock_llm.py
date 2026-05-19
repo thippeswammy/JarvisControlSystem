@@ -59,10 +59,10 @@ class MockLLM(LLMInterface):
                         )]
 
         # ── App opening ────────────────────────────────
-        if re.search(r"\b(open|launch|start|run)\b", text) and not text.endswith("?"):
-            target = re.sub(r"\b(open|launch|start|run)\b\s*", "", text).strip()
+        if re.search(r"^\s*(?:open|launch|start|run)\b", text) and not text.endswith("?"):
+            target = re.sub(r"^\s*(?:open|launch|start|run)\b\s*", "", text).strip()
             if target:
-                return [SkillCallSpec(skill="open_app", params={"target": target})]
+                return [SkillCallSpec(skill="open_app", params={"target": target, "_source": "mock"})]
 
         # ── Context-Aware Testing Mock ────────────────
         if "semantic intent:" in text:
@@ -107,23 +107,23 @@ class MockLLM(LLMInterface):
             return [SkillCallSpec(skill="set_brightness", params={"level": int(m.group(2))})]
 
         # ── Window management ─────────────────────────
-        if re.search(r"\b(minimize|minimise)\b", text):
-            return [SkillCallSpec(skill="minimize_window", params={})]
-        if re.search(r"\b(maximize|maximise|fullscreen)\b", text):
-            return [SkillCallSpec(skill="maximize_window", params={})]
-        if re.search(r"\b(close|quit|exit)\b", text):
-            target = re.sub(r"\b(close|quit|exit)\b\s*", "", text).strip() or "active"
-            return [SkillCallSpec(skill="close_app", params={"target": target})]
+        if re.search(r"^\s*(?:minimize|minimise)\b", text):
+            return [SkillCallSpec(skill="minimize_window", params={"_source": "mock"})]
+        if re.search(r"^\s*(?:maximize|maximise|fullscreen)\b", text):
+            return [SkillCallSpec(skill="maximize_window", params={"_source": "mock"})]
+        if re.search(r"^\s*(?:close|quit|exit)\b", text):
+            target = re.sub(r"^\s*(?:close|quit|exit)\b\s*", "", text).strip() or "active"
+            return [SkillCallSpec(skill="close_app", params={"target": target, "_source": "mock"})]
 
         # ── Keyboard ──────────────────────────────────
-        m = re.search(r"\b(press|hold)\b\s+(.+)", text)
+        m = re.search(r"^\s*(?:press|hold)\b\s+(.+)", text)
         if m:
-            return [SkillCallSpec(skill="press_key", params={"key": m.group(2).strip()})]
+            return [SkillCallSpec(skill="press_key", params={"key": m.group(1).strip(), "_source": "mock"})]
 
         # ── Typing ────────────────────────────────────
-        m = re.search(r"\b(type|write|say)\b\s+(.+)", text)
+        m = re.search(r"^\s*(?:type|write|say)\b\s+(.+)", text)
         if m:
-            return [SkillCallSpec(skill="type_text", params={"text": m.group(2).strip()})]
+            return [SkillCallSpec(skill="type_text", params={"text": m.group(1).strip(), "_source": "mock"})]
 
         # ── Session ───────────────────────────────────
         if re.search(r"\b(hi jarvis|hello jarvis|activate|hey jarvis)\b", text):

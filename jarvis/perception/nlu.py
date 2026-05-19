@@ -33,9 +33,17 @@ _INTENT_PATTERNS = [
     # Applications (Anchored to prevent matching inside quotes/sentences)
     (r"^\s*(?:please\s+)?(?:can\s+you\s+)?(?:open|launch|start)\s+(.+)\b",                      "open_app",      {"target": 1}),
     (r"^\s*(?:please\s+)?(?:can\s+you\s+)?(?:close|quit|exit)\s+(.+)\b",                        "close_app",     {"target": 1}),
-    
+
+    # Typing — parse "Type X into Y" → text=X, target=Y
+    (r"^\s*(?:please\s+)?(?:can\s+you\s+)?(?:type|write)\s+(.+?)\s+(?:in|into|on|to)\s+([\w\s]+)$", "type_text", {"text": 1, "target": 2}),
+    (r"^\s*(?:please\s+)?(?:can\s+you\s+)?(?:type|write)\s+(.+)$",                               "type_text",     {"text": 1}),
+
     # System
     (r"^\s*(?:please\s+)?(?:can\s+you\s+)?(?:analyze|check|read)\s+(?:the\s+)?logs?\b",         "log_analysis",  {}),
+
+    # Conversational fallback — prevent short filler phrases from becoming actions
+    # Must be near the end so real commands match first
+    (r"^\s*(?:ok|okay|yes|no|nope|sure|thanks|thank you|hello|hi|hey|cool|great|got it|got it)(?:[,!.\s].*)?$", "chat_reply", {}),
 ]
 
 # Words and symbols that signal compound commands

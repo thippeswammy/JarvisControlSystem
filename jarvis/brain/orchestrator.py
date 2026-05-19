@@ -45,12 +45,14 @@ class Orchestrator:
         bus: SkillBus,
         episodic: Optional[EpisodicMemory] = None,
         verification_loop=None,
+        learning_enabled: bool = False,
     ):
         self._memory = memory
         self._router = router
         self._bus = bus
         self._episodic = episodic or EpisodicMemory()
         self._verification_loop = verification_loop
+        self._learning_enabled = learning_enabled
 
         self._nlu = NLU()
         self._context = ContextHarvester(episodic=self._episodic)
@@ -192,7 +194,9 @@ class Orchestrator:
                 break
 
         # Auto-Learn Semantic Macro (The Reflex)
-        if all_success and has_llm_source and plan:
+        # Only runs when --learn-macros flag is active AND plan wasn't from mock backend
+        is_mock_plan = any(call.params.get("_source") == "mock" for call in plan)
+        if self._learning_enabled and all_success and has_llm_source and plan and not is_mock_plan:
             # Heuristic: Check for dynamic payloads in physical skills
             is_dynamic_payload = False
             for call in plan:

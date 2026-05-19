@@ -28,10 +28,12 @@ class SemanticEncoder:
         model: str = "nomic-embed-text",
         timeout: float = 30.0
     ):
+        import time
         self.api_url = api_url
         self.model = model
         self.timeout = timeout
         self._available: Optional[bool] = None  # None = unknown, will be set on first call
+        self._next_retry = 0.0
         logger.info(f"[SemanticEncoder] Initialized with {self.model} at {self.api_url}")
 
     def embed(self, text: str) -> Optional[List[float]]:
@@ -40,6 +42,10 @@ class SemanticEncoder:
         Returns None if the request fails.
         """
         if not text:
+            return None
+
+        import time
+        if time.time() < self._next_retry:
             return None
 
         payload = {
@@ -58,7 +64,8 @@ class SemanticEncoder:
                 result = json.loads(response.read().decode("utf-8"))
                 return result.get("embedding")
         except urllib.error.URLError as e:
-            logger.error(f"[SemanticEncoder] Failed to connect to Ollama: {e}. Attempting auto-start.")
+            logger.error(f"[SemanticEncoder] Failed to connect to Ollama: {e}. Attempting auto-start. Cooling down for 60s.")
+            self._next_retry = time.time() + 60.0
             # Resolve base URL from api_url (e.g. http://localhost:11434/api/embeddings -> http://localhost:11434)
             from urllib.parse import urlparse
             parsed = urlparse(self.api_url)
