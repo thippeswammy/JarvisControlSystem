@@ -63,7 +63,7 @@ class SlashHandler:
         channels_str = ", ".join([f"{c['name']} ({c['status']})" for c in s['channels']])
         return (
             f"🤖 **JARVIS Status**\n"
-            f"● Running: {'[OK]' if s['running'] else '[FAIL]'}\n"
+            f"● Running: {'✅' if s['running'] else '❌'}\n"
             f"● Active Channels: {channels_str}\n"
             f"● Total Sessions: {s['sessions']}\n"
             f"● Memory DB: `{s['memory']}`"

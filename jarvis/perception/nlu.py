@@ -75,6 +75,15 @@ class NLU:
         text = utterance.text.strip()
         text_lower = text.lower()
 
+        # Check for safe mode (quoted blocks with cognitive verbs outside quotes)
+        has_quotes = '"' in text_lower or "'" in text_lower
+        safe_mode = False
+        if has_quotes:
+            text_outside = re.sub(r'("[^"]*"|\'[^\']*\')', '', text_lower).strip()
+            cognitive_keywords = ["summarize", "explain", "translate", "tell me", "what is", "analyze", "read", "write a", "parse", "how to", "search", "lookup"]
+            if any(k in text_outside for k in cognitive_keywords):
+                safe_mode = True
+
         # Detect compound commands first, respecting quotes
         quotes = []
         def quote_replacer(m):
@@ -105,6 +114,7 @@ class NLU:
                 app_context=app_context,
                 compound=True,
                 sub_commands=sub_commands,
+                safe_mode=safe_mode,
             )
             logger.info(f"[NLU] Compound: {[c['intent'] for c in sub_commands]}")
             return packet
@@ -132,8 +142,9 @@ class NLU:
             entities=entities,
             app_context=app_context,
             sub_location=sub_location,
+            safe_mode=safe_mode,
         )
-        logger.info(f"[NLU] '{text}' → intent={intent}, entities={entities}")
+        logger.info(f"[NLU] '{text}' → intent={intent}, entities={entities}, safe_mode={safe_mode}")
         return packet
 
     # ── Private ──────────────────────────────────────

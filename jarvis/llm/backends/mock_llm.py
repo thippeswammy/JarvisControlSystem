@@ -34,6 +34,23 @@ class MockLLM(LLMInterface):
         text = prompt.lower().strip()
         logger.debug(f"[MockLLM] Planning for: {text!r}")
 
+        # ── Safe Quoted-Block Protection ──────────
+        has_quotes = '"' in text or "'" in text
+        if has_quotes:
+            text_outside = re.sub(r'("[^"]*"|\'[^\']*\')', '', text).strip()
+            cognitive_keywords = ["summarize", "explain", "translate", "tell me", "what is", "analyze", "read", "write a", "parse", "how to", "search", "lookup"]
+            if any(k in text_outside for k in cognitive_keywords):
+                return [SkillCallSpec(
+                    skill="chat_reply",
+                    params={"message": f"I analyzed the text: {prompt}. It contains a query or request to process text rather than execute action."}
+                )]
+
+        # ── Session Activate/Deactivate ──────────
+        if re.search(r"\b(hi jarvis|hello jarvis|activate|hey jarvis)\b", text):
+            return [SkillCallSpec(skill="session_activate", params={})]
+        if re.search(r"\b(bye|goodbye|close jarvis|deactivate|stop jarvis)\b", text):
+            return [SkillCallSpec(skill="session_deactivate", params={})]
+
         # ── Greetings / Help ──────────
         if re.search(r"\b(hi|hello|hey|greetings|morning|evening)\b", text) and len(text.split()) < 4:
             return [SkillCallSpec(
@@ -121,15 +138,13 @@ class MockLLM(LLMInterface):
             return [SkillCallSpec(skill="press_key", params={"key": m.group(1).strip(), "_source": "mock"})]
 
         # ── Typing ────────────────────────────────────
+        m = re.search(r"^\s*(?:type|write|say)\s+(.+?)\s+(?:in|into|on|to)\s+([\w\s]+)$", text)
+        if m:
+            return [SkillCallSpec(skill="type_text", params={"text": m.group(1).strip(), "target": m.group(2).strip(), "_source": "mock"})]
+
         m = re.search(r"^\s*(?:type|write|say)\b\s+(.+)", text)
         if m:
             return [SkillCallSpec(skill="type_text", params={"text": m.group(1).strip(), "_source": "mock"})]
-
-        # ── Session ───────────────────────────────────
-        if re.search(r"\b(hi jarvis|hello jarvis|activate|hey jarvis)\b", text):
-            return [SkillCallSpec(skill="session_activate", params={})]
-        if re.search(r"\b(bye|goodbye|close jarvis|deactivate|stop jarvis)\b", text):
-            return [SkillCallSpec(skill="session_deactivate", params={})]
 
         # ── Unknown → ask user ────────────────────────
         logger.info(f"[MockLLM] No heuristic match for: {text!r}")

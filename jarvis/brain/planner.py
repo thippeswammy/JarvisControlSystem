@@ -83,6 +83,14 @@ class Planner:
         return self._plan_single(packet, snapshot=packet.context_snapshot)
 
     def _plan_single(self, packet: PerceptionPacket, snapshot=None) -> list[SkillCall]:
+        # 0. Check safe mode for quoted blocks or text analysis
+        if getattr(packet, "safe_mode", False):
+            logger.info(f"[Planner] Safe mode active for: {packet.text!r}")
+            return [SkillCall(
+                skill="chat_reply",
+                params={"message": f"I've analyzed the text, but since it is inside a cognitive text analysis query, I won't execute any commands. Text: '{packet.text}'"}
+            )]
+
         # 1. Direct map (safety/session intents)
         if packet.intent in _DIRECT_MAP:
             skill_name = _DIRECT_MAP[packet.intent]

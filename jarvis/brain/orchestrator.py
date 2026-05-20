@@ -196,7 +196,13 @@ class Orchestrator:
         # Auto-Learn Semantic Macro (The Reflex)
         # Only runs when --learn-macros flag is active AND plan wasn't from mock backend
         is_mock_plan = any(call.params.get("_source") == "mock" for call in plan)
-        if self._learning_enabled and all_success and has_llm_source and plan and not is_mock_plan:
+        if (self._learning_enabled 
+            and all_success 
+            and has_llm_source 
+            and plan 
+            and not is_mock_plan
+            and packet.intent not in ("chat_reply", "unknown")
+            and utterance.confidence >= 0.85):
             # Heuristic: Check for dynamic payloads in physical skills
             is_dynamic_payload = False
             for call in plan:

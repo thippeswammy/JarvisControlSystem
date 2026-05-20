@@ -59,6 +59,7 @@ class PerceptionPacket:
     raw_plan_override: list = field(default_factory=list)  # pre-built plan (from memory recall)
     context_snapshot: Optional[ContextSnapshot] = None # NEW
     override_prompt: Optional[str] = None  # If set, Planner uses this text for the LLM call instead of packet.text
+    safe_mode: bool = False  # True if cognitive request inside quotes should not execute
 
     @property
     def text(self) -> str:
