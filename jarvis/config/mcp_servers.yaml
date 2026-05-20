@@ -1,0 +1,15 @@
+# MCP Server Registry
+# Add your MCP servers here. Jarvis discovers them at boot.
+# Transport: 'stdio' (subprocess) or 'http' (HTTP/SSE endpoint)
+mcp_servers:
+  # Example stdio server:
+  # - name: filesystem
+  #   transport: stdio
+  #   command: ["python", "agents_external/mcp_filesystem.py"]
+  #   description: "Read/write files on disk"
+  #
+  # Example HTTP server:
+  # - name: web_search
+  #   transport: http
+  #   url: "http://localhost:8765"
+  #   description: "Search the web"
