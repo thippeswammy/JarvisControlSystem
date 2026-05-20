@@ -46,6 +46,8 @@ class Orchestrator:
         episodic: Optional[EpisodicMemory] = None,
         verification_loop=None,
         learning_enabled: bool = False,
+        agent_bus=None,
+        mcp_bus=None,
     ):
         self._memory = memory
         self._router = router
@@ -54,9 +56,14 @@ class Orchestrator:
         self._verification_loop = verification_loop
         self._learning_enabled = learning_enabled
 
+        from jarvis.agents.agent_bus import AgentBus
+        from jarvis.mcp.mcp_bus import MCPBus
+        self.agent_bus = agent_bus or AgentBus(self._memory)
+        self.mcp_bus = mcp_bus or MCPBus()
+
         self._nlu = NLU()
         self._context = ContextHarvester(episodic=self._episodic)
-        self._planner = Planner(memory, router, bus)
+        self._planner = Planner(memory, router, bus, agent_bus=self.agent_bus, mcp_bus=self.mcp_bus)
         self._learner = ReactiveLearner(memory)
         self._pathfinder: Optional[GraphPathfinder] = None
 
@@ -67,6 +74,10 @@ class Orchestrator:
         # Discover skills
         self._bus.discover()
         logger.info(f"[Orchestrator] Skills: {self._bus.list_skills()}")
+
+        # Discover agents and MCP tools
+        self.agent_bus.discover()
+        self.mcp_bus.discover()
 
         # Wire pathfinder into memory
         db = self._memory.get_db()
@@ -150,6 +161,9 @@ class Orchestrator:
         
         for call in plan:
             call.params["_interface"] = snapshot.interface
+            call.params["_agent_bus"] = self.agent_bus
+            call.params["_mcp_bus"] = self.mcp_bus
+            call.params["_router"] = self._router
             if getattr(call, "source", "") == "llm":
                 has_llm_source = True
             if self._bus.is_cognitive(call.skill):
