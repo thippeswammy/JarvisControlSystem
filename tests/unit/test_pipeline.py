@@ -67,15 +67,20 @@ class TestNLU(unittest.TestCase):
 
     def test_open_app(self):
         p = self._parse("open notepad")
-        self.assertEqual(p.intent, "llm_route")
+        self.assertEqual(p.intent, "open_app")
+        self.assertEqual(p.entities.get("target"), "notepad")
 
     def test_open_settings_with_sub(self):
         p = self._parse("open settings wifi")
-        self.assertEqual(p.intent, "llm_route")
+        self.assertEqual(p.intent, "open_app")
+        self.assertEqual(p.entities.get("target"), "settings")
+        self.assertEqual(p.sub_location, "wifi")
 
     def test_open_display_settings(self):
         p = self._parse("open display settings")
-        self.assertEqual(p.intent, "llm_route")
+        self.assertEqual(p.intent, "open_app")
+        self.assertEqual(p.entities.get("target"), "settings")
+        self.assertEqual(p.sub_location, "display")
 
     def test_navigate_to(self):
         p = self._parse("navigate to bluetooth")
@@ -95,7 +100,8 @@ class TestNLU(unittest.TestCase):
 
     def test_type_text(self):
         p = self._parse("type hello world")
-        self.assertEqual(p.intent, "llm_route")
+        self.assertEqual(p.intent, "type_text")
+        self.assertEqual(p.entities.get("text"), "hello world")
 
     def test_shutdown(self):
         p = self._parse("shutdown")
@@ -114,7 +120,8 @@ class TestNLU(unittest.TestCase):
         self.assertTrue(p.compound)
         self.assertGreater(len(p.sub_commands), 1)
         intents = [s["intent"] for s in p.sub_commands]
-        self.assertIn("llm_route", intents)
+        self.assertIn("open_app", intents)
+        self.assertIn("type_text", intents)
 
     def test_voice_low_confidence_needs_confirmation(self):
         p = self._parse("open chrome", source="voice", conf=0.50)
