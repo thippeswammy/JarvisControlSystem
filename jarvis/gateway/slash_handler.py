@@ -2,20 +2,304 @@
 Slash Handler
 =============
 Parses and executes /commands from any channel.
-Shared logic between TUI, Telegram, and CLI.
+Uses the pluggable SlashRegistry to discover and route commands dynamically.
 """
 
+import asyncio
+import json
 import logging
-from typing import Optional
+from typing import List, Optional
+
+from jarvis.gateway.slash_registry import SlashRegistry
 
 logger = logging.getLogger(__name__)
 
+
+# ── Registry command handlers ────────────────────────────────
+
+def _cmd_help(args: List[str], session, gateway) -> str:
+    commands = SlashRegistry.list_commands()
+    resp = ["🤖 **JARVIS Available Commands:**"]
+    categories = {}
+    for entry in commands.values():
+        categories.setdefault(entry.category, []).append(entry)
+
+    for cat in sorted(categories.keys()):
+        resp.append(f"\n📂 **{cat.upper()}**")
+        for entry in sorted(categories[cat], key=lambda e: e.cmd):
+            resp.append(f"  `{entry.cmd}` - {entry.description}")
+
+    # Add agent shorthand note
+    resp.append("\n💡 *Tip: You can shorthand execute any agent by typing `/<AgentName> <task>`!*")
+    return "\n".join(resp)
+
+
+def _cmd_status(args: List[str], session, gateway) -> str:
+    s = gateway.status()
+    channels_str = ", ".join([f"{c['name']} ({c['status']})" for c in s["channels"]])
+    return (
+        f"🤖 **JARVIS Status**\n"
+        f"● Running: {'✅' if s['running'] else '❌'}\n"
+        f"● Active Channels: {channels_str}\n"
+        f"● Total Sessions: {s['sessions']}\n"
+        f"● Memory DB: `{s['memory']}`"
+    )
+
+
+def _cmd_reset(args: List[str], session, gateway) -> str:
+    session.episodic.clear()
+    return "[OK] Session reset. Episodic memory cleared."
+
+
+def _cmd_whoami(args: List[str], session, gateway) -> str:
+    return f"Session: `{session.id}`\nChannel: `{session.channel}`\nUser: `{session.user_id}`"
+
+
+def _cmd_memory(args: List[str], session, gateway) -> str:
+    if not args:
+        return "Usage: `/memory status` or `/memory search <query>`"
+
+    sub = args[0].lower()
+    memory = gateway.memory
+
+    if sub == "status":
+        stat = memory.get_stats()
+        return (
+            f"🧠 **Memory Stats**\n"
+            f"● Nodes: {stat['nodes']}\n"
+            f"● Edges: {stat['edges']}\n"
+            f"● Success Rate: {stat['success_rate']}%"
+        )
+    elif sub == "search":
+        query = " ".join(args[1:])
+        if not query:
+            return "Usage: `/memory search <query>`"
+        results = memory.search_edges(query, limit=5)
+        if not results:
+            return f"No memory found for `{query}`"
+
+        resp = [f"🔍 **Results for '{query}':**"]
+        for edge, score in results:
+            resp.append(f"● `{edge.id}` (Conf: {edge.confidence:.2f}, Score: {score})")
+        return "\n".join(resp)
+    else:
+        return f"Unknown memory subcommand: `{sub}`"
+
+
+def _cmd_logs(args: List[str], session, gateway) -> str:
+    from pathlib import Path
+    from jarvis.cli.commands.logs_cmd import LogAnalyzer
+
+    log_path = Path("logs/jarvis.log")
+    analyzer = LogAnalyzer(str(log_path))
+
+    if not args or args[0].lower() == "tail":
+        n = 10
+        if len(args) > 1:
+            try:
+                n = int(args[1])
+            except ValueError:
+                pass
+
+        lines = analyzer.tail(n=n, color=False)
+        return "📋 **Recent Logs:**\n```\n" + "\n".join(lines) + "\n```"
+
+    elif args[0].lower() == "analyze":
+        stats = analyzer.analyze()
+        if "error" in stats:
+            return f"❌ ERR: {stats['error']}"
+
+        resp = [
+            "📊 **Log Analysis (Last 1h)**",
+            f"● Total Lines: {stats['total_lines']}",
+            f"● Errors: {stats['levels'].get('ERROR', 0)}",
+            f"● Warnings: {stats['levels'].get('WARNING', 0)}",
+            f"● LLM Hits: {stats['ollama_hits']} (Ollama) / {stats['mock_hits']} (Mock)",
+        ]
+        return "\n".join(resp)
+    else:
+        return "Usage: `/logs tail [n]` or `/logs analyze`"
+
+
+def _cmd_skills(args: List[str], session, gateway) -> str:
+    bus = gateway.bus
+    if not bus:
+        return "❌ SkillBus not configured."
+    skills = bus.list_skills()
+    resp = ["🛠️ **Available Skills:**"]
+    for s in skills:
+        entry = bus.get_skill(s)
+        doc = entry.fn.__doc__ or "No description."
+        doc = doc.strip().split("\n")[0]
+        resp.append(f"● `{s}` - {doc}")
+    return "\n".join(resp)
+
+
+def _cmd_agents(args: List[str], session, gateway) -> str:
+    agent_bus = getattr(gateway, "agent_bus", None)
+    if not agent_bus:
+        return "❌ AgentBus not configured."
+    agents = sorted(agent_bus._registry.keys())
+    resp = ["🤖 **Registered Agents:**"]
+    for a in agents:
+        agent = agent_bus._registry[a]
+        desc = getattr(agent, "description", "")
+        if not desc and agent.__doc__:
+            desc = agent.__doc__.strip().split("\n")[0]
+        safe = "Concurrently" if agent.parallel_safe else "Sequentially"
+        resp.append(f"● `{a}` - {desc} ({safe})")
+    return "\n".join(resp)
+
+
+def _cmd_mcp(args: List[str], session, gateway) -> str:
+    mcp_bus = getattr(gateway, "mcp_bus", None)
+    if not mcp_bus:
+        return "❌ MCPBus not configured."
+    servers = mcp_bus.list_servers()
+    if not servers:
+        return "ℹ️ No MCP servers registered."
+
+    resp = ["🔌 **Registered MCP Servers & Tools:**"]
+    for s in servers:
+        adapter = mcp_bus._registry[s]
+        status = "🟢 healthy" if adapter.health_check() else "🔴 offline/unreachable"
+        resp.append(f"\n🖥️ **{s.upper()}** ({status})")
+        tools = adapter.list_tools()
+        for t in tools:
+            params_str = ", ".join(t.get("params", {}).get("properties", {}).keys())
+            resp.append(f"  ● `{t['name']}({params_str})` - {t.get('description', '')}")
+    return "\n".join(resp)
+
+
+def _cmd_spin(args: List[str], session, gateway) -> str:
+    if not args or len(args) < 2:
+        return "Usage: `/spin <agent> <task>`"
+
+    agent_name = args[0]
+    task = " ".join(args[1:])
+
+    agent_bus = getattr(gateway, "agent_bus", None)
+    if not agent_bus:
+        return "❌ AgentBus not configured."
+
+    logger.info(f"[SlashHandler] Spawning agent '{agent_name}' for task: {task!r}")
+    res = agent_bus.run_single(agent_name, task, {"router": gateway.router, "agent_bus": agent_bus})
+    status = "✅ Success" if res.success else "❌ Failed"
+    return f"**Agent Execution Result:**\n● Agent: `{agent_name}`\n● Status: {status}\n● Output: {res.output}"
+
+
+def _cmd_multiagents(args: List[str], session, gateway) -> str:
+    if not args or "--" not in args:
+        return "Usage: `/multiagents <agent1> <agent2> ... -- <task>`"
+
+    split_idx = args.index("--")
+    agents = args[:split_idx]
+    task = " ".join(args[split_idx + 1:])
+
+    if not agents or not task:
+        return "Usage: `/multiagents <agent1> <agent2> ... -- <task>`"
+
+    agent_bus = getattr(gateway, "agent_bus", None)
+    if not agent_bus:
+        return "❌ AgentBus not configured."
+
+    from jarvis.skills.builtins.plugin_skill import _run_async_in_thread
+
+    tasks = [(a, task) for a in agents]
+    logger.info(f"[SlashHandler] Spawning {len(agents)} agents in parallel: {agents}")
+    coro = agent_bus.run_parallel(tasks, {"router": gateway.router, "agent_bus": agent_bus})
+    results = _run_async_in_thread(coro)
+
+    resp = ["👥 **Parallel Agents Execution Results:**"]
+    for r in results:
+        status = "✅ Success" if r.success else "❌ Failed"
+        resp.append(f"\n● **{r.agent_name}** ({status}):\n{r.output}")
+    return "\n".join(resp)
+
+
+def _cmd_tool(args: List[str], session, gateway) -> str:
+    if len(args) < 2:
+        return "Usage: `/tool <server> <tool> [params_json_or_key=val]`"
+
+    server = args[0]
+    tool = args[1]
+    params = {}
+
+    if len(args) > 2:
+        params_str = " ".join(args[2:]).strip()
+        if params_str.startswith("{"):
+            try:
+                params = json.loads(params_str)
+            except Exception as exc:
+                return f"❌ Invalid JSON params: {exc}"
+        else:
+            for kv in params_str.split():
+                if "=" in kv:
+                    k, v = kv.split("=", 1)
+                    params[k] = v
+
+    mcp_bus = getattr(gateway, "mcp_bus", None)
+    if not mcp_bus:
+        return "❌ MCPBus not configured."
+
+    logger.info(f"[SlashHandler] Directly calling MCP tool {server}/{tool} with {params}")
+    res = mcp_bus.call(server, tool, params)
+    if "error" in res:
+        return f"❌ **Error calling MCP Tool {server}/{tool}:**\n{res['error']}"
+    return f"🟢 **MCP Tool {server}/{tool} Result:**\n{res.get('result', res)}"
+
+
+def _cmd_reload(args: List[str], session, gateway) -> str:
+    bus = gateway.bus
+    agent_bus = getattr(gateway, "agent_bus", None)
+    mcp_bus = getattr(gateway, "mcp_bus", None)
+
+    msg = []
+    if bus:
+        bus._registry.clear()
+        bus._discovered = False
+        bus.discover()
+        msg.append(f"● Skills reloaded (Total: {len(bus._registry)})")
+
+    if agent_bus:
+        agent_bus._registry.clear()
+        agent_bus._discovered = False
+        agent_bus.discover()
+        msg.append(f"● Agents reloaded (Total: {len(agent_bus._registry)})")
+
+    if mcp_bus:
+        mcp_bus.shutdown_all()
+        mcp_bus._registry.clear()
+        mcp_bus._discovered = False
+        mcp_bus.discover()
+        msg.append(f"● MCP servers reloaded (Total: {len(mcp_bus._registry)})")
+
+    return "🔄 **System Hot-Reload Complete:**\n" + "\n".join(msg)
+
+
+# ── Register Core Commands ──────────────────────────────────
+
+SlashRegistry.register("/help", _cmd_help, "Show this help catalog message", "general")
+SlashRegistry.register("/status", _cmd_status, "Show system health and active sessions", "general")
+SlashRegistry.register("/reset", _cmd_reset, "Reset current session and episodic memory", "general")
+SlashRegistry.register("/whoami", _cmd_whoami, "Show current session information", "general")
+SlashRegistry.register("/memory", _cmd_memory, "status | search <query> - Search long-term memory", "general")
+SlashRegistry.register("/logs", _cmd_logs, "tail [n] | analyze - Check logs", "general")
+
+SlashRegistry.register("/skills", _cmd_skills, "List all available skills", "plugin")
+SlashRegistry.register("/agents", _cmd_agents, "List all registered autonomous agents", "plugin")
+SlashRegistry.register("/mcp", _cmd_mcp, "List all registered MCP servers and tools", "plugin")
+SlashRegistry.register("/spin", _cmd_spin, "<agent> <task> - Execute a single agent", "plugin")
+SlashRegistry.register("/agent", _cmd_spin, "<agent> <task> - Alias for /spin", "plugin")
+SlashRegistry.register("/multiagents", _cmd_multiagents, "<a1> <a2> ... -- <task> - Execute agents in parallel", "plugin")
+SlashRegistry.register("/tool", _cmd_tool, "<server> <tool> [params] - Direct call to MCP tool", "plugin")
+SlashRegistry.register("/reload", _cmd_reload, "Hot-reload skills, agents, and MCP configs", "plugin")
+
+
 class SlashHandler:
-    """
-    Handles /status, /reset, /memory, /logs etc.
-    Each Session owns one instance of this.
-    """
-    def __init__(self, session, gateway):
+    """Handles parsing and routing of /commands from TUI, Telegram, or CLI."""
+
+    def __init__(self, session, gateway) -> None:
         self._session = session
         self._gateway = gateway
 
@@ -25,109 +309,23 @@ class SlashHandler:
     def handle(self, text: str) -> Optional[str]:
         if not self.is_slash(text):
             return None
-            
+
         parts = text.strip().split()
         cmd = parts[0].lower()
         args = parts[1:]
-        
-        logger.info(f"[SlashHandler] Executing {cmd} for session {self._session.id}")
-        
-        if cmd == "/help":
-            return self._cmd_help()
-        elif cmd == "/status":
-            return self._cmd_status()
-        elif cmd == "/reset":
-            return self._cmd_reset()
-        elif cmd == "/whoami":
-            return f"Session: `{self._session.id}`\nChannel: `{self._session.channel}`\nUser: `{self._session.user_id}`"
-        elif cmd == "/memory":
-            return self._cmd_memory(args)
-        elif cmd == "/logs":
-            return self._cmd_logs(args)
-        else:
-            return f"Unknown command: `{cmd}`. Type `/help` for list."
 
-    def _cmd_help(self) -> str:
-        return (
-            "Available commands:\n"
-            "  /status  - Show system status\n"
-            "  /reset   - Reset current session\n"
-            "  /memory  - status | search <q>\n"
-            "  /logs    - tail [n] | analyze\n"
-            "  /whoami  - Show session info\n"
-            "  /help    - Show this message"
-        )
+        logger.info(f"[SlashHandler] Dispatching command {cmd} for session {self._session.id}")
 
-    def _cmd_status(self) -> str:
-        s = self._gateway.status()
-        channels_str = ", ".join([f"{c['name']} ({c['status']})" for c in s['channels']])
-        return (
-            f"🤖 **JARVIS Status**\n"
-            f"● Running: {'✅' if s['running'] else '❌'}\n"
-            f"● Active Channels: {channels_str}\n"
-            f"● Total Sessions: {s['sessions']}\n"
-            f"● Memory DB: `{s['memory']}`"
-        )
+        # 1. Try Registry
+        res = SlashRegistry.handle(cmd, args, self._session, self._gateway)
+        if res is not None:
+            return res
 
-    def _cmd_reset(self) -> str:
-        self._session.episodic.clear()
-        return "[OK] Session reset. Episodic memory cleared."
+        # 2. Try Agent Name Shorthand: /<agent_name> <task>
+        agent_name = cmd[1:]
+        agent_bus = getattr(self._gateway, "agent_bus", None)
+        if agent_bus and agent_name in agent_bus._registry:
+            task = " ".join(args)
+            return _cmd_spin([agent_name, task], self._session, self._gateway)
 
-    def _cmd_memory(self, args) -> str:
-        if not args:
-            return "Usage: `/memory status` or `/memory search <query>`"
-        
-        sub = args[0].lower()
-        memory = self._gateway.session_mgr.memory
-        
-        if sub == "status":
-            stat = memory.get_stats()
-            return (
-                f"🧠 **Memory Stats**\n"
-                f"● Nodes: {stat['nodes']}\n"
-                f"● Edges: {stat['edges']}\n"
-                f"● Success Rate: {stat['success_rate']}%"
-            )
-        elif sub == "search":
-            query = " ".join(args[1:])
-            if not query: return "Usage: `/memory search <query>`"
-            results = memory.search_edges(query, limit=5)
-            if not results: return f"No memory found for `{query}`"
-            
-            resp = [f"🔍 **Results for '{query}':**"]
-            for edge, score in results:
-                resp.append(f"● `{edge.id}` (Conf: {edge.confidence:.2f}, Score: {score})")
-            return "\n".join(resp)
-        else:
-            return f"Unknown memory subcommand: `{sub}`"
-
-    def _cmd_logs(self, args) -> str:
-        from jarvis.cli.commands.logs_cmd import LogAnalyzer
-        from pathlib import Path
-        
-        log_path = Path("logs/jarvis.log")
-        analyzer = LogAnalyzer(str(log_path))
-        
-        if not args or args[0].lower() == "tail":
-            n = 10
-            if len(args) > 1:
-                try: n = int(args[1])
-                except: pass
-            
-            lines = analyzer.tail(n=n, color=False)
-            return "📋 **Recent Logs:**\n```\n" + "\n".join(lines) + "\n```"
-        
-        elif args[0].lower() == "analyze":
-            stats = analyzer.analyze()
-            if "error" in stats: return f"[red]ERR:[/red] {stats['error']}"
-            
-            resp = [
-                "📊 **Log Analysis (Last 1h)**",
-                f"● Total Lines: {stats['total_lines']}",
-                f"● Errors: {stats['levels'].get('ERROR', 0)}",
-                f"● Warnings: {stats['levels'].get('WARNING', 0)}",
-                f"● LLM Hits: {stats['ollama_hits']} (Ollama) / {stats['mock_hits']} (Mock)"
-            ]
-            return "\n".join(resp)
-        else:
-            return "Usage: `/logs tail [n]` or `/logs analyze`"
+        return f"Unknown command: `{cmd}`. Type `/help` for list."
