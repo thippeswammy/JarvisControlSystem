@@ -1,8 +1,9 @@
 """
 Browser Skill
 =============
-Playwright and CDP based Brave browser automation.
-Supports opening profiles, switching tabs, page actions, and DOM selector querying.
+Playwright and CDP based Brave/Chromium browser automation.
+Supports dynamic executable path finding, profile management, tab operations,
+and advanced DOM Accessibility Tree extraction for index-based clicking/typing.
 """
 
 import logging
@@ -12,20 +13,9 @@ import time
 from typing import Dict, Any, List, Optional
 from jarvis.skills.skill_decorator import skill
 from jarvis.skills.skill_bus import SkillResult
+from jarvis.utils.app_finder import AppFinder
 
 logger = logging.getLogger(__name__)
-
-BRAVE_PATHS = [
-    os.path.expandvars(r"%PROGRAMFILES%\BraveSoftware\Brave-Browser\Application\brave.exe"),
-    os.path.expandvars(r"%PROGRAMFILES(X86)%\BraveSoftware\Brave-Browser\Application\brave.exe"),
-    os.path.expandvars(r"%LOCALAPPDATA%\BraveSoftware\Brave-Browser\Application\brave.exe"),
-]
-
-def get_brave_path() -> Optional[str]:
-    for p in BRAVE_PATHS:
-        if os.path.exists(p):
-            return p
-    return None
 
 class BraveBrowserManager:
     """Manages browser automation using Playwright / CDP."""
@@ -34,12 +24,11 @@ class BraveBrowserManager:
         self.browser = None
         self.context = None
         self._cdp_url = "http://localhost:9222"
+        self.cached_nodes: List[Any] = []
 
     def _ensure_playwright(self):
         if self.playwright is not None:
             return
-        
-        # Lazy import of playwright
         from playwright.sync_api import sync_playwright
         self.playwright = sync_playwright().start()
 
@@ -47,7 +36,7 @@ class BraveBrowserManager:
         """Connects via CDP to running Brave or launches new instance."""
         self._ensure_playwright()
         
-        # Try connecting via CDP first (if Brave is already running with remote-debugging-port=9222)
+        # Try connecting via CDP first
         try:
             self.browser = self.playwright.chromium.connect_over_cdp(self._cdp_url)
             self.context = self.browser.contexts[0]
@@ -56,10 +45,10 @@ class BraveBrowserManager:
         except Exception as e:
             logger.debug(f"[BraveBrowserManager] CDP connection failed: {e}. Launching new instance...")
 
-        # Fallback: Launch a new Brave instance
-        exe = get_brave_path()
+        # Discovers the executable path dynamically
+        exe = AppFinder.find_exe_path("brave") or AppFinder.find_exe_path("chrome")
         if not exe:
-            raise FileNotFoundError("Brave browser executable not found on this system.")
+            raise FileNotFoundError("Brave or Chrome executable not found on this system.")
 
         user_data_dir = os.path.expandvars(r"%LOCALAPPDATA%\BraveSoftware\Brave-Browser\User Data")
         
@@ -73,7 +62,7 @@ class BraveBrowserManager:
                 "--remote-debugging-port=9222"
             ]
         )
-        logger.info(f"[BraveBrowserManager] Launched new Brave instance with profile '{profile}'.")
+        logger.info(f"[BraveBrowserManager] Launched new browser instance dynamically: {exe}")
         return self.context
 
     def close(self):
@@ -93,31 +82,28 @@ def open_brave_profile(params: dict) -> SkillResult:
         profile = "Default"
         
     try:
-        # Try launching/focusing Brave via State/UIA first to make it active
         from jarvis.brain.state_manager import WindowFocusController
         WindowFocusController.focus_window("brave")
         
         context = _MANAGER.connect_or_launch(profile=profile)
-        # Ensure we have at least one active page
         if not context.pages:
             page = context.new_page()
         else:
             page = context.pages[0]
             
         page.bring_to_front()
-        return SkillResult(success=True, action_taken=f"Opened Brave browser with profile: {profile}")
+        return SkillResult(success=True, action_taken=f"Opened browser with profile: {profile}")
     except Exception as e:
-        logger.warning(f"[browser_skill] Playwright profile open failed: {e}. Falling back to system startfile.")
+        logger.warning(f"[browser_skill] Profile open failed: {e}. Falling back to system startfile.")
         
-        # System fallback launcher
-        exe = get_brave_path()
+        exe = AppFinder.find_exe_path("brave") or AppFinder.find_exe_path("chrome")
         if exe:
             try:
                 subprocess.Popen([exe, f"--profile-directory={profile}"])
-                return SkillResult(success=True, action_taken=f"Launched Brave profile {profile} via system fallback")
+                return SkillResult(success=True, action_taken=f"Launched browser profile {profile} via system fallback")
             except Exception as se:
-                return SkillResult(success=False, message=f"Failed to open Brave profile: {se}")
-        return SkillResult(success=False, message=f"Brave browser not installed or failed to launch: {e}")
+                return SkillResult(success=False, message=f"Failed to open browser profile: {se}")
+        return SkillResult(success=False, message=f"Browser not installed or failed to launch: {e}")
 
 
 @skill(triggers=["switch browser tab", "switch tab in brave"], name="switch_browser_tab", category="browser")
@@ -153,13 +139,97 @@ def click_web_element(params: dict) -> SkillResult:
         page = context.pages[0]
         page.bring_to_front()
         
-        # Try both text and css matching
         if selector.startswith(".") or selector.startswith("#") or "[" in selector:
             page.click(selector, timeout=5000)
         else:
-            # Match by text content
             page.click(f"text={selector}", timeout=5000)
             
         return SkillResult(success=True, action_taken=f"Clicked web element: '{selector}'")
     except Exception as e:
         return SkillResult(success=False, message=f"Failed to click web element '{selector}': {e}")
+
+
+@skill(triggers=["extract browser dom tree", "show web interaction tree"], name="extract_browser_dom_tree", category="browser")
+def extract_browser_dom_tree(params: dict) -> SkillResult:
+    """Extracts a clean, compact, index-based representation of active web interactive elements."""
+    try:
+        context = _MANAGER.connect_or_launch()
+        if not context.pages:
+            return SkillResult(success=False, message="No active page open to extract tree.")
+            
+        page = context.pages[0]
+        page.bring_to_front()
+        
+        # Enumerate clickable/interactive candidates
+        selector = "a, button, input, select, textarea, [role=button], [role=link]"
+        elements = page.query_selector_all(selector)
+        
+        _MANAGER.cached_nodes = []
+        lines = []
+        idx = 0
+        
+        for elem in elements:
+            if not elem.is_visible():
+                continue
+                
+            tag = elem.evaluate("node => node.tagName.toLowerCase()")
+            text = (elem.inner_text() or "").strip().replace("\n", " ")
+            placeholder = elem.get_attribute("placeholder") or ""
+            role = elem.get_attribute("role") or ""
+            elem_id = elem.get_attribute("id") or ""
+            name_attr = elem.get_attribute("name") or ""
+            
+            # Formulate tag name and description
+            label = text or placeholder or name_attr or elem_id or "Unnamed element"
+            if len(label) > 60:
+                label = label[:57] + "..."
+                
+            type_str = tag
+            if role:
+                type_str = f"{tag}[{role}]"
+                
+            idx += 1
+            _MANAGER.cached_nodes.append(elem)
+            lines.append(f"[{idx}] {type_str.upper()}: '{label}'")
+            
+        catalog = " | ".join(lines) if lines else "No interactive web elements detected."
+        return SkillResult(success=True, action_taken="Extracted DOM Accessibility Tree", data={"dom_tree": catalog})
+    except Exception as e:
+        return SkillResult(success=False, message=f"DOM extraction failed: {e}")
+
+
+@skill(triggers=["click browser node", "click web index"], name="click_browser_node", category="browser")
+def click_browser_node(params: dict) -> SkillResult:
+    try:
+        index = int(params.get("index", 0))
+    except ValueError:
+        return SkillResult(success=False, message="Invalid node index integer")
+
+    if not (1 <= index <= len(_MANAGER.cached_nodes)):
+        return SkillResult(success=False, message=f"Node index {index} out of cached bounds (1-{len(_MANAGER.cached_nodes)})")
+        
+    try:
+        elem = _MANAGER.cached_nodes[index - 1]
+        elem.click()
+        return SkillResult(success=True, action_taken=f"Clicked browser node index: {index}")
+    except Exception as e:
+        return SkillResult(success=False, message=f"Failed clicking browser node: {e}")
+
+
+@skill(triggers=["fill browser node", "type web index"], name="fill_browser_node", category="browser")
+def fill_browser_node(params: dict) -> SkillResult:
+    try:
+        index = int(params.get("index", 0))
+    except ValueError:
+        return SkillResult(success=False, message="Invalid node index integer")
+    text = params.get("text", "")
+
+    if not (1 <= index <= len(_MANAGER.cached_nodes)):
+        return SkillResult(success=False, message=f"Node index {index} out of cached bounds (1-{len(_MANAGER.cached_nodes)})")
+        
+    try:
+        elem = _MANAGER.cached_nodes[index - 1]
+        elem.fill(text)
+        return SkillResult(success=True, action_taken=f"Typed '{text}' into browser node index: {index}")
+    except Exception as e:
+        return SkillResult(success=False, message=f"Failed typing into browser node: {e}")

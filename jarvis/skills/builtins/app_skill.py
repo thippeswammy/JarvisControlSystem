@@ -1,37 +1,12 @@
-"""App Skill — open, close, switch applications."""
+"""App Skill — open, close, switch applications autonomously."""
 import logging
 import os
 import subprocess
 from jarvis.skills.skill_decorator import skill
 from jarvis.skills.skill_bus import SkillResult
+from jarvis.utils.app_finder import AppFinder
 
 logger = logging.getLogger(__name__)
-
-KNOWN_APPS = {
-    "notepad": "notepad.exe",
-    "calculator": "CalculatorApp.exe",
-    "paint": "mspaint.exe",
-    "wordpad": "wordpad.exe",
-    "cmd": "cmd.exe",
-    "powershell": "powershell.exe",
-    "explorer": "explorer.exe",
-    "file explorer": "explorer.exe",
-    "edge": "msedge.exe",
-    "chrome": "chrome.exe",
-    "firefox": "firefox.exe",
-    "settings": "SystemSettings.exe",
-    "control panel": "control.exe",
-    "task manager": "taskmgr.exe",
-    "registry editor": "regedit.exe",
-    "device manager": "devmgmt.msc",
-    "snipping tool": "SnippingTool.exe",
-    "magnifier": "magnify.exe",
-    "notebook": "notepad.exe",
-    "windows settings": "SystemSettings.exe",
-    "word": "winword.exe",
-    "excel": "excel.exe",
-    "powerpoint": "powerpnt.exe",
-}
 
 @skill(triggers=["open app", "launch app", "start app", "run app"], name="open_app", category="app")
 def open_app(params: dict) -> SkillResult:
@@ -39,46 +14,49 @@ def open_app(params: dict) -> SkillResult:
     if not target:
         return SkillResult(success=False, message="No target app specified")
 
+    # Retrieve router if available for semantic disambiguation fallback
+    router = params.get("_router")
+
     # Try to focus existing window first to avoid multiple launches
     from jarvis.brain.state_manager import WindowFocusController
     try:
-        if WindowFocusController.focus_window(target):
+        if WindowFocusController.focus_window(target, router=router):
             return SkillResult(success=True, action_taken=f"Focused existing {target}")
     except Exception as fe:
         logger.debug(f"[app_skill] Focus existing check failed: {fe}")
 
-    exe = KNOWN_APPS.get(target.lower())
+    # Discover path dynamically without hardcoding
+    exe = AppFinder.find_exe_path(target)
 
     if exe:
         try:
-            if target.lower() == "settings":
-                os.startfile("ms-settings:")
+            if exe.startswith("ms-settings:"):
+                os.startfile(exe)
             else:
                 os.startfile(exe)
-            logger.info(f"[app_skill] Launched: {exe}")
+            logger.info(f"[app_skill] Discovered and launched: {exe}")
             
-            # Ensure focus
+            # Settle and ensure focus
             import time
             from pywinauto import Desktop
             time.sleep(1.5) # Wait for window to initialize
             try:
-                # 1. Try partial title match
+                # Try partial title match
                 win = Desktop(backend="uia").window(title_re=f"(?i).*{target}.*")
                 if win.exists():
                     win.set_focus()
                     logger.info(f"[app_skill] Focused window by title: {target}")
                 else:
-                    # 2. Try by process name if known
-                    if exe:
-                        proc_name = exe.replace(".exe", "")
-                        win = Desktop(backend="uia").window(process=proc_name)
-                        if win.exists():
-                            win.set_focus()
-                            logger.info(f"[app_skill] Focused window by process: {proc_name}")
+                    # Try by process name
+                    proc_name = os.path.basename(exe).replace(".exe", "")
+                    win = Desktop(backend="uia").window(process=proc_name)
+                    if win.exists():
+                        win.set_focus()
+                        logger.info(f"[app_skill] Focused window by process: {proc_name}")
             except Exception as fe:
                 logger.debug(f"[app_skill] Focus failed for {target}: {fe}")
 
-            return SkillResult(success=True, action_taken=f"Launched and focused {target}", data={"exe": exe})
+            return SkillResult(success=True, action_taken=f"Discovered and launched: {target}", data={"exe": exe})
         except Exception as e:
             logger.error(f"[app_skill] Launch failed for {exe}: {e}")
 
@@ -90,7 +68,7 @@ def open_app(params: dict) -> SkillResult:
         pyautogui.typewrite(target, interval=0.05)
         time.sleep(0.5)
         pyautogui.press("enter")
-        return SkillResult(success=True, action_taken=f"Searched and launched: {target}")
+        return SkillResult(success=True, action_taken=f"Searched and launched fallback: {target}")
     except Exception as e:
         return SkillResult(success=False, message=f"Failed to open {target!r}: {e}")
 
@@ -103,15 +81,17 @@ def close_app(params: dict) -> SkillResult:
         if target == "active":
             pyautogui.hotkey("alt", "F4")
         elif target.lower() == "all":
-            # Use PowerShell to close all windows with a title, excluding dev tools and the runner itself
+            # Close all windows excluding development tools and context components
             exclude = "'code','terminal','powershell','cmd','pycharm','conhost','antigravity'"
             cmd = f'powershell "Get-Process | Where-Object {{$_.MainWindowTitle -ne \'\' -and $_.Name -notin ({exclude})}} | Stop-Process -Force"'
             os.system(cmd)
             return SkillResult(success=True, action_taken="Closed all visible applications (excluding dev tools)")
         else:
-            exe = KNOWN_APPS.get(target.lower(), f"{target}.exe")
+            # Query path to get correct executable name dynamically
+            exe = AppFinder.find_exe_path(target)
+            exe_name = os.path.basename(exe) if exe and not exe.startswith("ms-settings:") else f"{target}.exe"
             
-            if exe.lower() == "explorer.exe":
+            if exe_name.lower() == "explorer.exe":
                 try:
                     import win32com.client
                     shell = win32com.client.Dispatch("Shell.Application")
@@ -120,7 +100,11 @@ def close_app(params: dict) -> SkillResult:
                 except Exception as ex:
                     logger.error(f"[app_skill] Failed to gracefully close Explorer: {ex}")
             else:
-                os.system(f'taskkill /IM "{exe}" /F')
-        return SkillResult(success=True, action_taken=f"Closed: {target}")
+                os.system(f'taskkill /IM "{exe_name}" /F')
+                # Try raw target too in case it was launched directly
+                if exe_name.lower() != f"{target.lower()}.exe":
+                    os.system(f'taskkill /IM "{target}.exe" /F')
+                    
+        return SkillResult(success=True, action_taken=f"Closed application: {target}")
     except Exception as e:
         return SkillResult(success=False, message=str(e))
