@@ -46,3 +46,15 @@ def test_find_exe_path_registry_hit(mock_exists):
         assert mock_reg.call_count >= 1
         called_args = [call[0][0] for call in mock_reg.call_args_list]
         assert "app" in called_args or "app.exe" in called_args
+
+def test_find_exe_path_direct_existing_file(tmp_path):
+    temp_exe = tmp_path / "custom_app.exe"
+    temp_exe.write_text("dummy")
+    
+    path = AppFinder.find_exe_path(str(temp_exe))
+    assert path == os.path.abspath(str(temp_exe))
+
+def test_find_exe_path_uri_schemes():
+    assert AppFinder.find_exe_path("ms-settings:display") == "ms-settings:display"
+    assert AppFinder.find_exe_path("chrome://settings") == "chrome://settings"
+

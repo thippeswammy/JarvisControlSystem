@@ -28,6 +28,19 @@ class AppFinder:
         if not app_clean:
             return None
 
+        # 0. High-Priority Direct Path/Protocol Checks (trusting direct LLM input)
+        expanded = os.path.expandvars(app_name).strip()
+        if os.path.exists(expanded) and os.path.isfile(expanded):
+            logger.info(f"[AppFinder] Direct file path exists, using immediately: {expanded}")
+            return os.path.abspath(expanded)
+
+        # Check for deep-links/protocols (e.g. ms-settings:wifi, custom URI schemes)
+        # URI protocols usually contain ':' but do not have ':' at index 1 (which indicates a Windows drive letter like C:)
+        if ":" in app_clean and not (len(app_clean) > 1 and app_clean[1] == ":"):
+            logger.info(f"[AppFinder] Detected URI/protocol scheme: {app_name}")
+            return app_name
+
+
         # Ensure we check variations (e.g. "word" -> "winword", "brave" -> "brave.exe")
         variations = [app_clean]
         if not app_clean.endswith(".exe"):
