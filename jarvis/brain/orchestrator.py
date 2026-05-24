@@ -18,6 +18,7 @@ from jarvis.brain.planner import Planner
 from jarvis.brain.reactive_learner import ReactiveLearner
 from jarvis.llm.llm_router import LLMRouter
 from jarvis.memory.layers.episodic import EpisodicMemory
+from jarvis.memory.layers.temporal import TemporalMemory
 from jarvis.memory.memory_manager import MemoryManager
 from jarvis.pathfinding.graph_pathfinder import GraphPathfinder
 from jarvis.perception.context_harvester import ContextHarvester
@@ -44,6 +45,7 @@ class Orchestrator:
         router: LLMRouter,
         bus: SkillBus,
         episodic: Optional[EpisodicMemory] = None,
+        temporal: Optional[TemporalMemory] = None,
         verification_loop=None,
         learning_enabled: bool = False,
         agent_bus=None,
@@ -53,8 +55,10 @@ class Orchestrator:
         self._router = router
         self._bus = bus
         self._episodic = episodic or EpisodicMemory()
+        self._temporal = temporal or getattr(self._episodic, "_temporal", None) or TemporalMemory()
         self._verification_loop = verification_loop
         self._learning_enabled = learning_enabled
+
 
         from jarvis.agents.agent_bus import AgentBus
         from jarvis.mcp.mcp_bus import MCPBus
@@ -179,6 +183,8 @@ class Orchestrator:
             if self._bus.is_cognitive(call.skill):
                 has_unsafe_skill = True
 
+            import time
+            start_time = time.perf_counter()
             if self._verification_loop:
                 result = self._verification_loop.execute_and_verify(
                     call=call,
@@ -190,6 +196,7 @@ class Orchestrator:
             else:
                 # Phase 5 mode: execute without verification
                 result = self._bus.dispatch(call)
+            duration_ms = int((time.perf_counter() - start_time) * 1000)
 
             results.append(result)
             
@@ -201,6 +208,20 @@ class Orchestrator:
                 skill=call.skill,
             )
 
+            # Log to temporal memory
+            action_desc = f"executed {call.skill}"
+            if call.params:
+                clean_params = {k: v for k, v in call.params.items() if not k.startswith("_")}
+                if clean_params:
+                    action_desc += f" with params: {clean_params}"
+            
+            self._temporal.log_event(
+                app_context=snapshot.active_app or "system",
+                action=action_desc,
+                status="SUCCESS" if result.success else "FAILED",
+                duration_ms=duration_ms
+            )
+
             # Record state transition for lineage tracking
             if result.success:
                 self._episodic.record_state_transition(
@@ -210,6 +231,7 @@ class Orchestrator:
                     skill_used=call.skill,
                     app_context=snapshot.active_app or ""
                 )
+
 
             # Stop plan on failure
             if not result.success:

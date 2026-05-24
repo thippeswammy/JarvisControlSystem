@@ -79,10 +79,17 @@ class VerificationLoop:
         # 0. Let UI settle from previous commands
         time.sleep(0.3)
 
+        # 1. Capture BEFORE state
+        # Use foreground window (app_title=None) to ensure we get real UI state
+        before_state, before_hash = self._harvester.harvest_and_hash(app_title=None)
+
         # Custom explicit verification logic
         if call.skill == "open_app":
             target = call.params.get("target", "")
             result = bus.dispatch(call)
+            if not before_hash:
+                logger.debug("[VerificationLoop] No UI state (UIA unavailable), trusting open_app result")
+                return result
             time.sleep(1.0) # Settle for app launch
             if result.success and (self.verify_window_exists(target) or self.verify_focus(target)):
                 logger.info(f"[VerificationLoop] [OK] open_app verified successfully: {target}")
@@ -96,6 +103,9 @@ class VerificationLoop:
         elif call.skill == "close_app":
             target = call.params.get("target", "")
             result = bus.dispatch(call)
+            if not before_hash:
+                logger.debug("[VerificationLoop] No UI state (UIA unavailable), trusting close_app result")
+                return result
             time.sleep(0.8) # Settle for app close
             if result.success and not self.verify_window_exists(target):
                 logger.info(f"[VerificationLoop] [OK] close_app verified successfully: {target}")
@@ -106,9 +116,6 @@ class VerificationLoop:
                 result.success = False
                 return result
 
-        # 1. Capture BEFORE state
-        # Use foreground window (app_title=None) to ensure we get real UI state
-        before_state, before_hash = self._harvester.harvest_and_hash(app_title=None)
 
         for attempt in range(0, 3):
             if attempt > 0:
