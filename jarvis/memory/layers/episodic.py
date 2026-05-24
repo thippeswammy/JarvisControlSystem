@@ -24,6 +24,8 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional, List
 
+from jarvis.memory.layers.temporal import TemporalMemory
+
 logger = logging.getLogger(__name__)
 
 @dataclass
@@ -51,12 +53,13 @@ class EpisodicMemory:
     One instance = one session. Create a new instance per process start.
     """
 
-    def __init__(self):
+    def __init__(self, temporal_memory: Optional[TemporalMemory] = None):
         _SESSION_DIR.mkdir(parents=True, exist_ok=True)
         self._session_id = datetime.now().strftime("%Y-%m-%d_%H%M%S")
         self._log: list[dict] = []
         self._lineage: list[StateTransition] = [] # Memory-only for now
         self._start_time = datetime.now()
+        self._temporal = temporal_memory or TemporalMemory()
 
     def clear(self):
         """Reset the current session memory."""
@@ -221,7 +224,7 @@ class EpisodicMemory:
 
     def as_llm_context(self, max_sessions: int = 3, top_n: int = 5, include_current: bool = True) -> str:
         """
-        Return a compact string summarising recent session history for LLM injection.
+        Return a compact string summarising recent session history and temporal events for LLM injection.
         Token budget: ~150 tokens max.
         """
         cmd_counter: Counter = Counter()
@@ -244,13 +247,23 @@ class EpisodicMemory:
                     cmd_counter[entry["cmd"]] += 1
 
         top = cmd_counter.most_common(top_n)
-        if not top:
+        parts = []
+        if top:
+            parts.append("Recent successful commands:")
+            for cmd, count in top:
+                parts.append(f"  - '{cmd}' (×{count})")
+
+        # 3. Add temporal timeline for time-awareness
+        if hasattr(self, "_temporal") and self._temporal:
+            temporal_ctx = self._temporal.as_llm_context(limit=3)
+            if temporal_ctx and "(no recent activity" not in temporal_ctx:
+                parts.append(temporal_ctx)
+
+        if not parts:
             return "(no episodic history)"
 
-        parts = ["Recent successful commands:"]
-        for cmd, count in top:
-            parts.append(f"  - '{cmd}' (×{count})")
-        return "\n".join(parts)
+        return "\n\n".join(parts)
+
 
     # ── Current session view ─────────────────────────────────────────────────
 
