@@ -24,4 +24,9 @@ skill/
 referency/
 
 # Runtime Memory DBs
-memory/
+/memory/
+
+
+# Process ID and runtime files
+*.pid
+
