@@ -62,6 +62,10 @@ class Orchestrator:
         self.mcp_bus = mcp_bus or MCPBus()
 
         self._nlu = NLU()
+        from jarvis.perception.context_fusion import ContextFusionLayer
+        self._context_fusion = ContextFusionLayer()
+        from jarvis.brain.safety_layer import IntentSafetyLayer
+        self._safety_layer = IntentSafetyLayer()
         self._context = ContextHarvester(episodic=self._episodic)
         self._planner = Planner(memory, router, bus, agent_bus=self.agent_bus, mcp_bus=self.mcp_bus)
         self._learner = ReactiveLearner(memory)
@@ -118,6 +122,12 @@ class Orchestrator:
 
         # NLU
         packet = self._nlu.parse(utterance, app_context=snapshot.active_app)
+        
+        # Intent Safety Layer
+        packet = self._safety_layer.check_safety(packet)
+        
+        # Coreference and context fusion
+        packet = self._context_fusion.fuse(packet, snapshot=snapshot)
         packet.context_snapshot = snapshot # Store for planner
         
         procedural_ctx = self._memory.get_relevant_context(

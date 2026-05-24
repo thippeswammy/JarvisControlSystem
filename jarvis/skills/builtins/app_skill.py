@@ -39,6 +39,14 @@ def open_app(params: dict) -> SkillResult:
     if not target:
         return SkillResult(success=False, message="No target app specified")
 
+    # Try to focus existing window first to avoid multiple launches
+    from jarvis.brain.state_manager import WindowFocusController
+    try:
+        if WindowFocusController.focus_window(target):
+            return SkillResult(success=True, action_taken=f"Focused existing {target}")
+    except Exception as fe:
+        logger.debug(f"[app_skill] Focus existing check failed: {fe}")
+
     exe = KNOWN_APPS.get(target.lower())
 
     if exe:

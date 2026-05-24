@@ -254,6 +254,12 @@ class AgentBus:
         except ImportError as exc:
             logger.debug(f"[AgentBus] Builtin AggregatorAgent not found/imported: {exc}")
 
+        try:
+            from jarvis.agents.builtin.brave_agent import BraveAgent
+            self.register(BraveAgent())
+        except ImportError as exc:
+            logger.debug(f"[AgentBus] Builtin BraveAgent not found/imported: {exc}")
+
     def _discover_from_yaml(self, config_path: Optional[str]) -> int:
         """Load agents listed in config/agents.yaml."""
         if yaml is None:
