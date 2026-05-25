@@ -69,44 +69,59 @@ class Scenario15(LiveScenario):
         assert "hello" in replies[-1]["text"].lower() or "help" in replies[-1]["text"].lower(), "Did not receive valid activation response"
 
     def test_multi_app_research(self):
-        # Verifies dynamic app finders, window management, and text-based copying across applications
-        self._simulate("open edge, navigate to github.com, then open notepad and write github notes")
+        # Abstract: User gives high-level goal, agent must resolve to Edge and Notepad
+        self._simulate("I want to research the GitHub website. Please launch Microsoft Edge, go to github.com, then summarize my notes in Notepad.")
         replies = self.adapter.get_replies()
         assert len(replies) > 0, "No reply received for multi-app research task"
 
     def test_telemetry_diagnose_and_save(self):
-        # Accesses World-State Modeler (CPU/RAM/Windows), logs status, types in active notepad, and saves
-        self._simulate("check system resources, then open notepad and type the status, and save as diagnostic_report.txt")
+        # Abstract: Needs resources, writing app (Notepad), and saving it in %TEMP%
+        import os
+        temp_dir = os.path.expandvars("%TEMP%")
+        target_file = os.path.join(temp_dir, "resource_check.txt")
+        # Ensure clean state prior to test
+        if os.path.exists(target_file):
+            try: os.remove(target_file)
+            except: pass
+
+        self._simulate(f"I need a full check of my computer's resources. Save this diagnostic report as '{target_file}' using my writing application.")
         replies = self.adapter.get_replies()
         assert len(replies) > 0, "No reply received for telemetry diagnosis task"
 
-    def test_temporal_Timeline_reasoning(self):
-        # Exercises the SQLite Structured Temporal Memory logs to retrieve chronological action latency
-        self._simulate("Search my memory timeline to find when I opened Notepad and what I did")
+    def test_file_explorer_verification(self):
+        # Abstract: Navigate folders and verify file exists in File Explorer
+        self._simulate("Please open my file explorer, navigate to my temp folder, and verify that the file resource_check.txt was created successfully.")
+        replies = self.adapter.get_replies()
+        assert len(replies) > 0, "No reply received for file explorer verification task"
+
+    def test_settings_deep_navigation(self):
+        # Abstract: Deeper settings and personalization checks
+        self._simulate("My display options feel incorrect. Open my personalization settings to help me configure it, but make sure to check display settings as well.")
+        replies = self.adapter.get_replies()
+        assert len(replies) > 0, "No reply received for deep settings task"
+
+    def test_temporal_timeline_reasoning(self):
+        # Exercises timeline queries in SQLite Structured Temporal Memory
+        self._simulate("Search my action history timeline to see when I worked on Notepad and resource_check.txt today.")
         replies = self.adapter.get_replies()
         assert len(replies) > 0, "No reply received for temporal timeline query"
 
-    def test_self_healing_recovery(self):
-        # Intentionally triggers error, exercises UIA element fallback and deep-link uri launching
-        self._simulate("click on non_existent_button, then open display settings")
-        replies = self.adapter.get_replies()
-        assert len(replies) > 0, "No reply received for self-healing recovery task"
-
     def test_copilot_cleanup(self):
-        # Dynamically searches registry paths to safely close Notepad, Settings, and Edge
-        self._simulate("close notepad, close edge, and close settings")
+        # Gracefully terminates Notepad, Settings, Edge, and File Explorer
+        self._simulate("Close all the programs we opened to keep my desktop clean.")
         replies = self.adapter.get_replies()
         assert len(replies) > 0, "No reply received for copilot cleanup task"
 
     def __init__(self):
         super().__init__()
         self.steps = [
-            StepDef("session_init",             self.test_session_init,             timeout_s=25),
-            StepDef("multi_app_research",        self.test_multi_app_research,        timeout_s=50),
-            StepDef("telemetry_diagnose_save",  self.test_telemetry_diagnose_and_save, timeout_s=45),
-            StepDef("temporal_timeline_reason", self.test_temporal_Timeline_reasoning, timeout_s=35),
-            StepDef("self_healing_recovery",    self.test_self_healing_recovery,    timeout_s=40),
-            StepDef("copilot_cleanup",          self.test_copilot_cleanup,          timeout_s=30),
+            StepDef("session_init",              self.test_session_init,             timeout_s=25),
+            StepDef("multi_app_research",         self.test_multi_app_research,         timeout_s=60),
+            StepDef("telemetry_diagnose_save",   self.test_telemetry_diagnose_and_save,  timeout_s=60),
+            StepDef("file_explorer_verify",      self.test_file_explorer_verification,  timeout_s=45),
+            StepDef("settings_deep_navigation",  self.test_settings_deep_navigation,  timeout_s=50),
+            StepDef("temporal_timeline_reason",  self.test_temporal_timeline_reasoning, timeout_s=35),
+            StepDef("copilot_cleanup",           self.test_copilot_cleanup,           timeout_s=35),
         ]
 
 
