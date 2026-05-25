@@ -42,7 +42,7 @@ class Scenario07(LiveScenario):
         
         from jarvis.brain.message_formatter import MessageFormatter
         reply_text = MessageFormatter.format(results, source="telegram")
-        self.adapter.send_message(self.chat_id, reply_text)
+        self.adapter.send(f"telegram:{self.chat_id}", reply_text)
         
         # Return the last result for assertions (or first if needed)
         return results[-1] if results else SkillResult(success=False)
