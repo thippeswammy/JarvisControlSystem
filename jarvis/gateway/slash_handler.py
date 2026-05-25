@@ -8,6 +8,10 @@ Uses the pluggable SlashRegistry to discover and route commands dynamically.
 import asyncio
 import json
 import logging
+import os
+import shutil
+from datetime import datetime
+from pathlib import Path
 from typing import List, Optional
 
 from jarvis.gateway.slash_registry import SlashRegistry
@@ -277,6 +281,124 @@ def _cmd_reload(args: List[str], session, gateway) -> str:
     return "🔄 **System Hot-Reload Complete:**\n" + "\n".join(msg)
 
 
+def _cmd_new_session(args: List[str], session, gateway) -> str:
+    """
+    /new_session  — Wipe all agent memory and start a 100% clean session.
+
+    Workflow:
+      1. Flush + close the current MemoryManager DB connection.
+      2. Archive jarvis.db (+ WAL/SHM) and the episodic/ folder into
+         memory/archive/<timestamp>/.
+      3. Delete the live DB files.
+      4. Re-initialise MemoryManager on the gateway so new queries get
+         a fresh SQLite file.
+      5. Kill every existing session so the next message creates a blank one.
+      6. Return a summary of what was archived/deleted.
+    """
+    memory = getattr(gateway, "memory", None)
+    if not memory:
+        return "❌ MemoryManager is not initialised — cannot reset."
+
+    # ── 1. Determine paths ──────────────────────────────────────────
+    try:
+        live_db_path = Path(memory.get_db_path())
+    except Exception as exc:
+        return f"❌ Could not resolve DB path: {exc}"
+
+    memory_dir = live_db_path.parent          # e.g. .../memory/
+    episodic_dir = memory_dir / "episodic"    # e.g. .../memory/episodic/
+
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    archive_dir = memory_dir / "archive" / ts
+    archive_dir.mkdir(parents=True, exist_ok=True)
+
+    archived: list[str] = []
+    deleted: list[str] = []
+    errors: list[str] = []
+
+    # ── 2. Close the live DB to release file locks ──────────────────
+    try:
+        memory.close()
+        logger.info("[/new_session] MemoryManager DB closed.")
+    except Exception as exc:
+        errors.append(f"DB close warning: {exc}")
+
+    # ── 3. Archive + delete DB files (db, wal, shm) ─────────────────
+    for suffix in ["", "-wal", "-shm"]:
+        candidate = Path(str(live_db_path) + suffix)
+        if candidate.exists():
+            dest = archive_dir / candidate.name
+            try:
+                shutil.copy2(str(candidate), str(dest))
+                archived.append(candidate.name)
+                os.remove(str(candidate))
+                deleted.append(candidate.name)
+                logger.info(f"[/new_session] Archived & deleted: {candidate.name}")
+            except Exception as exc:
+                errors.append(f"Could not archive {candidate.name}: {exc}")
+
+    # ── 4. Archive + delete episodic memory folder ──────────────────
+    if episodic_dir.exists() and any(episodic_dir.iterdir()):
+        dest_ep = archive_dir / "episodic"
+        try:
+            shutil.copytree(str(episodic_dir), str(dest_ep))
+            shutil.rmtree(str(episodic_dir))
+            episodic_dir.mkdir(exist_ok=True)   # recreate empty dir
+            archived.append("episodic/")
+            deleted.append("episodic/")
+            logger.info("[/new_session] Episodic memory archived & cleared.")
+        except Exception as exc:
+            errors.append(f"Could not archive episodic: {exc}")
+
+    # ── 5. Re-initialise MemoryManager with a fresh DB ──────────────
+    try:
+        from jarvis.memory.memory_manager import MemoryManager
+        from jarvis.memory.layers.procedural import ProceduralMemory
+
+        new_memory = MemoryManager(db_path=str(live_db_path))
+        gateway.memory = new_memory
+
+        # Re-seed procedural memory (settings graph etc.)
+        proc = ProceduralMemory(new_memory.get_db())
+        proc.seed_settings_graph()
+
+        # Propagate new memory to SessionManager and AgentBus
+        if gateway.session_mgr:
+            gateway.session_mgr._memory = new_memory
+        agent_bus = getattr(gateway, "agent_bus", None)
+        if agent_bus:
+            agent_bus._memory = new_memory
+
+        logger.info("[/new_session] Fresh MemoryManager initialised.")
+    except Exception as exc:
+        errors.append(f"MemoryManager re-init failed: {exc}")
+        logger.exception("[/new_session] MemoryManager re-init error")
+
+    # ── 6. Kill all existing sessions ───────────────────────────────
+    killed_sessions = 0
+    if gateway.session_mgr:
+        for sess in list(gateway.session_mgr.list_sessions()):
+            gateway.session_mgr.kill(sess.id)
+            killed_sessions += 1
+        logger.info(f"[/new_session] Killed {killed_sessions} session(s).")
+
+    # ── 7. Build response ────────────────────────────────────────────
+    lines = [
+        "🧹 **New Session Started — Memory Wiped!**",
+        f"📁 Archive: `memory/archive/{ts}/`",
+        f"● Archived: {', '.join(archived) or 'nothing'}",
+        f"● Deleted:  {', '.join(deleted) or 'nothing'}",
+        f"● Sessions killed: {killed_sessions}",
+        "● Fresh DB seeded with procedural memory.",
+    ]
+    if errors:
+        lines.append("\n⚠️ **Warnings:**")
+        for err in errors:
+            lines.append(f"  • {err}")
+    lines.append("\n✅ Send your next message to begin a completely fresh context!")
+    return "\n".join(lines)
+
+
 # ── Register Core Commands ──────────────────────────────────
 
 SlashRegistry.register("/help", _cmd_help, "Show this help catalog message", "general")
@@ -294,6 +416,7 @@ SlashRegistry.register("/agent", _cmd_spin, "<agent> <task> - Alias for /spin", 
 SlashRegistry.register("/multiagents", _cmd_multiagents, "<a1> <a2> ... -- <task> - Execute agents in parallel", "plugin")
 SlashRegistry.register("/tool", _cmd_tool, "<server> <tool> [params] - Direct call to MCP tool", "plugin")
 SlashRegistry.register("/reload", _cmd_reload, "Hot-reload skills, agents, and MCP configs", "plugin")
+SlashRegistry.register("/new_session", _cmd_new_session, "Wipe all memory & start 100% clean session", "general")
 
 
 class SlashHandler:
