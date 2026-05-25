@@ -80,7 +80,7 @@ def close_app(params: dict) -> SkillResult:
     try:
         if target == "active":
             pyautogui.hotkey("alt", "F4")
-        elif target.lower() == "all":
+        elif "all" in target.lower():
             # Close all windows excluding development tools and context components
             exclude = "'code','terminal','powershell','cmd','pycharm','conhost','antigravity'"
             cmd = f'powershell "Get-Process | Where-Object {{$_.MainWindowTitle -ne \'\' -and $_.Name -notin ({exclude})}} | Stop-Process -Force"'
