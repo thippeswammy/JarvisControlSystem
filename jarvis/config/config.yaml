@@ -8,8 +8,8 @@ jarvis:
 
 # ── LLM Router ──────────────────────────────────────────────
 llm:
-  primary: nvidia                    # NVIDIA cloud (qwen3-coder via NIM)
-  fallback: local                    # Ollama local fallback
+  primary: local                     # Ollama local primary
+  fallback: nvidia                   # NVIDIA cloud fallback
   emergency_fallback: mock           # always works
 
   backends:
