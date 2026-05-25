@@ -20,7 +20,7 @@ llm:
       fallback_model: "gemma3:4b"   # stable for 4GB VRAM
       max_tokens: 300
       temperature: 0.1
-      timeout_seconds: 15
+      timeout_seconds: 45
       auto_pull: true
 
     # Cloud: OpenAI or Anthropic
