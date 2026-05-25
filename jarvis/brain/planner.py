@@ -204,6 +204,7 @@ class Planner:
             'User: "search youtube for funny cats" → {{"type":"plan","steps":[{{"skill":"open_app","params":{{"target":"chrome"}}}},{{"skill":"type_text","params":{{"text":"funny cats"}},{{"skill":"press_key","params":{{"key":"enter"}}]}}\n'
             'User: "tell a joke in slack" → {{"type":"plan","steps":[{{"skill":"open_app","params":{{"target":"slack"}}}},{{"skill":"type_text","params":{{"text":"Why did the AI cross the road? To get to the other dataset."}}]}}\n'
             'User: "close settings and open notepad and type hello" → {{"type":"plan","steps":[{{"close_app","params":{{"target":"settings"}}}},{{"open_app","params":{{"target":"notepad"}}}},{{"type_text","params":{{"text":"hello"}}}}]}}\n'
+            'User: "type status in notepad and save as report.txt" → {{"type":"plan","steps":[{{"skill":"open_app","params":{{"target":"notepad"}}}},{{"skill":"type_text","params":{{"text":"status"}}}},{{"skill":"press_key","params":{{"key":"ctrl+s"}}}},{{"skill":"type_text","params":{{"text":"report.txt"}}}},{{"skill":"press_key","params":{{"key":"enter"}}}}]}}\n'
             'User: "ask search_agent to search for python tutorials" → {{"type":"agent","agent":"search_agent","agent_task":"search for python tutorials"}}\n'
             'User: "use filesystem to read_file notes.txt" → {{"type":"mcp","mcp_server":"filesystem","mcp_tool":"read_file","mcp_params":{{"path":"notes.txt"}}}}\n'
         )
