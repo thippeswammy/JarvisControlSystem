@@ -66,6 +66,23 @@ def navigate_location(params: dict) -> SkillResult:
         full_target = target
         if "." in target and not target.startswith("http") and not ":\\" in target:
             full_target = "https://" + target
+        
+        # In-Place Browser Navigation Check
+        try:
+            import pyautogui
+            active_title = (pyautogui.getActiveWindowTitle() or "").lower()
+            is_browser_active = any(b in active_title for b in ["edge", "chrome", "brave", "firefox", "browser", "chromium"])
+            if is_browser_active:
+                logger.info(f"[navigator_skill] Active browser window detected: '{active_title}'. Navigating in-place.")
+                pyautogui.hotkey("ctrl", "l")
+                time.sleep(0.3)
+                pyautogui.typewrite(full_target, interval=0.02)
+                time.sleep(0.2)
+                pyautogui.press("enter")
+                return SkillResult(success=True, action_taken=f"Navigated active browser to: {full_target}")
+        except Exception as e:
+            logger.warning(f"[navigator_skill] In-place browser navigation failed: {e}. Falling back to system handler.")
+
         try:
             os.startfile(full_target)
             return SkillResult(success=True, action_taken=f"Opened target directly: {full_target}")
