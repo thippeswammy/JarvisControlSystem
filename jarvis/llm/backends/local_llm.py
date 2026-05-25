@@ -275,23 +275,27 @@ class LocalLLM(LLMInterface):
         try:
             data = json.loads(candidate)
         except Exception:
-            # Strategy 2: If JSON loads failed, it might be partial or contain non-JSON text.
-            # Try to find ANY { } block if we haven't already.
-            if candidate != cleaned: # we already tried the search once
-                # Wrap the raw text (cleaned of markdown) as a chat message as a last resort.
-                # BUT: if it still looks like JSON (starts with {), try to strip the outer layer.
-                if cleaned.startswith("{") and "}" in cleaned:
-                    # Final attempt: try to just take everything between first and last bracket
-                    try:
-                        idx_start = cleaned.find("{")
-                        idx_end = cleaned.rfind("}")
-                        data = json.loads(cleaned[idx_start:idx_end+1])
-                    except Exception:
+            try:
+                healed = self._heal_json(candidate)
+                data = json.loads(healed)
+            except Exception:
+                # Strategy 2: If JSON loads failed, it might be partial or contain non-JSON text.
+                # Try to find ANY { } block if we haven't already.
+                if candidate != cleaned: # we already tried the search once
+                    # Wrap the raw text (cleaned of markdown) as a chat message as a last resort.
+                    # BUT: if it still looks like JSON (starts with {), try to strip the outer layer.
+                    if cleaned.startswith("{") and "}" in cleaned:
+                        # Final attempt: try to just take everything between first and last bracket
+                        try:
+                            idx_start = cleaned.find("{")
+                            idx_end = cleaned.rfind("}")
+                            data = json.loads(cleaned[idx_start:idx_end+1])
+                        except Exception:
+                            return LLMDecision(type="chat", message=self._clean_chat_text(raw))
+                    else:
                         return LLMDecision(type="chat", message=self._clean_chat_text(raw))
                 else:
                     return LLMDecision(type="chat", message=self._clean_chat_text(raw))
-            else:
-                return LLMDecision(type="chat", message=self._clean_chat_text(raw))
 
         try:
             if not isinstance(data, dict):
@@ -334,6 +338,44 @@ class LocalLLM(LLMInterface):
             except:
                 pass
         return text
+        
+    def _heal_json(self, s: str) -> str:
+        """Autonomously closes open JSON structures for truncated LLM responses."""
+        s = s.strip()
+        if not s.startswith("{"):
+            return s
+        open_braces = 0
+        open_brackets = 0
+        in_string = False
+        escape = False
+        
+        for i, char in enumerate(s):
+            if escape:
+                escape = False
+                continue
+            if char == "\\":
+                escape = True
+                continue
+            if char == '"' and (i == 0 or s[i-1] != "\\"):
+                in_string = not in_string
+                continue
+            if not in_string:
+                if char == "{":
+                    open_braces += 1
+                elif char == "}":
+                    open_braces = max(0, open_braces - 1)
+                elif char == "[":
+                    open_brackets += 1
+                elif char == "]":
+                    open_brackets = max(0, open_brackets - 1)
+                    
+        if in_string:
+            s += '"'
+        if open_brackets > 0:
+            s += "]" * open_brackets
+        if open_braces > 0:
+            s += "}" * open_braces
+        return s
 
     def _pull_model_async(self, model: str) -> None:
         """Non-blocking model pull via subprocess."""
