@@ -249,8 +249,17 @@ class Scenario99(LiveScenario):
         self._assert_no_actions(res_nodes, "Conversational nodes explanation")
         
         # 18.4 Vision Fallback
-        self._simulate("Find the blue button on the current screen.")
-        self._assert_replied("Vision Fallback check")
+        try:
+            import playwright
+            has_playwright = True
+        except ImportError:
+            has_playwright = False
+
+        if has_playwright:
+            self._simulate("Find the blue button on the current screen.")
+            self._assert_replied("Vision Fallback check")
+        else:
+            print("[Scenario 99] ⚠️ Skipping Playwright Vision Fallback check (module not installed)")
 
     # ─────────────────────────────────────────────────────────────
     # Step Registration
