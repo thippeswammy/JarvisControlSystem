@@ -170,7 +170,12 @@ class Planner:
         if self._agent_bus:
             agent_catalog = self._agent_bus.get_agent_catalog()
 
+        active_app_ctx = "None"
+        if snapshot:
+            active_app_ctx = f"Application Name: \"{snapshot.active_app}\"\nWindow Title: \"{snapshot.active_window_title}\""
+
         enriched_context = (
+            f"[Active Foreground Window]\n{active_app_ctx}\n\n"
             f"[System Preferences]\n{system_ctx}\n\n"
             f"[Current UI State]\n{ui_ctx}\n\n"
             f"[State Provenance]\n{lineage_ctx}\n\n"
