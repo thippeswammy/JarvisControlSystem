@@ -67,7 +67,7 @@ class Orchestrator:
 
         self._nlu = NLU()
         from jarvis.perception.context_fusion import ContextFusionLayer
-        self._context_fusion = ContextFusionLayer()
+        self._context_fusion = ContextFusionLayer(episodic=self._episodic)
         from jarvis.brain.safety_layer import IntentSafetyLayer
         self._safety_layer = IntentSafetyLayer()
         self._context = ContextHarvester(episodic=self._episodic)
