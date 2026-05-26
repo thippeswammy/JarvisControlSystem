@@ -167,7 +167,7 @@ class TunneledLLM(LLMInterface):
         cleaned = re.sub(r"```(?:json)?\s*", "", raw, flags=re.IGNORECASE).strip()
         cleaned = cleaned.replace("```", "").strip()
 
-        obj_match = re.search(r"(\{.*?\})", cleaned, re.DOTALL)
+        obj_match = re.search(r"(\{.*\})", cleaned, re.DOTALL)
         if obj_match:
             candidate = obj_match.group(1)
         else:
