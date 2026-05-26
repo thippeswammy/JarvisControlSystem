@@ -63,13 +63,6 @@ class Planner:
         #   - Results in one LLM call instead of N calls
         if packet.compound and packet.sub_commands:
             full_text = packet.utterance.text  # The original un-split full sentence
-            sub_texts = [s["text"] for s in packet.sub_commands]
-            compound_prompt = (
-                f"{full_text}\n"
-                f"[This is a compound command with {len(sub_texts)} parts: "
-                + ", ".join(f'"{t}"' for t in sub_texts)
-                + "]. Plan ALL steps in a single 'plan' or 'mixed' response."
-            )
             logger.info(f"[Planner] Compound → single LLM call: {full_text!r}")
             compound_packet = PerceptionPacket(
                 utterance=packet.utterance,
@@ -79,7 +72,7 @@ class Planner:
                 memory_context=packet.memory_context,
             )
             compound_packet.context_snapshot = packet.context_snapshot
-            compound_packet.override_prompt = compound_prompt
+            compound_packet.override_prompt = full_text
             return self._plan_single(compound_packet, snapshot=packet.context_snapshot)
 
         return self._plan_single(packet, snapshot=packet.context_snapshot)
