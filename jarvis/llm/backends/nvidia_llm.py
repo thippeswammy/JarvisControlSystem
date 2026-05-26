@@ -165,6 +165,7 @@ class NvidiaLLM(LLMInterface):
         """Lazily create the OpenAI client pointed at the NVIDIA endpoint."""
         if self._client is None:
             try:
+                from openai import OpenAI
                 self._client = OpenAI(
                     api_key=self._api_key,
                     base_url=self._base_url,

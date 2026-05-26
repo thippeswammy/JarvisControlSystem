@@ -8,8 +8,8 @@ jarvis:
 
 # ── LLM Router ──────────────────────────────────────────────
 llm:
-  primary: local                     # Ollama local primary
-  fallback: nvidia                   # NVIDIA cloud fallback
+  primary: tunneled                     # Tunneled ngrok primary
+  fallback: local                   # NVIDIA cloud fallback
   emergency_fallback: mock           # always works
 
   backends:
@@ -44,10 +44,12 @@ llm:
 
     # Tunneled: self-hosted model via ngrok / cloudflared / bore.pub
     tunneled:
-      api_url: "${JARVIS_TUNNEL_URL}"
-      api_key: "${JARVIS_TUNNEL_KEY}"
-      model: "${JARVIS_TUNNEL_MODEL}"
-      timeout_seconds: 10
+      api_url: "https://petri-crowbar-occupier.ngrok-free.dev/v1"
+      api_key: ""
+      model: "gemma4:e2b"
+      max_tokens: 131072
+      temperature: 0.6
+      timeout_seconds: 45
 
     mock:
       enabled: true
