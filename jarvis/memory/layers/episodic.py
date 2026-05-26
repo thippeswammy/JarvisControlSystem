@@ -264,6 +264,31 @@ class EpisodicMemory:
 
         return "\n\n".join(parts)
 
+    def get_last_active_app(self, exclude_apps: set) -> Optional[str]:
+        """Retrieve the most recent active app in this session that is not in exclude_apps."""
+        # 1. Check current logs backwards
+        for entry in reversed(self._log):
+            app = entry.get("app", "")
+            if app and app.lower() not in exclude_apps:
+                return app
+
+        # 2. Check state transitions lineage
+        for transition in reversed(self._lineage):
+            app = transition.app_context
+            if app and app.lower() not in exclude_apps:
+                return app
+
+        # 3. Check temporal memory sqlite database
+        if hasattr(self, "_temporal") and self._temporal:
+            try:
+                events = self._temporal.get_timeline(limit=30)
+                for event in events:
+                    app = event.get("app_context", "")
+                    if app and app.lower() not in exclude_apps:
+                        return app
+            except Exception as e:
+                logger.debug(f"[EpisodicMemory] Failed to query temporal for last active app: {e}")
+        return None
 
     # ── Current session view ─────────────────────────────────────────────────
 

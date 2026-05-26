@@ -23,8 +23,12 @@ class ContextFusionLayer:
         (re.compile(r"\b(close|quit|exit)\s+(it|them|this|that|the app|the window)\b", re.I), "close_app"),
         (re.compile(r"\b(maximize|maximise|fullscreen)\s+(it|them|this|that|the app|the window)\b", re.I), "maximize_window"),
         (re.compile(r"\b(minimize|minimise)\s+(it|them|this|that|the app|the window)\b", re.I), "minimize_window"),
-        (re.compile(r"\b(focus|activate|switch to)\s+(it|them|this|that|the app|the window)\b", re.I), "activate_window"),
+        (re.compile(r"\b(focus|activate|switch to|bring|restore)\s+(?:back\s+)?(it|them|this|that|the app|the window)\b", re.I), "activate_window"),
+        (re.compile(r"\b(bring|restore|focus|activate)\s+(it|them|this|that|the app|the window)\s+back\b", re.I), "activate_window"),
     ]
+
+    def __init__(self, episodic=None):
+        self._episodic = episodic
 
     def fuse(self, packet: PerceptionPacket, snapshot: Optional[ContextSnapshot] = None) -> PerceptionPacket:
         """
@@ -36,6 +40,17 @@ class ContextFusionLayer:
 
         original_text = packet.text
         active_app = snapshot.active_app or ""
+        
+        # Exclude development, shell, and runner processes from being the target of pronoun resolution
+        EXCLUDED_APPS = {"code", "terminal", "powershell", "cmd", "pycharm", "conhost", "antigravity", "antigravity ide"}
+        
+        if active_app.lower() in EXCLUDED_APPS or not active_app:
+            fallback_app = None
+            if self._episodic:
+                fallback_app = self._episodic.get_last_active_app(EXCLUDED_APPS)
+            if fallback_app:
+                logger.info(f"[ContextFusion] Foreground app is excluded/empty ({active_app!r}) — falling back to last active user app: {fallback_app!r}")
+                active_app = fallback_app
         
         # If no active app is found, fallback to standard lookup
         if not active_app and hasattr(snapshot, "active_window_title") and snapshot.active_window_title:
