@@ -157,7 +157,8 @@ class TunneledLLM(LLMInterface):
                 if attempt == 2:
                     return None
 
-    def decide_closed_loop(self, prompt: str, context: str = "") -> Optional[ClosedLoopDecision]:
+    def _call_llm_closed_loop(self, prompt: str, context: str) -> Optional[str]:
+        """Native closed-loop call via tunnel. Returns raw text."""
         if not self._api_url:
             return None
 
@@ -188,9 +189,8 @@ class TunneledLLM(LLMInterface):
                 content = resp.json()["choices"][0]["message"]["content"].strip()
                 self.last_raw_response = content
 
-                decision = self._parse_closed_loop_decision(content)
-                if decision:
-                    return decision
+                if self._parse_closed_loop_decision(content):
+                    return content
 
                 if attempt < 2:
                     logger.warning(f"[TunneledLLM] Closed-loop JSON parse failure on attempt {attempt+1}. Retrying...")
@@ -200,52 +200,12 @@ class TunneledLLM(LLMInterface):
                         'Return ONLY: {"status": "in_progress"|"done"|"blocked", "reasoning": "...", "actions": [...]}'
                     )})
                 else:
-                    logger.error("[TunneledLLM] Closed-loop JSON self-correction exhausted.")
-                    return ClosedLoopDecision(status="blocked", reasoning="JSON parse failure", block_reason="JSON parse failure")
+                    return content  # Fallback to base class wrapper
             except Exception as e:
                 logger.error(f"[TunneledLLM] Closed-loop request failed attempt {attempt+1}: {e}")
                 if attempt == 2:
                     return None
-
-    def _parse_closed_loop_decision(self, raw: str) -> Optional[ClosedLoopDecision]:
-        import re
-        cleaned = re.sub(r"```(?:json)?\s*", "", raw, flags=re.IGNORECASE).strip()
-        cleaned = cleaned.replace("```", "").strip()
-        obj_match = re.search(r"(\{.*\})", cleaned, re.DOTALL)
-        candidate = obj_match.group(1) if obj_match else cleaned
-        try:
-            data = json.loads(candidate)
-        except Exception:
-            return None
-        if not isinstance(data, dict) or "status" not in data:
-            return None
-        actions = []
-        if "actions" in data and isinstance(data["actions"], list):
-            for item in data["actions"]:
-                if isinstance(item, dict) and "skill" in item:
-                    actions.append(SkillCallSpec(skill=item["skill"], params=item.get("params", {})))
-        return ClosedLoopDecision(
-            status=data.get("status", "blocked"),
-            reasoning=data.get("reasoning", ""),
-            actions=actions,
-            summary=data.get("summary"),
-            block_reason=data.get("block_reason"),
-        )
-
-    def _is_valid_json_decision(self, content: str) -> tuple[bool, Optional[str]]:
-        import json
-        import re
-        cleaned = re.sub(r"```(?:json)?\s*", "", content, flags=re.IGNORECASE).strip()
-        cleaned = cleaned.replace("```", "").strip()
-        obj_match = re.search(r"(\{.*\})", cleaned, re.DOTALL)
-        candidate = obj_match.group(1) if obj_match else cleaned
-        try:
-            data = json.loads(candidate)
-            if isinstance(data, dict) and "type" in data:
-                return True, None
-            return False, "JSON does not contain a 'type' field"
-        except Exception as e:
-            return False, str(e)
+        return None
 
     def _headers(self) -> dict:
         h = {"Content-Type": "application/json"}
@@ -253,54 +213,3 @@ class TunneledLLM(LLMInterface):
             h["Authorization"] = f"Bearer {self._api_key}"
         return h
 
-    def _parse_plan(self, raw: str) -> Optional[Plan]:
-        raw = raw.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
-        try:
-            data = json.loads(raw)
-            if not isinstance(data, list):
-                data = [data]
-            return [
-                SkillCallSpec(skill=d["skill"], params=d.get("params", {}))
-                for d in data if isinstance(d, dict) and "skill" in d
-            ] or None
-        except Exception as e:
-            logger.warning(f"[TunneledLLM] Plan parse error: {e}")
-            return None
-
-    def _parse_decision(self, raw: str) -> Optional[LLMDecision]:
-        import re
-        cleaned = re.sub(r"```(?:json)?\s*", "", raw, flags=re.IGNORECASE).strip()
-        cleaned = cleaned.replace("```", "").strip()
-
-        obj_match = re.search(r"(\{.*\})", cleaned, re.DOTALL)
-        if obj_match:
-            candidate = obj_match.group(1)
-        else:
-            candidate = cleaned
-            
-        try:
-            data = json.loads(candidate)
-            if not isinstance(data, dict):
-                raise ValueError("Decision must be a JSON object")
-                
-            dec_type = data.get("type", "chat")
-            
-            steps = None
-            if "steps" in data and isinstance(data["steps"], list):
-                steps = []
-                for item in data["steps"]:
-                    if isinstance(item, dict) and "skill" in item:
-                        steps.append(SkillCallSpec(
-                            skill=item["skill"],
-                            params=item.get("params", {}),
-                        ))
-            
-            return LLMDecision(
-                type=dec_type,
-                message=data.get("message"),
-                steps=steps,
-                question=data.get("question")
-            )
-        except Exception as e:
-            logger.warning(f"[TunneledLLM] Failed to parse decision JSON.\nRaw: {raw[:300]}\nError: {e}")
-            return None

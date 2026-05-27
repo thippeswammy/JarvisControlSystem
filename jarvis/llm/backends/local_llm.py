@@ -228,13 +228,14 @@ class LocalLLM(LLMInterface):
                 if attempt == 2:
                     return None
 
-    def decide_closed_loop(self, prompt: str, context: str = "") -> Optional[ClosedLoopDecision]:
+    def _call_llm_closed_loop(self, prompt: str, context: str) -> Optional[str]:
         """
-        Closed-loop decision: LLM returns status + actions or signals done.
-        Uses 3-attempt JSON self-correction, same as decide().
+        Native closed-loop LLM call. Returns raw response text.
+        Uses 3-attempt self-correction for JSON issues.
+        Parsing is handled by the base class _parse_closed_loop_decision().
         """
         from jarvis.brain.closed_loop_prompt import build_closed_loop_system_prompt
-        
+
         model = self._active_model or self._model
         sys_prompt = build_closed_loop_system_prompt()
 
@@ -252,7 +253,6 @@ class LocalLLM(LLMInterface):
                 "temperature": 0.3 if attempt == 0 else 0.1,
                 "stream": False,
             }
-
             try:
                 resp = requests.post(
                     f"{self._api_url}/chat/completions",
@@ -263,255 +263,25 @@ class LocalLLM(LLMInterface):
                 content = resp.json()["choices"][0]["message"]["content"].strip()
                 self.last_raw_response = content
 
-                decision = self._parse_closed_loop_decision(content)
-                if decision:
-                    return decision
+                # Check if parseable by base class
+                if self._parse_closed_loop_decision(content):
+                    return content
 
                 if attempt < 2:
                     logger.warning(f"[LocalLLM] Closed-loop JSON parse failure on attempt {attempt+1}. Retrying...")
                     messages.append({"role": "assistant", "content": content})
                     messages.append({"role": "user", "content": (
                         "Your response was not valid JSON for the closed-loop schema. "
-                        "Return ONLY a JSON object with: "
-                        '{"status": "in_progress"|"done"|"blocked", "reasoning": "...", '
-                        '"actions": [...], "summary": "..."}'
+                        'Return ONLY: {"status": "in_progress"|"done"|"blocked", "reasoning": "...", "actions": [...]}'
                     )})
                 else:
                     logger.error("[LocalLLM] Closed-loop JSON self-correction exhausted.")
-                    # Last resort: treat as blocked
-                    return ClosedLoopDecision(
-                        status="blocked",
-                        reasoning="LLM failed to produce valid closed-loop JSON after 3 attempts",
-                        block_reason="JSON parse failure"
-                    )
+                    return content  # Return raw; base class will fallback to decide() wrapper
             except Exception as e:
                 logger.error(f"[LocalLLM] Closed-loop request failed attempt {attempt+1}: {e}")
                 if attempt == 2:
                     return None
-
-    def _parse_closed_loop_decision(self, raw: str) -> Optional[ClosedLoopDecision]:
-        """Parse LLM raw text into a ClosedLoopDecision."""
-        import re
-        
-        cleaned = re.sub(r"```(?:json)?\s*", "", raw, flags=re.IGNORECASE).strip()
-        cleaned = cleaned.replace("```", "").strip()
-        
-        obj_match = re.search(r"(\{.*\})", cleaned, re.DOTALL)
-        candidate = obj_match.group(1) if obj_match else cleaned
-        
-        try:
-            data = json.loads(candidate)
-        except Exception:
-            try:
-                healed = self._heal_json(candidate)
-                data = json.loads(healed)
-            except Exception:
-                logger.warning(f"[LocalLLM] Failed to parse closed-loop JSON: {raw[:200]}")
-                return None
-        
-        if not isinstance(data, dict) or "status" not in data:
-            logger.warning(f"[LocalLLM] Closed-loop JSON missing 'status' field: {data}")
-            return None
-        
-        status = data.get("status", "blocked")
-        reasoning = data.get("reasoning", "")
-        summary = data.get("summary")
-        block_reason = data.get("block_reason")
-        
-        actions = []
-        if "actions" in data and isinstance(data["actions"], list):
-            for item in data["actions"]:
-                if isinstance(item, dict) and "skill" in item:
-                    actions.append(SkillCallSpec(
-                        skill=item["skill"],
-                        params=item.get("params", {}),
-                    ))
-        
-        return ClosedLoopDecision(
-            status=status,
-            reasoning=reasoning,
-            actions=actions,
-            summary=summary,
-            block_reason=block_reason,
-        )
-
-    def _is_valid_json_decision(self, content: str) -> tuple[bool, Optional[str]]:
-        import json
-        import re
-        cleaned = re.sub(r"```(?:json)?\s*", "", content, flags=re.IGNORECASE).strip()
-        cleaned = cleaned.replace("```", "").strip()
-        obj_match = re.search(r"(\{.*\})", cleaned, re.DOTALL)
-        candidate = obj_match.group(1) if obj_match else cleaned
-        try:
-            data = json.loads(candidate)
-            if isinstance(data, dict) and "type" in data:
-                return True, None
-            return False, "JSON does not contain a 'type' field"
-        except Exception as e:
-            return False, str(e)
-
-    # ── Private ──────────────────────────────────
-
-    def _parse_plan(self, raw: str) -> Optional[Plan]:
-        """Extract JSON array from LLM response and convert to Plan."""
-        import re
-        
-        # Step 1: Strip all markdown code fences (```json ... ``` or ``` ... ```)
-        cleaned = re.sub(r"```(?:json)?\s*", "", raw, flags=re.IGNORECASE).strip()
-        cleaned = cleaned.replace("```", "").strip()
-
-        # Step 2: Extract first valid JSON array via regex (greedy)
-        array_match = re.search(r"(\[.*\])", cleaned, re.DOTALL)
-        if array_match:
-            candidate = array_match.group(1)
-        else:
-            candidate = cleaned
-
-        try:
-            data = json.loads(candidate)
-            if not isinstance(data, list):
-                data = [data]
-            plan = []
-            for item in data:
-                if isinstance(item, dict) and "skill" in item:
-                    plan.append(SkillCallSpec(
-                        skill=item["skill"],
-                        params=item.get("params", {}),
-                    ))
-            return plan if plan else None
-        except json.JSONDecodeError:
-            # Step 3: Last-resort — find any {"skill": ...} object in the raw text
-            objects = re.findall(r'\{[^{}]*"skill"[^{}]*\}', cleaned, re.DOTALL)
-            if objects:
-                plan = []
-                for obj_str in objects:
-                    try:
-                        item = json.loads(obj_str)
-                        if "skill" in item:
-                            plan.append(SkillCallSpec(skill=item["skill"], params=item.get("params", {})))
-                    except Exception:
-                        continue
-                if plan:
-                    return plan
-            logger.warning(f"[LocalLLM] Failed to parse plan JSON.\nRaw: {raw[:300]}")
-            return None
-
-    def _parse_decision(self, raw: str) -> Optional[LLMDecision]:
-        import re
-        
-        # Pre-clean: strip markdown fences globally before extraction
-        cleaned = re.sub(r"```(?:json)?\s*", "", raw, flags=re.IGNORECASE).strip()
-        cleaned = cleaned.replace("```", "").strip()
-
-        # Strategy 1: Find the largest outermost JSON object {...}
-        # This handles cases where the LLM adds text before or after the JSON block.
-        obj_match = re.search(r"(\{.*\})", cleaned, re.DOTALL)
-        candidate = obj_match.group(1) if obj_match else cleaned
-            
-        try:
-            data = json.loads(candidate)
-        except Exception:
-            try:
-                healed = self._heal_json(candidate)
-                data = json.loads(healed)
-            except Exception:
-                # Strategy 2: If JSON loads failed, it might be partial or contain non-JSON text.
-                # Try to find ANY { } block if we haven't already.
-                if candidate != cleaned: # we already tried the search once
-                    # Wrap the raw text (cleaned of markdown) as a chat message as a last resort.
-                    # BUT: if it still looks like JSON (starts with {), try to strip the outer layer.
-                    if cleaned.startswith("{") and "}" in cleaned:
-                        # Final attempt: try to just take everything between first and last bracket
-                        try:
-                            idx_start = cleaned.find("{")
-                            idx_end = cleaned.rfind("}")
-                            data = json.loads(cleaned[idx_start:idx_end+1])
-                        except Exception:
-                            return LLMDecision(type="chat", message=self._clean_chat_text(raw))
-                    else:
-                        return LLMDecision(type="chat", message=self._clean_chat_text(raw))
-                else:
-                    return LLMDecision(type="chat", message=self._clean_chat_text(raw))
-
-        try:
-            if not isinstance(data, dict):
-                raise ValueError("Decision must be a JSON object")
-                
-            dec_type = data.get("type", "chat")
-            
-            steps = None
-            if "steps" in data and isinstance(data["steps"], list):
-                steps = []
-                for item in data["steps"]:
-                    if isinstance(item, dict) and "skill" in item:
-                        steps.append(SkillCallSpec(
-                            skill=item["skill"],
-                            params=item.get("params", {}),
-                        ))
-            
-            return LLMDecision(
-                type=dec_type,
-                message=data.get("message"),
-                steps=steps,
-                question=data.get("question")
-            )
-        except Exception as e:
-            logger.warning(f"[LocalLLM] Failed to parse decision JSON fields.\nRaw: {raw[:300]}\nError: {e}")
-            return LLMDecision(type="chat", message=self._clean_chat_text(raw))
-
-    def _clean_chat_text(self, text: str) -> str:
-        """Strips markdown fences and attempts to hide JSON artifacts from the user."""
-        import re
-        # Remove markdown fences
-        text = re.sub(r"```(?:json)?\s*", "", text, flags=re.IGNORECASE).strip()
-        text = text.replace("```", "").strip()
-        # If it's JUST a JSON object, try to extract the "message" or "question" field
-        if text.startswith("{") and text.endswith("}"):
-            try:
-                data = json.loads(text)
-                if "message" in data: return data["message"]
-                if "question" in data: return data["question"]
-            except:
-                pass
-        return text
-        
-    def _heal_json(self, s: str) -> str:
-        """Autonomously closes open JSON structures for truncated LLM responses."""
-        s = s.strip()
-        if not s.startswith("{"):
-            return s
-        open_braces = 0
-        open_brackets = 0
-        in_string = False
-        escape = False
-        
-        for i, char in enumerate(s):
-            if escape:
-                escape = False
-                continue
-            if char == "\\":
-                escape = True
-                continue
-            if char == '"' and (i == 0 or s[i-1] != "\\"):
-                in_string = not in_string
-                continue
-            if not in_string:
-                if char == "{":
-                    open_braces += 1
-                elif char == "}":
-                    open_braces = max(0, open_braces - 1)
-                elif char == "[":
-                    open_brackets += 1
-                elif char == "]":
-                    open_brackets = max(0, open_brackets - 1)
-                    
-        if in_string:
-            s += '"'
-        if open_brackets > 0:
-            s += "]" * open_brackets
-        if open_braces > 0:
-            s += "}" * open_braces
-        return s
+        return None
 
     def _pull_model_async(self, model: str) -> None:
         """Non-blocking model pull via subprocess."""
@@ -525,3 +295,4 @@ class LocalLLM(LLMInterface):
 
         import threading
         threading.Thread(target=_pull, daemon=True).start()
+

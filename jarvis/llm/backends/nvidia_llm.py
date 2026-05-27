@@ -159,10 +159,10 @@ class NvidiaLLM(LLMInterface):
             return self._parse_decision(content)
         except Exception as e:
             logger.error(f"[NvidiaLLM] decide() request failed: {e}")
-            return None
-    # ── decide_closed_loop() ─────────────────────────────────
+    # ── Closed-loop hook ──────────────────────────────────────
 
-    def decide_closed_loop(self, prompt: str, context: str = "") -> Optional[ClosedLoopDecision]:
+    def _call_llm_closed_loop(self, prompt: str, context: str) -> Optional[str]:
+        """Native closed-loop call via NVIDIA API. Returns raw text."""
         try:
             from jarvis.brain.closed_loop_prompt import build_closed_loop_system_prompt
             client = self._get_client()
@@ -182,34 +182,10 @@ class NvidiaLLM(LLMInterface):
             )
             content = response.choices[0].message.content.strip()
             self.last_raw_response = content
-            return self._parse_closed_loop_decision(content)
+            return content
         except Exception as e:
-            logger.error(f"[NvidiaLLM] decide_closed_loop() failed: {e}")
+            logger.error(f"[NvidiaLLM] _call_llm_closed_loop() failed: {e}")
             return None
-
-    def _parse_closed_loop_decision(self, raw: str) -> Optional[ClosedLoopDecision]:
-        cleaned = re.sub(r"```(?:json)?\s*", "", raw, flags=re.IGNORECASE).strip()
-        cleaned = cleaned.replace("```", "").strip()
-        obj_match = re.search(r"(\{.*\})", cleaned, re.DOTALL)
-        candidate = obj_match.group(1) if obj_match else cleaned
-        try:
-            data = json.loads(candidate)
-        except Exception:
-            return None
-        if not isinstance(data, dict) or "status" not in data:
-            return None
-        actions = []
-        if "actions" in data and isinstance(data["actions"], list):
-            for item in data["actions"]:
-                if isinstance(item, dict) and "skill" in item:
-                    actions.append(SkillCallSpec(skill=item["skill"], params=item.get("params", {})))
-        return ClosedLoopDecision(
-            status=data.get("status", "blocked"),
-            reasoning=data.get("reasoning", ""),
-            actions=actions,
-            summary=data.get("summary"),
-            block_reason=data.get("block_reason"),
-        )
 
     # ── Private helpers ──────────────────────────────────────
 
@@ -229,52 +205,3 @@ class NvidiaLLM(LLMInterface):
                 )
         return self._client
 
-    def _parse_plan(self, raw: str) -> Optional[Plan]:
-        raw = raw.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
-        try:
-            data = json.loads(raw)
-            if not isinstance(data, list):
-                data = [data]
-            return [
-                SkillCallSpec(skill=item["skill"], params=item.get("params", {}))
-                for item in data if isinstance(item, dict) and "skill" in item
-            ] or None
-        except Exception as e:
-            logger.warning(f"[NvidiaLLM] Plan parse error: {e}")
-            return None
-
-    def _parse_decision(self, raw: str) -> Optional[LLMDecision]:
-        cleaned = re.sub(r"```(?:json)?\s*", "", raw, flags=re.IGNORECASE).strip()
-        cleaned = cleaned.replace("```", "").strip()
-
-        obj_match = re.search(r"(\{.*\})", cleaned, re.DOTALL)
-        candidate = obj_match.group(1) if obj_match else cleaned
-
-        try:
-            data = json.loads(candidate)
-            if not isinstance(data, dict):
-                raise ValueError("Decision must be a JSON object")
-
-            dec_type = data.get("type", "chat")
-
-            steps = None
-            if "steps" in data and isinstance(data["steps"], list):
-                steps = []
-                for item in data["steps"]:
-                    if isinstance(item, dict) and "skill" in item:
-                        steps.append(SkillCallSpec(
-                            skill=item["skill"],
-                            params=item.get("params", {}),
-                        ))
-
-            return LLMDecision(
-                type=dec_type,
-                message=data.get("message"),
-                steps=steps,
-                question=data.get("question"),
-            )
-        except Exception as e:
-            logger.warning(
-                f"[NvidiaLLM] Failed to parse decision JSON.\nRaw: {raw[:300]}\nError: {e}"
-            )
-            return None
