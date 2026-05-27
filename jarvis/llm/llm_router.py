@@ -229,19 +229,20 @@ class LLMRouter:
         log_entry = {
             "timestamp": timestamp,
             "mode": mode,
-            "backend": backend_name,
+            "backend": str(backend_name),
             "raw_input_payload": raw_input,
             "raw_output_response": raw_response,
             "output_response": output_response
         }
         
         with open(log_path, "a", encoding="utf-8") as f:
-            f.write(json.dumps(log_entry, indent=2, ensure_ascii=False) + "\n\n" + "="*80 + "\n\n")
+            f.write(json.dumps(log_entry, indent=2, ensure_ascii=False, default=str) + "\n\n" + "="*80 + "\n\n")
             f.flush()
             try:
                 os.fsync(f.fileno())
             except Exception:
                 pass
+
 
     def route(self, prompt: str, memory_context: str = "") -> Plan:
         """
