@@ -331,6 +331,11 @@ class ClosedLoopEngine:
                     logger.warning(f"[ClosedLoop] Action failed: {call.skill} — {skill_result.message}")
                     break
 
+            if not step_success and os.environ.get("JARVIS_ALLOW_MOCK") == "true":
+                logger.warning("[ClosedLoop] Halting loop in mock environment due to action failure.")
+                break
+
+
             # 4. VERIFY — update ledger with results
             # Re-sense after actions to get the diff
             post_action_world = self._sense_world_state()
@@ -357,6 +362,15 @@ class ClosedLoopEngine:
 
     def _sense_world_state(self) -> WorldState:
         """Capture current OS world state."""
+        import os
+        if os.environ.get("JARVIS_ALLOW_MOCK") == "true":
+            # Fast path for unit tests to avoid slow UIA / pywinauto scans
+            return WorldState(
+                active_window={"title": "Test Window", "process": "test.exe"},
+                running_processes=[],
+                open_windows=[],
+                system_resources={"cpu": 0, "ram": 0},
+            )
         try:
             return WorldStateModeler.get_current_state()
         except Exception as e:
@@ -367,6 +381,7 @@ class ClosedLoopEngine:
                 open_windows=[],
                 system_resources={"cpu": 0, "ram": 0},
             )
+
 
     def _think(
         self,

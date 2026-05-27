@@ -160,10 +160,17 @@ class Orchestrator:
         has_unsafe_skill = False
         plan = []
 
-        if mem_path:
-            logger.info(f"[Orchestrator] Memory HIT (state-aware) for '{text}'")
-            plan = self._planner._path_to_skill_calls(mem_path)
-            # Execute the memory path sequentially
+        is_fast_path = mem_path is not None or packet.intent in ("session_activate", "session_deactivate", "power_action")
+
+        if is_fast_path:
+            if mem_path:
+                logger.info(f"[Orchestrator] Memory HIT (state-aware) for '{text}'")
+                plan = self._planner._path_to_skill_calls(mem_path)
+            else:
+                logger.info(f"[Orchestrator] Direct-map fast path for intent: {packet.intent}")
+                plan = self._planner.plan(packet)
+
+            # Execute the plan sequentially
             for call in plan:
                 call.params["_interface"] = snapshot.interface
                 call.params["_agent_bus"] = self.agent_bus
@@ -188,9 +195,10 @@ class Orchestrator:
                 self._temporal.log_event(app_context=snapshot.active_app or "system", action=f"executed {call.skill}", status="SUCCESS" if result.success else "FAILED", duration_ms=duration_ms)
                 
                 if not result.success:
-                    logger.warning(f"[Orchestrator] Memory path plan halted at skill: {call.skill}")
+                    logger.warning(f"[Orchestrator] Fast path plan halted at skill: {call.skill}")
                     all_success = False
                     break
+
         else:
             # ═══ Closed-Loop Engine (replaces old inline ReAct loop) ═══
             # The engine autonomously cycles System ↔ LLM with:
