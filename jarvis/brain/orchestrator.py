@@ -184,7 +184,6 @@ class Orchestrator:
                 duration_ms = int((time.perf_counter() - start_time) * 1000)
                 results.append(result)
                 
-                self._episodic.log_command(command=text, success=result.success, app=snapshot.active_app or "", skill=call.skill)
                 self._temporal.log_event(app_context=snapshot.active_app or "system", action=f"executed {call.skill}", status="SUCCESS" if result.success else "FAILED", duration_ms=duration_ms)
                 
                 if not result.success:
@@ -261,13 +260,6 @@ class Orchestrator:
                         "success": result.success,
                         "message": result.message or result.action_taken
                     })
-                    
-                    self._episodic.log_command(
-                        command=text,
-                        success=result.success,
-                        app=current_snapshot.active_app or "",
-                        skill=call.skill,
-                    )
                     
                     action_desc = f"executed {call.skill}"
                     if call.params:
@@ -379,6 +371,23 @@ class Orchestrator:
                     )
                     self._memory.add_learned_macro(new_edge)
                     logger.info(f"[Orchestrator] Learned new state-aware macro for trigger: {text!r}")
+
+        # Log command execution exactly once per turn in episodic memory
+        last_app = ""
+        last_skill = ""
+        if plan:
+            last_skill = plan[-1].skill
+        try:
+            last_app = self._context.capture().active_app or ""
+        except Exception:
+            pass
+        self._episodic.log_command(
+            command=text,
+            success=all_success,
+            app=last_app,
+            skill=last_skill,
+            from_memory=bool(mem_path)
+        )
 
         return results
 
