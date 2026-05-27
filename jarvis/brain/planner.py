@@ -53,7 +53,7 @@ class Planner:
         self._mcp_bus = mcp_bus
         self._preference_router = PreferenceRouter()
 
-    def plan(self, packet: PerceptionPacket) -> list[SkillCall]:
+    def plan(self, packet: PerceptionPacket, react_history: list[dict] = None) -> list[SkillCall]:
         """Convert PerceptionPacket → ordered list of SkillCalls."""
 
         # Compound command: send the FULL original sentence to the LLM in ONE call.
@@ -73,11 +73,11 @@ class Planner:
             )
             compound_packet.context_snapshot = packet.context_snapshot
             compound_packet.override_prompt = full_text
-            return self._plan_single(compound_packet, snapshot=packet.context_snapshot)
+            return self._plan_single(compound_packet, snapshot=packet.context_snapshot, react_history=react_history)
 
-        return self._plan_single(packet, snapshot=packet.context_snapshot)
+        return self._plan_single(packet, snapshot=packet.context_snapshot, react_history=react_history)
 
-    def _plan_single(self, packet: PerceptionPacket, snapshot=None) -> list[SkillCall]:
+    def _plan_single(self, packet: PerceptionPacket, snapshot=None, react_history: list[dict] = None) -> list[SkillCall]:
         # 0. Check safe mode for quoted blocks or text analysis
         if getattr(packet, "safe_mode", False):
             logger.info(f"[Planner] Safe mode active for: {packet.text!r}")
@@ -99,7 +99,7 @@ class Planner:
 
         # 3. Unknown intent / all others → LLM Unified Router
         logger.info(f"[Brain] Routing to cognitive layer for intent: {packet.intent!r}")
-        return self._plan_via_unified_llm(packet, snapshot=snapshot)
+        return self._plan_via_unified_llm(packet, snapshot=snapshot, react_history=react_history)
 
     def _plan_open_app(self, packet: PerceptionPacket) -> list[SkillCall]:
         target = packet.entities.get("target", "")
@@ -147,7 +147,45 @@ class Planner:
         # Fallback skill call
         return [SkillCall(skill="navigate_location", params={"target": target})]
 
-    def _plan_via_unified_llm(self, packet: PerceptionPacket, snapshot=None) -> list[SkillCall]:
+    def _get_os_desktop_state(self) -> str:
+        try:
+            import win32gui
+            from pywinauto import Desktop
+            
+            hwnd = win32gui.GetForegroundWindow()
+            fore_title = win32gui.GetWindowText(hwnd)
+            
+            # Enumerate open windows and modal dialogs
+            windows = Desktop(backend="uia").windows()
+            open_wins = []
+            modal_popups = []
+            
+            for win in windows:
+                try:
+                    title = win.window_text().strip()
+                    if title:
+                        open_wins.append(title)
+                        # Identify potential modal child dialogs
+                        for child in win.children():
+                            if child.control_type() == "Window":
+                                c_title = child.window_text().strip()
+                                if c_title:
+                                    modal_popups.append(f"{c_title} (child of {title})")
+                except:
+                    continue
+            
+            state_desc = f"Active Foreground Window: \"{fore_title}\"\n"
+            if open_wins:
+                state_desc += f"Open Application Windows: {open_wins}\n"
+            if modal_popups:
+                state_desc += f"Active Dialogs/Popups detected: {modal_popups}\n"
+            else:
+                state_desc += "Active Dialogs/Popups detected: None\n"
+            return state_desc
+        except Exception as e:
+            return f"OS Desktop State Error: {e}"
+
+    def _plan_via_unified_llm(self, packet: PerceptionPacket, snapshot=None, react_history: list[dict] = None) -> list[SkillCall]:
         # Context enrichment for LLM
         system_ctx = self._preference_router.get_system_context()
         ui_ctx = "UI State: Unknown"
@@ -174,8 +212,20 @@ class Planner:
         if snapshot:
             active_app_ctx = f"Application Name: \"{snapshot.active_app}\"\nWindow Title: \"{snapshot.active_window_title}\""
 
+        os_desktop_ctx = self._get_os_desktop_state()
+        
+        react_history_ctx = "No preceding steps in this turn."
+        if react_history:
+            react_history_ctx = "\n".join(
+                f"- Step {i+1}: {step.get('skill')}({ {k: v for k, v in step.get('params', {}).items() if not k.startswith('_')} }) -> {'SUCCESS' if step.get('success') else 'FAILED'}"
+                f"{' (' + step.get('message') + ')' if step.get('message') else ''}"
+                for i, step in enumerate(react_history)
+            )
+
         enriched_context = (
             f"[Active Foreground Window]\n{active_app_ctx}\n\n"
+            f"[OS Desktop State]\n{os_desktop_ctx}\n\n"
+            f"[Execution History in Current Turn]\n{react_history_ctx}\n\n"
             f"[System Preferences]\n{system_ctx}\n\n"
             f"[Current UI State]\n{ui_ctx}\n\n"
             f"[State Provenance]\n{lineage_ctx}\n\n"
