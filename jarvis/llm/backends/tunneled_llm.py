@@ -19,7 +19,7 @@ from typing import Optional
 
 import requests
 
-from jarvis.llm.llm_interface import LLMInterface, Plan, SkillCallSpec, LLMDecision
+from jarvis.llm.llm_interface import LLMInterface, Plan, SkillCallSpec, LLMDecision, ClosedLoopDecision
 
 logger = logging.getLogger(__name__)
 
@@ -156,6 +156,81 @@ class TunneledLLM(LLMInterface):
                 logger.error(f"[TunneledLLM] Decide request failed on attempt {attempt+1}: {e}")
                 if attempt == 2:
                     return None
+
+    def decide_closed_loop(self, prompt: str, context: str = "") -> Optional[ClosedLoopDecision]:
+        if not self._api_url:
+            return None
+
+        from jarvis.brain.closed_loop_prompt import build_closed_loop_system_prompt
+        sys_prompt = build_closed_loop_system_prompt()
+
+        messages = [
+            {"role": "system", "content": sys_prompt},
+            {"role": "system", "content": context},
+            {"role": "user", "content": prompt}
+        ]
+
+        for attempt in range(3):
+            try:
+                resp = requests.post(
+                    f"{self._api_url}/chat/completions",
+                    headers=self._headers(),
+                    json={
+                        "model": self._model,
+                        "messages": messages,
+                        "max_tokens": self._max_tokens + 200,
+                        "temperature": 0.3 if attempt == 0 else 0.1,
+                        "stream": False,
+                    },
+                    timeout=self._timeout,
+                )
+                resp.raise_for_status()
+                content = resp.json()["choices"][0]["message"]["content"].strip()
+                self.last_raw_response = content
+
+                decision = self._parse_closed_loop_decision(content)
+                if decision:
+                    return decision
+
+                if attempt < 2:
+                    logger.warning(f"[TunneledLLM] Closed-loop JSON parse failure on attempt {attempt+1}. Retrying...")
+                    messages.append({"role": "assistant", "content": content})
+                    messages.append({"role": "user", "content": (
+                        "Your response was not valid JSON for the closed-loop schema. "
+                        'Return ONLY: {"status": "in_progress"|"done"|"blocked", "reasoning": "...", "actions": [...]}'
+                    )})
+                else:
+                    logger.error("[TunneledLLM] Closed-loop JSON self-correction exhausted.")
+                    return ClosedLoopDecision(status="blocked", reasoning="JSON parse failure", block_reason="JSON parse failure")
+            except Exception as e:
+                logger.error(f"[TunneledLLM] Closed-loop request failed attempt {attempt+1}: {e}")
+                if attempt == 2:
+                    return None
+
+    def _parse_closed_loop_decision(self, raw: str) -> Optional[ClosedLoopDecision]:
+        import re
+        cleaned = re.sub(r"```(?:json)?\s*", "", raw, flags=re.IGNORECASE).strip()
+        cleaned = cleaned.replace("```", "").strip()
+        obj_match = re.search(r"(\{.*\})", cleaned, re.DOTALL)
+        candidate = obj_match.group(1) if obj_match else cleaned
+        try:
+            data = json.loads(candidate)
+        except Exception:
+            return None
+        if not isinstance(data, dict) or "status" not in data:
+            return None
+        actions = []
+        if "actions" in data and isinstance(data["actions"], list):
+            for item in data["actions"]:
+                if isinstance(item, dict) and "skill" in item:
+                    actions.append(SkillCallSpec(skill=item["skill"], params=item.get("params", {})))
+        return ClosedLoopDecision(
+            status=data.get("status", "blocked"),
+            reasoning=data.get("reasoning", ""),
+            actions=actions,
+            summary=data.get("summary"),
+            block_reason=data.get("block_reason"),
+        )
 
     def _is_valid_json_decision(self, content: str) -> tuple[bool, Optional[str]]:
         import json

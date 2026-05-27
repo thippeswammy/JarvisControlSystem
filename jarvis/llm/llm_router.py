@@ -30,7 +30,7 @@ from typing import Optional
 
 import yaml
 
-from jarvis.llm.llm_interface import LLMInterface, Plan, LLMDecision
+from jarvis.llm.llm_interface import LLMInterface, Plan, LLMDecision, ClosedLoopDecision
 from jarvis.llm.backends.mock_llm import MockLLM
 from jarvis.llm.backends.local_llm import LocalLLM
 from jarvis.llm.backends.openai_llm import OpenAILLM
@@ -359,6 +359,56 @@ class LLMRouter:
         # Final fallback: Raise error instead of falling back to Mock
         raise RuntimeError("Jarvis local cognitive core (Ollama gemma3) is offline. Please make sure the service is running ('ollama serve').")
 
+    def decide_closed_loop(self, prompt: str, context: str = "") -> ClosedLoopDecision:
+        """
+        Closed-loop decision routing: primary → fallback → emergency.
+        Returns ClosedLoopDecision with status/actions/summary.
+        """
+        for backend in [self._primary, self._fallback, self._emergency]:
+            if not backend:
+                continue
+            if not self._is_healthy(backend):
+                logger.info(f"[LLMRouter] Skipping unhealthy backend for closed-loop: {backend.name}")
+                continue
+
+            # Check if MockLLM is disallowed
+            if "mock" in backend.name.lower() and os.environ.get("JARVIS_ALLOW_MOCK") != "true":
+                logger.info(f"[LLMRouter] Disallowing MockLLM fallback for CLOSED_LOOP.")
+                continue
+
+            logger.info(f"[ClosedLoop] Requesting decision from {backend.name}...")
+
+            # Clear last raw response
+            if hasattr(backend, "last_raw_response"):
+                backend.last_raw_response = ""
+
+            try:
+                decision = backend.decide_closed_loop(prompt, context)
+            except NotImplementedError:
+                logger.warning(f"[LLMRouter] {backend.name} does not support closed-loop. Trying next.")
+                continue
+            except Exception as e:
+                logger.error(f"[LLMRouter] {backend.name} closed-loop raised: {e} — trying next.")
+                with self._lock:
+                    self._health[backend.name] = False
+                continue
+
+            raw_response_text = getattr(backend, "last_raw_response", "") or "No raw response captured"
+            self._write_to_raw_log("CLOSED_LOOP", backend.name, {"prompt": prompt[:200]}, raw_response_text)
+
+            if decision:
+                logger.info(f"[ClosedLoop] Status: {decision.status.upper()} | Actions: {len(decision.actions)}")
+                return decision
+            else:
+                logger.warning(f"[LLMRouter] {backend.name} returned empty closed-loop decision — trying next.")
+
+        # Final fallback: return blocked
+        from jarvis.llm.llm_interface import ClosedLoopDecision as CLD
+        return CLD(
+            status="blocked",
+            reasoning="All LLM backends failed or unavailable",
+            block_reason="No available backend",
+        )
     def stop(self):
         """Stop the health monitor thread."""
         self._stop_event.set()

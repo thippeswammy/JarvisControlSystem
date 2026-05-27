@@ -12,7 +12,7 @@ import logging
 import re
 from typing import Optional
 
-from jarvis.llm.llm_interface import LLMInterface, Plan, SkillCallSpec, LLMDecision
+from jarvis.llm.llm_interface import LLMInterface, Plan, SkillCallSpec, LLMDecision, ClosedLoopDecision
 
 logger = logging.getLogger(__name__)
 
@@ -224,3 +224,19 @@ class MockLLM(LLMInterface):
                 return LLMDecision(type="plan", steps=other_steps)
             
         return LLMDecision(type="chat", message="I'm a mock brain, and I don't know what to say.")
+
+    def decide_closed_loop(self, prompt: str, context: str = "") -> Optional[ClosedLoopDecision]:
+        """Mock closed-loop: uses plan() heuristics, always signals done in one step."""
+        self.last_raw_response = "Mock closed-loop fallback"
+        plan = self.plan(prompt, context)
+        if plan:
+            return ClosedLoopDecision(
+                status="in_progress",
+                reasoning="Mock heuristic plan",
+                actions=plan,
+            )
+        return ClosedLoopDecision(
+            status="blocked",
+            reasoning="Mock LLM could not determine actions",
+            block_reason="No heuristic match",
+        )

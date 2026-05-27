@@ -25,7 +25,7 @@ from typing import Optional
 import requests
 
 from jarvis.utils.ollama_utils import ensure_ollama_running
-from jarvis.llm.llm_interface import LLMInterface, Plan, SkillCallSpec, LLMDecision
+from jarvis.llm.llm_interface import LLMInterface, Plan, SkillCallSpec, LLMDecision, ClosedLoopDecision
 
 logger = logging.getLogger(__name__)
 _DEFAULT_MODEL = "gemma3:4b"
@@ -227,6 +227,113 @@ class LocalLLM(LLMInterface):
                 logger.error(f"[LocalLLM] Decide request failed on attempt {attempt+1}: {e}")
                 if attempt == 2:
                     return None
+
+    def decide_closed_loop(self, prompt: str, context: str = "") -> Optional[ClosedLoopDecision]:
+        """
+        Closed-loop decision: LLM returns status + actions or signals done.
+        Uses 3-attempt JSON self-correction, same as decide().
+        """
+        from jarvis.brain.closed_loop_prompt import build_closed_loop_system_prompt
+        
+        model = self._active_model or self._model
+        sys_prompt = build_closed_loop_system_prompt()
+
+        messages = [
+            {"role": "system", "content": sys_prompt},
+            {"role": "system", "content": context},
+            {"role": "user", "content": prompt}
+        ]
+
+        for attempt in range(3):
+            payload = {
+                "model": model,
+                "messages": messages,
+                "max_tokens": self._max_tokens + 200,
+                "temperature": 0.3 if attempt == 0 else 0.1,
+                "stream": False,
+            }
+
+            try:
+                resp = requests.post(
+                    f"{self._api_url}/chat/completions",
+                    json=payload,
+                    timeout=self._timeout,
+                )
+                resp.raise_for_status()
+                content = resp.json()["choices"][0]["message"]["content"].strip()
+                self.last_raw_response = content
+
+                decision = self._parse_closed_loop_decision(content)
+                if decision:
+                    return decision
+
+                if attempt < 2:
+                    logger.warning(f"[LocalLLM] Closed-loop JSON parse failure on attempt {attempt+1}. Retrying...")
+                    messages.append({"role": "assistant", "content": content})
+                    messages.append({"role": "user", "content": (
+                        "Your response was not valid JSON for the closed-loop schema. "
+                        "Return ONLY a JSON object with: "
+                        '{"status": "in_progress"|"done"|"blocked", "reasoning": "...", '
+                        '"actions": [...], "summary": "..."}'
+                    )})
+                else:
+                    logger.error("[LocalLLM] Closed-loop JSON self-correction exhausted.")
+                    # Last resort: treat as blocked
+                    return ClosedLoopDecision(
+                        status="blocked",
+                        reasoning="LLM failed to produce valid closed-loop JSON after 3 attempts",
+                        block_reason="JSON parse failure"
+                    )
+            except Exception as e:
+                logger.error(f"[LocalLLM] Closed-loop request failed attempt {attempt+1}: {e}")
+                if attempt == 2:
+                    return None
+
+    def _parse_closed_loop_decision(self, raw: str) -> Optional[ClosedLoopDecision]:
+        """Parse LLM raw text into a ClosedLoopDecision."""
+        import re
+        
+        cleaned = re.sub(r"```(?:json)?\s*", "", raw, flags=re.IGNORECASE).strip()
+        cleaned = cleaned.replace("```", "").strip()
+        
+        obj_match = re.search(r"(\{.*\})", cleaned, re.DOTALL)
+        candidate = obj_match.group(1) if obj_match else cleaned
+        
+        try:
+            data = json.loads(candidate)
+        except Exception:
+            try:
+                healed = self._heal_json(candidate)
+                data = json.loads(healed)
+            except Exception:
+                logger.warning(f"[LocalLLM] Failed to parse closed-loop JSON: {raw[:200]}")
+                return None
+        
+        if not isinstance(data, dict) or "status" not in data:
+            logger.warning(f"[LocalLLM] Closed-loop JSON missing 'status' field: {data}")
+            return None
+        
+        status = data.get("status", "blocked")
+        reasoning = data.get("reasoning", "")
+        summary = data.get("summary")
+        block_reason = data.get("block_reason")
+        
+        actions = []
+        if "actions" in data and isinstance(data["actions"], list):
+            for item in data["actions"]:
+                if isinstance(item, dict) and "skill" in item:
+                    actions.append(SkillCallSpec(
+                        skill=item["skill"],
+                        params=item.get("params", {}),
+                    ))
+        
+        return ClosedLoopDecision(
+            status=status,
+            reasoning=reasoning,
+            actions=actions,
+            summary=summary,
+            block_reason=block_reason,
+        )
 
     def _is_valid_json_decision(self, content: str) -> tuple[bool, Optional[str]]:
         import json

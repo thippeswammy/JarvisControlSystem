@@ -17,7 +17,7 @@ import os
 import re
 from typing import Optional
 
-from jarvis.llm.llm_interface import LLMInterface, Plan, SkillCallSpec, LLMDecision
+from jarvis.llm.llm_interface import LLMInterface, Plan, SkillCallSpec, LLMDecision, ClosedLoopDecision
 
 logger = logging.getLogger(__name__)
 
@@ -160,6 +160,56 @@ class NvidiaLLM(LLMInterface):
         except Exception as e:
             logger.error(f"[NvidiaLLM] decide() request failed: {e}")
             return None
+    # ── decide_closed_loop() ─────────────────────────────────
+
+    def decide_closed_loop(self, prompt: str, context: str = "") -> Optional[ClosedLoopDecision]:
+        try:
+            from jarvis.brain.closed_loop_prompt import build_closed_loop_system_prompt
+            client = self._get_client()
+            sys_prompt = build_closed_loop_system_prompt()
+            messages = [
+                {"role": "system", "content": sys_prompt},
+                {"role": "system", "content": context},
+                {"role": "user", "content": prompt},
+            ]
+            response = client.chat.completions.create(
+                model=self._model,
+                messages=messages,
+                max_tokens=self._max_tokens,
+                temperature=0.3,
+                top_p=self._top_p,
+                timeout=self._timeout,
+            )
+            content = response.choices[0].message.content.strip()
+            self.last_raw_response = content
+            return self._parse_closed_loop_decision(content)
+        except Exception as e:
+            logger.error(f"[NvidiaLLM] decide_closed_loop() failed: {e}")
+            return None
+
+    def _parse_closed_loop_decision(self, raw: str) -> Optional[ClosedLoopDecision]:
+        cleaned = re.sub(r"```(?:json)?\s*", "", raw, flags=re.IGNORECASE).strip()
+        cleaned = cleaned.replace("```", "").strip()
+        obj_match = re.search(r"(\{.*\})", cleaned, re.DOTALL)
+        candidate = obj_match.group(1) if obj_match else cleaned
+        try:
+            data = json.loads(candidate)
+        except Exception:
+            return None
+        if not isinstance(data, dict) or "status" not in data:
+            return None
+        actions = []
+        if "actions" in data and isinstance(data["actions"], list):
+            for item in data["actions"]:
+                if isinstance(item, dict) and "skill" in item:
+                    actions.append(SkillCallSpec(skill=item["skill"], params=item.get("params", {})))
+        return ClosedLoopDecision(
+            status=data.get("status", "blocked"),
+            reasoning=data.get("reasoning", ""),
+            actions=actions,
+            summary=data.get("summary"),
+            block_reason=data.get("block_reason"),
+        )
 
     # ── Private helpers ──────────────────────────────────────
 

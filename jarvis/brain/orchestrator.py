@@ -16,6 +16,7 @@ from typing import Optional, Callable
 
 from jarvis.brain.planner import Planner
 from jarvis.brain.reactive_learner import ReactiveLearner
+from jarvis.brain.closed_loop_engine import ClosedLoopEngine
 from jarvis.llm.llm_router import LLMRouter
 from jarvis.memory.layers.episodic import EpisodicMemory
 from jarvis.memory.layers.temporal import TemporalMemory
@@ -191,108 +192,45 @@ class Orchestrator:
                     all_success = False
                     break
         else:
-            # Closed-Loop ReAct Loop
-            react_history = []
-            max_iterations = 10
-            iteration = 0
-            
-            while iteration < max_iterations:
-                iteration += 1
-                logger.info(f"[Orchestrator] Starting ReAct iteration {iteration}/{max_iterations}")
-                
-                # Re-sense state (harvesting context at the start of each iteration)
-                current_snapshot = self._context.capture()
-                current_snapshot.interface = snapshot.interface
-                packet.context_snapshot = current_snapshot
-                
-                # Update memory context based on current snapshot
-                procedural_ctx = self._memory.get_relevant_context(
-                    text,
-                    app_id=current_snapshot.active_app or None,
-                    state_sig=current_snapshot.state_sig
-                )
-                episodic_ctx = self._episodic.as_llm_context()
-                packet.memory_context = f"{episodic_ctx}\n\n{procedural_ctx}"
-                
-                # Think: Let planner generate next steps given current snapshot and history
-                iter_plan = self._planner.plan(packet, react_history=react_history)
-                if not iter_plan:
-                    logger.info("[Orchestrator] ReAct loop: Planner generated no actions. Exiting loop.")
-                    break
-                
-                # Act: Execute the plan generated for this step
-                step_success = True
-                for call in iter_plan:
-                    # Enforce that LLM is the source
-                    if getattr(call, "source", "") == "llm":
-                        has_llm_source = True
-                    if self._bus.is_cognitive(call.skill):
-                        has_unsafe_skill = True
-                        
-                    call.params["_interface"] = current_snapshot.interface
-                    call.params["_agent_bus"] = self.agent_bus
-                    call.params["_mcp_bus"] = self.mcp_bus
-                    call.params["_router"] = self._router
-                    
-                    # Accumulate into global plan for macro learning later
-                    plan.append(call)
-                    
-                    import time
-                    start_time = time.perf_counter()
-                    if self._verification_loop:
-                        result = self._verification_loop.execute_and_verify(
-                            call=call,
-                            bus=self._bus,
-                            packet=packet,
-                            snapshot=current_snapshot,
-                            learner=self._learner,
-                        )
-                    else:
-                        result = self._bus.dispatch(call)
-                    duration_ms = int((time.perf_counter() - start_time) * 1000)
-                    
-                    results.append(result)
-                    
-                    # Log history item
-                    react_history.append({
-                        "skill": call.skill,
-                        "params": call.params,
-                        "success": result.success,
-                        "message": result.message or result.action_taken
-                    })
-                    
-                    action_desc = f"executed {call.skill}"
-                    if call.params:
-                        clean_params = {k: v for k, v in call.params.items() if not k.startswith("_")}
-                        if clean_params:
-                            action_desc += f" with params: {clean_params}"
-                    
-                    self._temporal.log_event(
-                        app_context=current_snapshot.active_app or "system",
-                        action=action_desc,
-                        status="SUCCESS" if result.success else "FAILED",
-                        duration_ms=duration_ms
-                    )
-                    
-                    if result.success:
-                        self._episodic.record_state_transition(
-                            state_sig="",
-                            cause="JARVIS",
-                            action=f"executed {call.skill}",
-                            skill_used=call.skill,
-                            app_context=current_snapshot.active_app or ""
-                        )
-                    else:
-                        step_success = False
-                        all_success = False
-                        break
-                
-                # Check for loop termination
-                if len(iter_plan) == 1 and iter_plan[0].skill in ("chat_reply", "ask_user"):
-                    logger.info(f"[Orchestrator] ReAct loop reached conversational terminal action: {iter_plan[0].skill}")
-                    break
-                if not step_success:
-                    logger.warning("[Orchestrator] ReAct step execution encountered a failure. Proceeding to next iteration for course correction.")
+            # ═══ Closed-Loop Engine (replaces old inline ReAct loop) ═══
+            # The engine autonomously cycles System ↔ LLM with:
+            #   - Clean empty ExecutionLedger at start (no stale data)
+            #   - World-state diffs injected per iteration
+            #   - Explicit DONE/BLOCKED signals from LLM
+            #   - Adaptive iteration limits
+            #   - Integrated RecoveryEngine for self-healing
+            from jarvis.brain.preference_router import PreferenceRouter
+            try:
+                preference_router = PreferenceRouter()
+            except Exception:
+                preference_router = None
+
+            engine = ClosedLoopEngine(
+                router=self._router,
+                bus=self._bus,
+                context_harvester=self._context,
+                episodic=self._episodic,
+                temporal=self._temporal,
+                verification_loop=self._verification_loop,
+                learner=self._learner,
+                agent_bus=self.agent_bus,
+                mcp_bus=self.mcp_bus,
+                preference_router=preference_router,
+                max_iterations=10,
+            )
+
+            loop_result = engine.run(
+                goal=text,
+                packet=packet,
+                initial_snapshot=snapshot,
+            )
+
+            # Map engine results back to orchestrator variables
+            results = loop_result.results
+            plan = loop_result.plan
+            has_llm_source = loop_result.has_llm_source
+            has_unsafe_skill = loop_result.has_unsafe_skill
+            all_success = loop_result.completed or all(r.success for r in results)
 
         # Auto-Learn Semantic Macro (The Reflex)
         # Only runs when --learn-macros flag is active AND plan wasn't from mock backend

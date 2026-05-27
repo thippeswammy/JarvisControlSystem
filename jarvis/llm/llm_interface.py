@@ -45,6 +45,23 @@ class LLMDecision:
     mcp_params: Optional[dict] = None
 
 
+@dataclass
+class ClosedLoopDecision:
+    """
+    Decision from the LLM within the closed-loop execution cycle.
+    
+    The LLM signals:
+      - "in_progress": actions to execute, then re-sense and loop
+      - "done":        goal is complete, exit the loop
+      - "blocked":     cannot proceed, escalate to recovery/user
+    """
+    status: str              # "done", "in_progress", "blocked"
+    reasoning: str = ""      # LLM's internal reasoning (logged, not shown to user)
+    actions: list = field(default_factory=list)  # list[SkillCallSpec] — empty when done
+    summary: Optional[str] = None  # Populated when status="done" — what was accomplished
+    block_reason: Optional[str] = None  # Populated when status="blocked"
+
+
 
 class LLMInterface(ABC):
     """
@@ -88,6 +105,15 @@ class LLMInterface(ABC):
         Given a user command and full context block, make a unified decision.
         Returns None if the backend cannot produce a valid decision.
         """
+
+    def decide_closed_loop(self, prompt: str, context: str = "") -> Optional['ClosedLoopDecision']:
+        """
+        Closed-loop decision: given a goal + accumulated execution context,
+        return next actions or signal completion.
+        
+        Default: raises NotImplementedError (backends implement incrementally).
+        """
+        raise NotImplementedError(f"{self.name} does not support decide_closed_loop yet")
 
     def build_system_prompt(self) -> str:
         """
