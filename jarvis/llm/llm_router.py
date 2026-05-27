@@ -108,9 +108,9 @@ class LLMRouter:
                     api_url=bc.get("api_url", "http://localhost:11434/v1"),
                     model=bc.get("model", "gemma3:4b"),
                     fallback_model=bc.get("fallback_model", "gemma3:4b"),
-                    max_tokens=bc.get("max_tokens", 300),
+                    max_tokens=bc.get("max_tokens", 30000),
                     temperature=bc.get("temperature", 0.1),
-                    timeout=bc.get("timeout_seconds", 15),
+                    timeout=bc.get("timeout_seconds", 60),
                     auto_pull=bc.get("auto_pull", True),
                 )
             if name == "openai":
@@ -118,28 +118,28 @@ class LLMRouter:
                     provider=bc.get("provider", "openai"),
                     api_key=_resolve(bc.get("api_key", "")),
                     model=bc.get("model", "gpt-4o-mini"),
-                    max_tokens=bc.get("max_tokens", 300),
+                    max_tokens=bc.get("max_tokens", 30000),
                     temperature=bc.get("temperature", 0.1),
-                    timeout=bc.get("timeout_seconds", 20),
+                    timeout=bc.get("timeout_seconds", 60),
                 )
             if name == "tunneled":
                 return TunneledLLM(
                     api_url=_resolve(bc.get("api_url", "")),
                     api_key=_resolve(bc.get("api_key", "")),
                     model=_resolve(bc.get("model", "")),
-                    max_tokens=bc.get("max_tokens", 300),
+                    max_tokens=bc.get("max_tokens", 30000),
                     temperature=bc.get("temperature", 0.1),
-                    timeout=bc.get("timeout_seconds", 10),
+                    timeout=bc.get("timeout_seconds", 60),
                 )
             if name == "nvidia":
                 return NvidiaLLM(
                     model=bc.get("model", "qwen/qwen3-coder-480b-a35b-instruct"),
                     api_key=_resolve(bc.get("api_key", "")),
                     base_url=bc.get("base_url", "https://integrate.api.nvidia.com/v1"),
-                    max_tokens=bc.get("max_tokens", 4096),
+                    max_tokens=bc.get("max_tokens", 40960),
                     temperature=bc.get("temperature", 0.7),
                     top_p=bc.get("top_p", 0.8),
-                    timeout=bc.get("timeout_seconds", 30),
+                    timeout=bc.get("timeout_seconds", 60),
                 )
             if name == "mock":
                 return MockLLM()
@@ -272,6 +272,11 @@ class LLMRouter:
             if hasattr(backend, "last_raw_response"):
                 backend.last_raw_response = ""
 
+            # Check if MockLLM is disallowed
+            if "mock" in backend.name.lower() and os.environ.get("JARVIS_ALLOW_MOCK") != "true":
+                logger.info(f"[LLMRouter] Disallowing MockLLM fallback for PLAN.")
+                continue
+
             try:
                 plan = backend.plan(prompt, memory_context)
             except Exception as e:
@@ -289,9 +294,8 @@ class LLMRouter:
             else:
                 logger.warning(f"[LLMRouter] {backend.name} returned empty plan — trying next.")
 
-        # Final fallback: mock always works
-        logger.warning("[LLMRouter] All backends failed. Using mock emergency fallback.")
-        return self._emergency.plan(prompt, memory_context) or []
+        # Final fallback: Raise error instead of falling back to Mock
+        raise RuntimeError("Jarvis local cognitive core (Ollama gemma3) is offline. Please make sure the service is running ('ollama serve').")
 
     def decide(self, prompt: str, context: str = "") -> LLMDecision:
         """
@@ -303,6 +307,11 @@ class LLMRouter:
                 continue
             if not self._is_healthy(backend):
                 logger.info(f"[LLMRouter] Skipping unhealthy backend: {backend.name}")
+                continue
+
+            # Check if MockLLM is disallowed
+            if "mock" in backend.name.lower() and os.environ.get("JARVIS_ALLOW_MOCK") != "true":
+                logger.info(f"[LLMRouter] Disallowing MockLLM fallback for DECIDE.")
                 continue
 
             logger.info(f"[Cognitive] Requesting decision from {backend.name}...")
@@ -347,9 +356,8 @@ class LLMRouter:
             else:
                 logger.warning(f"[LLMRouter] {backend.name} returned empty decision — trying next.")
 
-        # Final fallback (should never be reached as emergency is always healthy)
-        logger.warning("[LLMRouter] All backends failed. Returning emergency offline chat.")
-        return LLMDecision(type="chat", message="Sorry, my cognitive core is currently offline.")
+        # Final fallback: Raise error instead of falling back to Mock
+        raise RuntimeError("Jarvis local cognitive core (Ollama gemma3) is offline. Please make sure the service is running ('ollama serve').")
 
     def stop(self):
         """Stop the health monitor thread."""

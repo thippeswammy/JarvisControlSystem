@@ -193,28 +193,55 @@ class LocalLLM(LLMInterface):
             {"role": "user", "content": prompt}
         ]
 
-        payload = {
-            "model": model,
-            "messages": messages,
-            "max_tokens": self._max_tokens + 200, # allow longer for chat
-            "temperature": 0.4, # slightly higher for chat
-            "stream": False,
-        }
+        for attempt in range(3):
+            payload = {
+                "model": model,
+                "messages": messages,
+                "max_tokens": self._max_tokens + 200,
+                "temperature": 0.4 if attempt == 0 else 0.1,  # Lower temperature on retry
+                "stream": False,
+            }
 
+            try:
+                resp = requests.post(
+                    f"{self._api_url}/chat/completions",
+                    json=payload,
+                    timeout=self._timeout,
+                )
+                resp.raise_for_status()
+                content = resp.json()["choices"][0]["message"]["content"].strip()
+                self.last_raw_response = content
+                
+                is_valid, error_msg = self._is_valid_json_decision(content)
+                if is_valid:
+                    return self._parse_decision(content)
+                
+                if attempt < 2:
+                    logger.warning(f"[LocalLLM] JSON parse failure on attempt {attempt+1}: {error_msg}. Retrying self-correction...")
+                    messages.append({"role": "assistant", "content": content})
+                    messages.append({"role": "user", "content": f"Your response was not valid JSON. Parse error: {error_msg}. Please fix the JSON and return ONLY the valid JSON object matching the schema."})
+                else:
+                    logger.error(f"[LocalLLM] JSON self-correction exhausted all attempts.")
+                    return self._parse_decision(content)
+            except Exception as e:
+                logger.error(f"[LocalLLM] Decide request failed on attempt {attempt+1}: {e}")
+                if attempt == 2:
+                    return None
+
+    def _is_valid_json_decision(self, content: str) -> tuple[bool, Optional[str]]:
+        import json
+        import re
+        cleaned = re.sub(r"```(?:json)?\s*", "", content, flags=re.IGNORECASE).strip()
+        cleaned = cleaned.replace("```", "").strip()
+        obj_match = re.search(r"(\{.*\})", cleaned, re.DOTALL)
+        candidate = obj_match.group(1) if obj_match else cleaned
         try:
-            resp = requests.post(
-                f"{self._api_url}/chat/completions",
-                json=payload,
-                timeout=self._timeout,
-            )
-            resp.raise_for_status()
-            content = resp.json()["choices"][0]["message"]["content"].strip()
-            self.last_raw_response = content
-            return self._parse_decision(content)
-
+            data = json.loads(candidate)
+            if isinstance(data, dict) and "type" in data:
+                return True, None
+            return False, "JSON does not contain a 'type' field"
         except Exception as e:
-            logger.error(f"[LocalLLM] Decide request failed: {e}")
-            return None
+            return False, str(e)
 
     # ── Private ──────────────────────────────────
 
