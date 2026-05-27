@@ -41,12 +41,23 @@ class Scenario99(LiveScenario):
         parser = argparse.ArgumentParser(description="Scenario 99 Runner")
         parser.add_argument("--telegram", action="store_true", help="Enable live Telegram logging")
         parser.add_argument("--chat-id", type=str, default="5469322696", help="Telegram Chat ID to send updates to")
+        parser.add_argument("--steps", type=str, help="Comma-separated step numbers or names to run (e.g. 01,02)")
         args, _ = parser.parse_known_args()
         
         self.telegram_enabled = args.telegram
         self.telegram_chat_id = args.chat_id
         self.telegram_token = None
         self.last_plan = []
+
+        if args.steps:
+            step_numbers = [s.strip() for s in args.steps.split(",")]
+            filtered = []
+            for step in self.steps:
+                for num in step_numbers:
+                    if step.name.startswith(num) or num in step.name:
+                        filtered.append(step)
+                        break
+            self.steps = filtered
 
         # Initialize Memory Graph, Skill Bus, local-first LLM Router, and Orchestrator
         mem = MemoryManager()
@@ -55,8 +66,8 @@ class Scenario99(LiveScenario):
         
         # Intercept the plan generation
         original_plan = self.orch._planner.plan
-        def custom_plan(packet):
-            calls = original_plan(packet)
+        def custom_plan(packet, *args, **kwargs):
+            calls = original_plan(packet, *args, **kwargs)
             self.last_plan = calls
             return calls
         self.orch._planner.plan = custom_plan
