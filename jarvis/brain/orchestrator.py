@@ -143,13 +143,6 @@ class Orchestrator:
         
         packet.memory_context = f"{episodic_ctx}\n\n{procedural_ctx}"
 
-        logger.info(
-            f"[Orchestrator] '{text}' → intent={packet.intent}, "
-            f"app={snapshot.active_app}"
-        )
-
-        # Plan
-        # Compound commands go directly to the LLM (full sentence, one call).
         # Single commands: try memory recall first (fast path), then fall to LLM.
         mem_path = None
         if not packet.compound:
@@ -158,86 +151,156 @@ class Orchestrator:
                 app_id=snapshot.active_app or None,
                 state_sig=snapshot.state_sig
             )
-        
-        if mem_path:
-            logger.info(f"[Orchestrator] Memory HIT (state-aware) for '{text}'")
-            plan = self._planner._path_to_skill_calls(mem_path)
-        else:
-            if packet.compound:
-                logger.info("[Orchestrator] Compound command → single LLM call")
-            plan = self._planner.plan(packet)
 
-        # Execute each skill call in the plan
+        # Plan & Execute via Closed-Loop ReAct Engine
         results = []
         all_success = True
         has_llm_source = False
         has_unsafe_skill = False
-        
-        for call in plan:
-            call.params["_interface"] = snapshot.interface
-            call.params["_agent_bus"] = self.agent_bus
-            call.params["_mcp_bus"] = self.mcp_bus
-            call.params["_router"] = self._router
-            if getattr(call, "source", "") == "llm":
-                has_llm_source = True
-            if self._bus.is_cognitive(call.skill):
-                has_unsafe_skill = True
+        plan = []
 
-            import time
-            start_time = time.perf_counter()
-            if self._verification_loop:
-                result = self._verification_loop.execute_and_verify(
-                    call=call,
-                    bus=self._bus,
-                    packet=packet,
-                    snapshot=snapshot,
-                    learner=self._learner,
-                )
-            else:
-                # Phase 5 mode: execute without verification
-                result = self._bus.dispatch(call)
-            duration_ms = int((time.perf_counter() - start_time) * 1000)
-
-            results.append(result)
+        if mem_path:
+            logger.info(f"[Orchestrator] Memory HIT (state-aware) for '{text}'")
+            plan = self._planner._path_to_skill_calls(mem_path)
+            # Execute the memory path sequentially
+            for call in plan:
+                call.params["_interface"] = snapshot.interface
+                call.params["_agent_bus"] = self.agent_bus
+                call.params["_mcp_bus"] = self.mcp_bus
+                call.params["_router"] = self._router
+                
+                import time
+                start_time = time.perf_counter()
+                if self._verification_loop:
+                    result = self._verification_loop.execute_and_verify(
+                        call=call,
+                        bus=self._bus,
+                        packet=packet,
+                        snapshot=snapshot,
+                        learner=self._learner,
+                    )
+                else:
+                    result = self._bus.dispatch(call)
+                duration_ms = int((time.perf_counter() - start_time) * 1000)
+                results.append(result)
+                
+                self._episodic.log_command(command=text, success=result.success, app=snapshot.active_app or "", skill=call.skill)
+                self._temporal.log_event(app_context=snapshot.active_app or "system", action=f"executed {call.skill}", status="SUCCESS" if result.success else "FAILED", duration_ms=duration_ms)
+                
+                if not result.success:
+                    logger.warning(f"[Orchestrator] Memory path plan halted at skill: {call.skill}")
+                    all_success = False
+                    break
+        else:
+            # Closed-Loop ReAct Loop
+            react_history = []
+            max_iterations = 10
+            iteration = 0
             
-            # Log to episodic memory
-            self._episodic.log_command(
-                command=text,
-                success=result.success,
-                app=snapshot.active_app or "",
-                skill=call.skill,
-            )
-
-            # Log to temporal memory
-            action_desc = f"executed {call.skill}"
-            if call.params:
-                clean_params = {k: v for k, v in call.params.items() if not k.startswith("_")}
-                if clean_params:
-                    action_desc += f" with params: {clean_params}"
-            
-            self._temporal.log_event(
-                app_context=snapshot.active_app or "system",
-                action=action_desc,
-                status="SUCCESS" if result.success else "FAILED",
-                duration_ms=duration_ms
-            )
-
-            # Record state transition for lineage tracking
-            if result.success:
-                self._episodic.record_state_transition(
-                    state_sig="", # post-execution state (unknown until next cycle)
-                    cause="JARVIS",
-                    action=f"executed {call.skill}",
-                    skill_used=call.skill,
-                    app_context=snapshot.active_app or ""
+            while iteration < max_iterations:
+                iteration += 1
+                logger.info(f"[Orchestrator] Starting ReAct iteration {iteration}/{max_iterations}")
+                
+                # Re-sense state (harvesting context at the start of each iteration)
+                current_snapshot = self._context.capture()
+                current_snapshot.interface = snapshot.interface
+                packet.context_snapshot = current_snapshot
+                
+                # Update memory context based on current snapshot
+                procedural_ctx = self._memory.get_relevant_context(
+                    text,
+                    app_id=current_snapshot.active_app or None,
+                    state_sig=current_snapshot.state_sig
                 )
-
-
-            # Stop plan on failure
-            if not result.success:
-                logger.warning(f"[Orchestrator] Plan halted at skill: {call.skill}")
-                all_success = False
-                break
+                episodic_ctx = self._episodic.as_llm_context()
+                packet.memory_context = f"{episodic_ctx}\n\n{procedural_ctx}"
+                
+                # Think: Let planner generate next steps given current snapshot and history
+                iter_plan = self._planner.plan(packet, react_history=react_history)
+                if not iter_plan:
+                    logger.info("[Orchestrator] ReAct loop: Planner generated no actions. Exiting loop.")
+                    break
+                
+                # Act: Execute the plan generated for this step
+                step_success = True
+                for call in iter_plan:
+                    # Enforce that LLM is the source
+                    if getattr(call, "source", "") == "llm":
+                        has_llm_source = True
+                    if self._bus.is_cognitive(call.skill):
+                        has_unsafe_skill = True
+                        
+                    call.params["_interface"] = current_snapshot.interface
+                    call.params["_agent_bus"] = self.agent_bus
+                    call.params["_mcp_bus"] = self.mcp_bus
+                    call.params["_router"] = self._router
+                    
+                    # Accumulate into global plan for macro learning later
+                    plan.append(call)
+                    
+                    import time
+                    start_time = time.perf_counter()
+                    if self._verification_loop:
+                        result = self._verification_loop.execute_and_verify(
+                            call=call,
+                            bus=self._bus,
+                            packet=packet,
+                            snapshot=current_snapshot,
+                            learner=self._learner,
+                        )
+                    else:
+                        result = self._bus.dispatch(call)
+                    duration_ms = int((time.perf_counter() - start_time) * 1000)
+                    
+                    results.append(result)
+                    
+                    # Log history item
+                    react_history.append({
+                        "skill": call.skill,
+                        "params": call.params,
+                        "success": result.success,
+                        "message": result.message or result.action_taken
+                    })
+                    
+                    self._episodic.log_command(
+                        command=text,
+                        success=result.success,
+                        app=current_snapshot.active_app or "",
+                        skill=call.skill,
+                    )
+                    
+                    action_desc = f"executed {call.skill}"
+                    if call.params:
+                        clean_params = {k: v for k, v in call.params.items() if not k.startswith("_")}
+                        if clean_params:
+                            action_desc += f" with params: {clean_params}"
+                    
+                    self._temporal.log_event(
+                        app_context=current_snapshot.active_app or "system",
+                        action=action_desc,
+                        status="SUCCESS" if result.success else "FAILED",
+                        duration_ms=duration_ms
+                    )
+                    
+                    if result.success:
+                        self._episodic.record_state_transition(
+                            state_sig="",
+                            cause="JARVIS",
+                            action=f"executed {call.skill}",
+                            skill_used=call.skill,
+                            app_context=current_snapshot.active_app or ""
+                        )
+                    else:
+                        step_success = False
+                        all_success = False
+                        break
+                
+                # Check for loop termination
+                if len(iter_plan) == 1 and iter_plan[0].skill in ("chat_reply", "ask_user"):
+                    logger.info(f"[Orchestrator] ReAct loop reached conversational terminal action: {iter_plan[0].skill}")
+                    break
+                if not step_success:
+                    logger.warning("[Orchestrator] ReAct step execution encountered a failure. Proceeding to next iteration for course correction.")
 
         # Auto-Learn Semantic Macro (The Reflex)
         # Only runs when --learn-macros flag is active AND plan wasn't from mock backend
@@ -259,8 +322,16 @@ class Orchestrator:
                         is_dynamic_payload = True
                         break
 
-            if has_unsafe_skill or is_dynamic_payload:
-                reason = "dynamic cognitive skill" if has_unsafe_skill else "dynamic payload content"
+            # Explicitly blacklist dynamic cognitive skills from automatic memorization
+            MACRO_BLACKLIST = {
+                "type_text", "press_key", "click_browser_node", "fill_browser_node", 
+                "click_web_element", "search_web", "run_agent", "run_agent_pipeline", 
+                "call_mcp_tool", "extract_browser_dom_tree", "click_element", "scroll_page"
+            }
+            has_blacklisted_skill = any(call.skill in MACRO_BLACKLIST for call in plan)
+
+            if has_unsafe_skill or is_dynamic_payload or has_blacklisted_skill:
+                reason = "dynamic/cognitive blacklisted skill" if has_blacklisted_skill else ("dynamic cognitive skill" if has_unsafe_skill else "dynamic payload content")
                 logger.info(f"[Orchestrator] Skipping macro learning: plan contains {reason}")
             else:
                 import json
