@@ -31,6 +31,7 @@ class MockLLM(LLMInterface):
         return True  # Always available
 
     def plan(self, prompt: str, memory_context: str = "") -> Optional[Plan]:
+        self.last_raw_response = "Mock Emergency Fallback Activated"
         text = prompt.lower().strip()
         logger.debug(f"[MockLLM] Planning for: {text!r}")
 
@@ -201,6 +202,7 @@ class MockLLM(LLMInterface):
         )]
 
     def decide(self, prompt: str, context: str = "") -> Optional[LLMDecision]:
+        self.last_raw_response = "Mock emergency cognitive fallback response"
         logger.debug(f"[MockLLM] Deciding for: {prompt!r}")
         plan = self.plan(prompt, context)
         if plan:

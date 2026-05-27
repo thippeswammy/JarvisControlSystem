@@ -85,6 +85,7 @@ class TunneledLLM(LLMInterface):
             )
             resp.raise_for_status()
             content = resp.json()["choices"][0]["message"]["content"].strip()
+            self.last_raw_response = content
             return self._parse_plan(content)
         except requests.exceptions.Timeout:
             logger.warning(f"[TunneledLLM] Timeout after {self._timeout}s")
@@ -137,6 +138,7 @@ class TunneledLLM(LLMInterface):
             )
             resp.raise_for_status()
             content = resp.json()["choices"][0]["message"]["content"].strip()
+            self.last_raw_response = content
             return self._parse_decision(content)
         except Exception as e:
             logger.error(f"[TunneledLLM] Decide request failed: {e}")

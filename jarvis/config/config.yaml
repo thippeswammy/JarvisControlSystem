@@ -8,8 +8,8 @@ jarvis:
 
 # ── LLM Router ──────────────────────────────────────────────
 llm:
-  primary: tunneled                     # Tunneled ngrok primary
-  fallback: local                   # NVIDIA cloud fallback
+  primary: local                     # Local Ollama primary
+  fallback: tunneled                   # Tunneled ngrok fallback
   emergency_fallback: mock           # always works
 
   backends:

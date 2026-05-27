@@ -151,23 +151,97 @@ class LLMRouter:
 
         return cls(primary=primary, fallback=fallback, emergency=emergency)
 
+    def _clean_and_parse_json(self, raw_text: str):
+        import json
+        import re
+        # Strip markdown braces if present
+        candidate = re.sub(r"```(?:json)?\s*", "", raw_text, flags=re.IGNORECASE).strip()
+        candidate = candidate.replace("```", "").strip()
+        
+        # Try parsing directly first
+        try:
+            return json.loads(candidate)
+        except Exception:
+            pass
+            
+        # Find JSON structure (starts with { or [)
+        obj_match = re.search(r"(\{.*\}|\[.*\])", candidate, re.DOTALL)
+        if obj_match:
+            json_str = obj_match.group(1)
+            # Try parsing this structure
+            try:
+                return json.loads(json_str)
+            except Exception:
+                pass
+                
+            # If it failed, maybe there are extra closing braces at the end.
+            if json_str.startswith("{") and json_str.endswith("}"):
+                temp = json_str
+                for _ in range(20):
+                    if temp.endswith("}"):
+                        temp = temp[:-1].rstrip()
+                        try:
+                            return json.loads(temp)
+                        except Exception:
+                            pass
+                    else:
+                        break
+                        
+            # Brace counting heuristic
+            if json_str.startswith("{"):
+                brace_count = 0
+                in_string = False
+                escape = False
+                for idx, char in enumerate(json_str):
+                    if escape:
+                        escape = False
+                        continue
+                    if char == '\\':
+                        escape = True
+                        continue
+                    if char == '"':
+                        in_string = not in_string
+                        continue
+                    if not in_string:
+                        if char == '{':
+                            brace_count += 1
+                        elif char == '}':
+                            brace_count -= 1
+                            if brace_count == 0:
+                                candidate_substring = json_str[:idx+1]
+                                try:
+                                    return json.loads(candidate_substring)
+                                except Exception:
+                                    pass
+        return candidate
+
     def _write_to_raw_log(self, mode: str, backend_name: str, raw_input: dict, raw_response: str):
         import json
+        import os
         from datetime import datetime
         log_path = Path(__file__).parent.parent.parent / "logs" / "llm_raw.log"
         log_path.parent.mkdir(exist_ok=True)
         
+        # Clean and parse for the user-friendly output_response
+        output_response = self._clean_and_parse_json(raw_response)
+
         timestamp = datetime.now().isoformat()
         log_entry = {
             "timestamp": timestamp,
             "mode": mode,
             "backend": backend_name,
             "raw_input_payload": raw_input,
-            "raw_output_response": raw_response
+            "raw_output_response": raw_response,
+            "output_response": output_response
         }
         
         with open(log_path, "a", encoding="utf-8") as f:
             f.write(json.dumps(log_entry, indent=2, ensure_ascii=False) + "\n\n" + "="*80 + "\n\n")
+            f.flush()
+            try:
+                os.fsync(f.fileno())
+            except Exception:
+                pass
 
     def route(self, prompt: str, memory_context: str = "") -> Plan:
         """
@@ -194,21 +268,10 @@ class LLMRouter:
             }
             raw_input["messages"] = [m for m in raw_input["messages"] if m is not None]
 
-            # Intercept post requests to capture exact response content
-            import requests
-            original_post = requests.post
-            raw_response_text = "N/A or Connection Exception"
-            
-            def intercepted_post(*args, **kwargs):
-                nonlocal raw_response_text
-                resp = original_post(*args, **kwargs)
-                try:
-                    raw_response_text = resp.json()["choices"][0]["message"]["content"]
-                except Exception as e:
-                    raw_response_text = f"Failed to extract raw content: {e}"
-                return resp
+            # Clear last raw response before calling
+            if hasattr(backend, "last_raw_response"):
+                backend.last_raw_response = ""
 
-            requests.post = intercepted_post
             try:
                 plan = backend.plan(prompt, memory_context)
             except Exception as e:
@@ -216,9 +279,8 @@ class LLMRouter:
                 with self._lock:
                     self._health[backend.name] = False
                 continue
-            finally:
-                requests.post = original_post
 
+            raw_response_text = getattr(backend, "last_raw_response", "") or "No raw response captured"
             self._write_to_raw_log("PLAN", backend.name, raw_input, raw_response_text)
 
             if plan:
@@ -264,21 +326,10 @@ class LLMRouter:
                 ]
             }
 
-            # Intercept post requests to capture exact response content
-            import requests
-            original_post = requests.post
-            raw_response_text = "N/A or Connection Exception"
-            
-            def intercepted_post(*args, **kwargs):
-                nonlocal raw_response_text
-                resp = original_post(*args, **kwargs)
-                try:
-                    raw_response_text = resp.json()["choices"][0]["message"]["content"]
-                except Exception as e:
-                    raw_response_text = f"Failed to extract raw content: {e}"
-                return resp
+            # Clear last raw response before calling
+            if hasattr(backend, "last_raw_response"):
+                backend.last_raw_response = ""
 
-            requests.post = intercepted_post
             try:
                 decision = backend.decide(prompt, context)
             except Exception as e:
@@ -286,9 +337,8 @@ class LLMRouter:
                 with self._lock:
                     self._health[backend.name] = False
                 continue
-            finally:
-                requests.post = original_post
 
+            raw_response_text = getattr(backend, "last_raw_response", "") or "No raw response captured"
             self._write_to_raw_log("DECIDE", backend.name, raw_input, raw_response_text)
 
             if decision:

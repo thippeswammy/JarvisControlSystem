@@ -109,6 +109,7 @@ class NvidiaLLM(LLMInterface):
                 timeout=self._timeout,
             )
             content = response.choices[0].message.content.strip()
+            self.last_raw_response = content
             return self._parse_plan(content)
         except Exception as e:
             logger.error(f"[NvidiaLLM] plan() request failed: {e}")
@@ -154,6 +155,7 @@ class NvidiaLLM(LLMInterface):
                 timeout=self._timeout,
             )
             content = response.choices[0].message.content.strip()
+            self.last_raw_response = content
             return self._parse_decision(content)
         except Exception as e:
             logger.error(f"[NvidiaLLM] decide() request failed: {e}")

@@ -151,6 +151,7 @@ class LocalLLM(LLMInterface):
             data = resp.json()
             logger.info(f"[LocalLLM] Raw Response: {data}")
             content = data["choices"][0]["message"]["content"].strip()
+            self.last_raw_response = content
             return self._parse_plan(content)
 
         except requests.exceptions.Timeout:
@@ -208,6 +209,7 @@ class LocalLLM(LLMInterface):
             )
             resp.raise_for_status()
             content = resp.json()["choices"][0]["message"]["content"].strip()
+            self.last_raw_response = content
             return self._parse_decision(content)
 
         except Exception as e:
