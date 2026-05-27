@@ -46,6 +46,7 @@ def fake_gateway(fake_gateway_status):
     gw.status.return_value = fake_gateway_status
     gw.session_mgr = MagicMock()
     gw.session_mgr.memory = MagicMock()
+    gw.memory = gw.session_mgr.memory
     gw.session_mgr.memory.get_stats.return_value = {
         "nodes": 10, "edges": 5, "success_rate": 88.0,
         "db_size_kb": 32, "db_path": "/tmp/test.db"

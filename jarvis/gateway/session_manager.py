@@ -57,7 +57,9 @@ class SessionManager:
             router=self._router,
             bus=self._bus,
             episodic=episodic,
-            verification_loop=self._vloop
+            verification_loop=self._vloop,
+            agent_bus=getattr(self._gateway, "agent_bus", None),
+            mcp_bus=getattr(self._gateway, "mcp_bus", None)
         )
         orch.boot() # Ensure orchestrator is ready
 

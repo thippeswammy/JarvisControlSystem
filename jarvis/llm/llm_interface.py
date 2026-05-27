@@ -31,10 +31,19 @@ Plan = list[SkillCallSpec]
 @dataclass
 class LLMDecision:
     """The unified decision from the LLM Brain."""
-    type: str  # "chat", "plan", "mixed", "clarify"
+    type: str  # "chat", "plan", "mixed", "clarify", "agent", "multiagent", "mcp"
     message: Optional[str] = None
     steps: Optional[Plan] = None
     question: Optional[str] = None
+    # Agent fields
+    agent: Optional[str] = None
+    agent_task: Optional[str] = None
+    agent_tasks: Optional[list[dict]] = None   # for multiagent
+    # MCP fields
+    mcp_server: Optional[str] = None
+    mcp_tool: Optional[str] = None
+    mcp_params: Optional[dict] = None
+
 
 
 class LLMInterface(ABC):

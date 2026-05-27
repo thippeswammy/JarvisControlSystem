@@ -33,6 +33,8 @@ class GatewayDaemon:
         self.memory: Optional[MemoryManager] = None
         self.router: Optional[LLMRouter] = None
         self.bus: Optional[SkillBus] = None
+        self.agent_bus = None
+        self.mcp_bus = None
         
         # Managers
         self.session_mgr: Optional[SessionManager] = None
@@ -59,6 +61,14 @@ class GatewayDaemon:
         # 3. Skill Bus
         self.bus = SkillBus()
         self.bus.discover() # Discover skills on startup
+        
+        # 3b. Agent Bus & MCP Bus
+        from jarvis.agents.agent_bus import AgentBus
+        from jarvis.mcp.mcp_bus import MCPBus
+        self.agent_bus = AgentBus(self.memory)
+        self.agent_bus.discover()
+        self.mcp_bus = MCPBus()
+        self.mcp_bus.discover()
         
         # Phase 6: Verification Loop (Hardware/UI state tracking)
         from jarvis.memory.state_harvester import StateHarvester

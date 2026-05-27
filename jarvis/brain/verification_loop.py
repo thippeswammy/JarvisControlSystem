@@ -36,7 +36,7 @@ SKIP_VERIFY_SKILLS = {
     "type_text", "press_key", "search_web", "search_windows",
     "session_activate", "session_deactivate", "system_status",
     "ask_user", "set_volume", "set_brightness", "power_action",
-    "scroll_page", "open_app", "close_app", "chat_reply"
+    "scroll_page", "chat_reply"
 }
 
 _DEFAULT_SETTLE_MS = 600   # ms to wait after action before re-harvesting
@@ -54,13 +54,7 @@ class VerificationLoop:
         vloop.execute_and_verify(call, bus, packet, snapshot, learner)
     """
 
-    def __init__(
-        self,
-        harvester: StateHarvester,
-        comparator: StateComparator,
-        recovery: RecoveryStrategies,
-        settle_ms: int = _DEFAULT_SETTLE_MS,
-    ):
+    def __init__(self, harvester: StateHarvester, comparator: StateComparator, recovery: RecoveryStrategies, settle_ms: int = _DEFAULT_SETTLE_MS):
         self._harvester = harvester
         self._comparator = comparator
         self._recovery = recovery
@@ -89,6 +83,40 @@ class VerificationLoop:
         # Use foreground window (app_title=None) to ensure we get real UI state
         before_state, before_hash = self._harvester.harvest_and_hash(app_title=None)
 
+        # Custom explicit verification logic
+        if call.skill == "open_app":
+            target = call.params.get("target", "")
+            result = bus.dispatch(call)
+            if not before_hash:
+                logger.debug("[VerificationLoop] No UI state (UIA unavailable), trusting open_app result")
+                return result
+            time.sleep(1.0) # Settle for app launch
+            if result.success and (self.verify_window_exists(target) or self.verify_focus(target)):
+                logger.info(f"[VerificationLoop] [OK] open_app verified successfully: {target}")
+                result.action_taken = f"[Verified] {result.action_taken}"
+                return result
+            else:
+                logger.warning(f"[VerificationLoop] [FAIL] open_app failed verification: {target}")
+                result.success = False
+                return result
+
+        elif call.skill == "close_app":
+            target = call.params.get("target", "")
+            result = bus.dispatch(call)
+            if not before_hash:
+                logger.debug("[VerificationLoop] No UI state (UIA unavailable), trusting close_app result")
+                return result
+            time.sleep(0.8) # Settle for app close
+            if result.success and not self.verify_window_exists(target):
+                logger.info(f"[VerificationLoop] [OK] close_app verified successfully: {target}")
+                result.action_taken = f"[Verified] {result.action_taken}"
+                return result
+            else:
+                logger.warning(f"[VerificationLoop] [FAIL] close_app failed verification: {target}")
+                result.success = False
+                return result
+
+
         for attempt in range(0, 3):
             if attempt > 0:
                 result = self._recovery.retry(call, attempt)
@@ -108,6 +136,15 @@ class VerificationLoop:
 
             # 4. Capture AFTER state
             after_state, after_hash = self._harvester.harvest_and_hash(app_title=None)
+
+            # Custom navigation check fallback
+            if call.skill == "navigate_location":
+                target = call.params.get("target", "")
+                if self.verify_navigation(target):
+                    logger.info(f"[VerificationLoop] [OK] navigate_location verified successfully: {target}")
+                    self._maybe_learn(call, packet, learner, success=True)
+                    result.action_taken = f"[Verified] {result.action_taken}"
+                    return result
 
             # 5. Compare
             if not before_hash and not after_hash:
@@ -130,16 +167,44 @@ class VerificationLoop:
         # If we exhausted retries and still no state change, try alternative/ask user
         return self._handle_failure_post_retry(call, bus, packet, snapshot, pathfinder)
 
+    # ── Explicit Verification Helpers ────────────────
+
+    def verify_window_exists(self, app_id: str) -> bool:
+        try:
+            from pywinauto import Desktop
+            windows = Desktop(backend="uia").windows()
+            app_id_lower = app_id.lower()
+            for win in windows:
+                title = win.window_text().lower()
+                if app_id_lower in title or (app_id_lower == "settings" and "systemsettings" in title):
+                    return True
+            return False
+        except Exception:
+            return False
+
+    def verify_focus(self, app_id: str) -> bool:
+        try:
+            import win32gui
+            from jarvis.perception.context_harvester import ContextHarvester
+            hwnd = win32gui.GetForegroundWindow()
+            title = win32gui.GetWindowText(hwnd)
+            inferred = ContextHarvester._infer_app_id(title)
+            return inferred.lower() == app_id.lower()
+        except Exception:
+            return False
+
+    def verify_navigation(self, target_label: str) -> bool:
+        try:
+            import win32gui
+            hwnd = win32gui.GetForegroundWindow()
+            title = win32gui.GetWindowText(hwnd).lower()
+            return target_label.lower() in title
+        except Exception:
+            return False
+
     # ── Private ──────────────────────────────────────
 
-    def _handle_failure_post_retry(
-        self,
-        call: SkillCall,
-        bus: SkillBus,
-        packet: PerceptionPacket,
-        snapshot: ContextSnapshot,
-        pathfinder,
-    ) -> SkillResult:
+    def _handle_failure_post_retry(self, call: SkillCall, bus: SkillBus, packet: PerceptionPacket, snapshot: ContextSnapshot, pathfinder) -> SkillResult:
         """Try alternative → ask_user in order after retries failed."""
         # Tier 2: Alternative path (only for navigation)
         if call.skill == "navigate_location":
@@ -155,13 +220,7 @@ class VerificationLoop:
         # Tier 3: Ask user
         return self._recovery.ask_user(call)
 
-    def _maybe_learn(
-        self,
-        call: SkillCall,
-        packet: PerceptionPacket,
-        learner: ReactiveLearner,
-        success: bool,
-    ) -> None:
+    def _maybe_learn(self, call: SkillCall, packet: PerceptionPacket, learner: ReactiveLearner, success: bool) -> None:
         """Store the path if it was a navigation action with a known target."""
         if call.skill != "navigate_location":
             return

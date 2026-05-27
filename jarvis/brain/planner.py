@@ -45,10 +45,12 @@ class Planner:
             bus.dispatch(call)
     """
 
-    def __init__(self, memory: MemoryManager, router: LLMRouter, bus: SkillBus):
+    def __init__(self, memory: MemoryManager, router: LLMRouter, bus: SkillBus, agent_bus=None, mcp_bus=None):
         self._memory = memory
         self._router = router
         self._bus = bus
+        self._agent_bus = agent_bus
+        self._mcp_bus = mcp_bus
         self._preference_router = PreferenceRouter()
 
     def plan(self, packet: PerceptionPacket) -> list[SkillCall]:
@@ -167,24 +169,44 @@ class Planner:
         skill_catalog = self._bus.get_skill_catalog()
         episodic_context = packet.memory_context or "No recent memory."
 
+        mcp_catalog = ""
+        if self._mcp_bus:
+            mcp_catalog = self._mcp_bus.get_tool_catalog()
+
+        agent_catalog = ""
+        if self._agent_bus:
+            agent_catalog = self._agent_bus.get_agent_catalog()
+
         enriched_context = (
             f"[System Preferences]\n{system_ctx}\n\n"
             f"[Current UI State]\n{ui_ctx}\n\n"
             f"[State Provenance]\n{lineage_ctx}\n\n"
             f"[Episodic Memory]\n{episodic_context}\n\n"
             f"[Available Skills]\n{skill_catalog}\n\n"
+        )
+        if mcp_catalog:
+            enriched_context += f"[Available MCP Tools]\n{mcp_catalog}\n\n"
+        if agent_catalog:
+            enriched_context += f"[Available Agents]\n{agent_catalog}\n\n"
+
+        enriched_context += (
             "[Critical Rules]\n"
             "1. META-RULE: If the user intent involves content generation (explaining, summarizing, drafting, jokes) AND a destination application is specified OR active, you MUST deliver that content using 'type_text' into the target app. Do NOT use the 'message' field for the payload.\n"
             "2. CONTEXT-AWARENESS: If an app is already active and the user says 'write a summary', target that active app.\n"
             "3. CONVERSATIONAL: If the input is conversational (e.g. 'Ok can open apps', 'thanks'), respond conversationally and do NOT assume app launching or actions.\n"
-            "4. CAPABILITY: If asked about capabilities, list the [Available Skills] concisely.\n\n"
+            "4. CAPABILITY: If asked about capabilities, list the [Available Skills] concisely.\n"
+            "5. AUTONOMOUS AGENTS: If the task requires deep reasoning, multi-step sub-tasks, or running complex background logic, you may delegate to a sub-agent using type: 'agent' or 'multiagent'.\n"
+            "6. MCP TOOLS: If the task requires external tools (like reading files, web search, etc.) which are listed in [Available MCP Tools], you can use type: 'mcp' to call them directly.\n\n"
             "[Examples]\n"
             'User: "open notepad" → {{"type":"plan","steps":[{{"skill":"open_app","params":{{"target":"notepad"}}}}]}}\n'
             'User: "write a python hello world in vscode" → {{"type":"plan","steps":[{{"skill":"open_app","params":{{"target":"vscode"}}}},{{"skill":"type_text","params":{{"text":"print(\'hello world\')"}}]}}\n'
             'User: "summarize the news in word" → {{"type":"plan","steps":[{{"skill":"open_app","params":{{"target":"word"}}}},{{"skill":"type_text","params":{{"text":"The main news today is..."}}]}}\n'
             'User: "search youtube for funny cats" → {{"type":"plan","steps":[{{"skill":"open_app","params":{{"target":"chrome"}}}},{{"skill":"type_text","params":{{"text":"funny cats"}},{{"skill":"press_key","params":{{"key":"enter"}}]}}\n'
             'User: "tell a joke in slack" → {{"type":"plan","steps":[{{"skill":"open_app","params":{{"target":"slack"}}}},{{"skill":"type_text","params":{{"text":"Why did the AI cross the road? To get to the other dataset."}}]}}\n'
-            'User: "close settings and open notepad and type hello" → {{"type":"plan","steps":[{{"skill":"close_app","params":{{"target":"settings"}}}},{{"skill":"open_app","params":{{"target":"notepad"}}}},{{"skill":"type_text","params":{{"text":"hello"}}}}]}}\n'
+            'User: "close settings and open notepad and type hello" → {{"type":"plan","steps":[{{"close_app","params":{{"target":"settings"}}}},{{"open_app","params":{{"target":"notepad"}}}},{{"type_text","params":{{"text":"hello"}}}}]}}\n'
+            'User: "type status in notepad and save as report.txt" → {{"type":"plan","steps":[{{"skill":"open_app","params":{{"target":"notepad"}}}},{{"skill":"type_text","params":{{"text":"status"}}}},{{"skill":"press_key","params":{{"key":"ctrl+s"}}}},{{"skill":"type_text","params":{{"text":"report.txt"}}}},{{"skill":"press_key","params":{{"key":"enter"}}}}]}}\n'
+            'User: "ask search_agent to search for python tutorials" → {{"type":"agent","agent":"search_agent","agent_task":"search for python tutorials"}}\n'
+            'User: "use filesystem to read_file notes.txt" → {{"type":"mcp","mcp_server":"filesystem","mcp_tool":"read_file","mcp_params":{{"path":"notes.txt"}}}}\n'
         )
 
         # Use override prompt if compound command prepared one
@@ -226,6 +248,47 @@ class Planner:
         elif decision.type == "clarify":
             if decision.question:
                 calls.append(SkillCall(skill="ask_user", params={"question": decision.question}))
+
+        # 5. Agent
+        elif decision.type == "agent":
+            if decision.agent and decision.agent_task:
+                calls.append(SkillCall(
+                    skill="run_agent",
+                    params={
+                        "agent": decision.agent,
+                        "task": decision.agent_task,
+                        "_agent_bus": self._agent_bus,
+                        "_router": self._router
+                    },
+                    source="llm"
+                ))
+
+        # 6. Multiagent
+        elif decision.type == "multiagent":
+            if decision.agent_tasks:
+                calls.append(SkillCall(
+                    skill="run_agent_pipeline",
+                    params={
+                        "tasks": decision.agent_tasks,
+                        "_agent_bus": self._agent_bus,
+                        "_router": self._router
+                    },
+                    source="llm"
+                ))
+
+        # 7. MCP
+        elif decision.type == "mcp":
+            if decision.mcp_server and decision.mcp_tool:
+                calls.append(SkillCall(
+                    skill="call_mcp_tool",
+                    params={
+                        "server": decision.mcp_server,
+                        "tool": decision.mcp_tool,
+                        "params": decision.mcp_params or {},
+                        "_mcp_bus": self._mcp_bus
+                    },
+                    source="llm"
+                ))
 
         # Safety fallback
         if not calls:

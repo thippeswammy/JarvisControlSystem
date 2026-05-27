@@ -3,9 +3,7 @@ Context Harvester
 =================
 Extracts current system context: active app, window title, active graph node.
 Used to populate ContextSnapshot in each pipeline cycle.
-
-Generic implementation — no hardcoded app dict.
-App identity is inferred from window title using fuzzy matching.
+Zero hardcoded mappings. App identity is fetched dynamically from the foreground window PID.
 """
 
 import logging
@@ -17,35 +15,10 @@ from jarvis.perception.ui_inspector import UIInspector
 
 logger = logging.getLogger(__name__)
 
-# Title fragments → canonical app_id mapping (extendable)
-_TITLE_TO_APP: list[tuple[re.Pattern, str]] = [
-    (re.compile(r"settings", re.I),    "settings"),
-    (re.compile(r"notepad", re.I),     "notepad"),
-    (re.compile(r"chrome", re.I),      "chrome"),
-    (re.compile(r"firefox", re.I),     "firefox"),
-    (re.compile(r"edge", re.I),        "edge"),
-    (re.compile(r"explorer", re.I),    "explorer"),
-    (re.compile(r"word", re.I),        "word"),
-    (re.compile(r"excel", re.I),       "excel"),
-    (re.compile(r"powerpoint", re.I),  "powerpoint"),
-    (re.compile(r"vs\s*code|visual studio code", re.I), "vscode"),
-    (re.compile(r"task manager", re.I),"taskmanager"),
-    (re.compile(r"control panel", re.I),"controlpanel"),
-    (re.compile(r"cmd|command prompt", re.I), "cmd"),
-    (re.compile(r"powershell", re.I),  "powershell"),
-]
-
-
 class ContextHarvester:
     """
     Captures the current Windows foreground window state.
     Returns a ContextSnapshot with app_id, title, and (optionally) state hash.
-
-    Usage:
-        harvester = ContextHarvester()
-        snapshot = harvester.capture()
-        # snapshot.active_app == "settings"
-        # snapshot.active_window_title == "Display - Settings"
     """
 
     def __init__(self, state_harvester=None, episodic=None):
@@ -56,7 +29,7 @@ class ContextHarvester:
     def capture(self) -> ContextSnapshot:
         """Capture current foreground window context."""
         title = self._get_foreground_title()
-        app_id = self._infer_app_id(title)
+        app_id = self._get_foreground_app_id()
 
         state_hash = ""
         if self._state_harvester and app_id:
@@ -90,7 +63,7 @@ class ContextHarvester:
 
     def get_active_app(self) -> str:
         """Quick lookup: just the app_id of the current foreground window."""
-        return self._infer_app_id(self._get_foreground_title())
+        return self._get_foreground_app_id()
 
     # ── Private ──────────────────────────────────────
 
@@ -104,12 +77,19 @@ class ContextHarvester:
             return ""
 
     @staticmethod
-    def _infer_app_id(title: str) -> str:
-        if not title:
+    def _get_foreground_app_id() -> str:
+        try:
+            import win32gui
+            import win32process
+            import psutil
+            hwnd = win32gui.GetForegroundWindow()
+            if not hwnd:
+                return ""
+            _, pid = win32process.GetWindowThreadProcessId(hwnd)
+            proc = psutil.Process(pid)
+            name = proc.name().replace(".exe", "").lower()
+            if "systemsettings" in name:
+                return "settings"
+            return name
+        except Exception:
             return ""
-        for pattern, app_id in _TITLE_TO_APP:
-            if pattern.search(title):
-                return app_id
-        # Fallback: use first word of title, lowercased
-        first_word = re.split(r"[\s\-–|]", title)[0].strip().lower()
-        return first_word or "unknown"

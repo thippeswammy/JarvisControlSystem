@@ -105,7 +105,8 @@ class SemanticEncoder:
             ensure_ollama_running(url=base_url)
             return self._local_fallback_embed(text)
         except Exception as e:
-            logger.error(f"[SemanticEncoder] Error generating embedding: {e}")
+            logger.error(f"[SemanticEncoder] Error generating embedding: {e}. Cooling down for 60s.")
+            SemanticEncoder._global_next_retry = time.time() + 60.0
             return self._local_fallback_embed(text)
 
     @staticmethod

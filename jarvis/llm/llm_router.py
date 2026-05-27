@@ -34,6 +34,7 @@ from jarvis.llm.llm_interface import LLMInterface, Plan, LLMDecision
 from jarvis.llm.backends.mock_llm import MockLLM
 from jarvis.llm.backends.local_llm import LocalLLM
 from jarvis.llm.backends.openai_llm import OpenAILLM
+from jarvis.llm.backends.nvidia_llm import NvidiaLLM
 from jarvis.llm.backends.tunneled_llm import TunneledLLM
 
 logger = logging.getLogger(__name__)
@@ -129,6 +130,16 @@ class LLMRouter:
                     max_tokens=bc.get("max_tokens", 300),
                     temperature=bc.get("temperature", 0.1),
                     timeout=bc.get("timeout_seconds", 10),
+                )
+            if name == "nvidia":
+                return NvidiaLLM(
+                    model=bc.get("model", "qwen/qwen3-coder-480b-a35b-instruct"),
+                    api_key=_resolve(bc.get("api_key", "")),
+                    base_url=bc.get("base_url", "https://integrate.api.nvidia.com/v1"),
+                    max_tokens=bc.get("max_tokens", 4096),
+                    temperature=bc.get("temperature", 0.7),
+                    top_p=bc.get("top_p", 0.8),
+                    timeout=bc.get("timeout_seconds", 30),
                 )
             if name == "mock":
                 return MockLLM()

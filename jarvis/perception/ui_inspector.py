@@ -4,6 +4,7 @@ UI Inspector
 Extracts a compact, LLM-readable snapshot of the current UI state.
 Uses pywinauto's UIA backend to harvest navigation items, buttons, and page titles.
 Produces a stable 'state_signature' for state-keyed memory recall.
+Zero hardcoded mappings: App identity is queried from the active window thread process.
 """
 
 import hashlib
@@ -37,7 +38,6 @@ class UISnapshot:
             parts.append(f"Active Section: {self.active_section}")
         
         if self.nav_items:
-            # Cap to avoid token bloat
             nav_str = ", ".join(self.nav_items[:12])
             parts.append(f"Navigation Menu: [{nav_str}]")
             
@@ -48,18 +48,13 @@ class UISnapshot:
         return " | ".join(parts)
 
 class UIInspector:
-    """
-    Inspects the live UI and generates a stable UISnapshot.
-    """
+    """Inspects the live UI and generates a stable UISnapshot."""
 
     def __init__(self):
         self._uia_available = self._check_uia()
 
     def inspect(self, app_title: Optional[str] = None) -> UISnapshot:
-        """
-        Harvest UI tree from the foreground window or specified app.
-        Returns a UISnapshot.
-        """
+        """Harvest UI tree from foreground window or specified app."""
         if not self._uia_available:
             return UISnapshot(is_empty=True)
 
@@ -72,6 +67,8 @@ class UIInspector:
     def _harvest_ui(self, app_title: Optional[str]) -> UISnapshot:
         from pywinauto import Desktop
         import win32gui
+        import win32process
+        import psutil
 
         desktop = Desktop(backend="uia")
         
@@ -89,14 +86,24 @@ class UIInspector:
                 return UISnapshot(is_empty=True)
             win = desktop.window(handle=hwnd)
 
+        # Get active app dynamically via Process PID
+        app_id = ""
+        try:
+            _, pid = win32process.GetWindowThreadProcessId(win.handle)
+            proc = psutil.Process(pid)
+            app_id = proc.name().replace(".exe", "").lower()
+            if "systemsettings" in app_id:
+                app_id = "settings"
+        except Exception:
+            app_id = self._infer_app_id_fallback(win.window_text())
+
         snap = UISnapshot(
-            active_app=self._infer_app_id(win.window_text()),
+            active_app=app_id,
             page_title=win.window_text()
         )
 
         # Harvest key elements
         try:
-            # depth=4 is a balance between info and speed
             descendants = win.descendants(depth=4)
             for ctrl in descendants:
                 try:
@@ -116,7 +123,6 @@ class UIInspector:
                         if name not in snap.visible_buttons:
                             snap.visible_buttons.append(name)
                     elif ctrl_type == "Text":
-                        # If it's a large header, maybe it's the section name
                         if not snap.active_section and len(name) > 3:
                             snap.active_section = name
                 except Exception:
@@ -125,7 +131,6 @@ class UIInspector:
             logger.debug(f"[UIInspector] Descendant walk failed: {e}")
 
         # Compute stable signature
-        # We sort items to ensure signature is stable even if tree order shifts slightly
         sorted_nav = sorted(snap.nav_items)
         raw_sig = f"{snap.active_app}|{snap.page_title}|{','.join(sorted_nav)}"
         snap.state_signature = hashlib.sha256(raw_sig.encode()).hexdigest()[:12]
@@ -142,8 +147,7 @@ class UIInspector:
             return False
 
     @staticmethod
-    def _infer_app_id(title: str) -> str:
-        # Simple inference logic
+    def _infer_app_id_fallback(title: str) -> str:
         title_lower = title.lower()
         if "settings" in title_lower: return "settings"
         if "notepad" in title_lower: return "notepad"

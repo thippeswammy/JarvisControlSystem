@@ -1,0 +1,10 @@
+# Agent Registry
+# Add your agents here. Jarvis discovers them at boot.
+# parallel_safe: true means the agent can run concurrently with others
+agents:
+  # Example:
+  # - name: search_agent
+  #   module: agents_external.search_agent
+  #   fn: run
+  #   description: "Searches the web and returns structured results"
+  #   parallel_safe: true

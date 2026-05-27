@@ -37,8 +37,10 @@ def type_text(params: dict) -> SkillResult:
         time.sleep(0.5) # Allow focus to settle
         
         # Safe Automation Check
+        import win32gui
         active_title = pyautogui.getActiveWindowTitle()
-        if not active_title:
+        hwnd = win32gui.GetForegroundWindow()
+        if not active_title and not hwnd:
             return SkillResult(success=False, message="Safety aborted: No active window found to type into. Please focus an app first.")
             
         pyautogui.typewrite(text, interval=interval)

@@ -18,6 +18,7 @@ from jarvis.brain.planner import Planner
 from jarvis.brain.reactive_learner import ReactiveLearner
 from jarvis.llm.llm_router import LLMRouter
 from jarvis.memory.layers.episodic import EpisodicMemory
+from jarvis.memory.layers.temporal import TemporalMemory
 from jarvis.memory.memory_manager import MemoryManager
 from jarvis.pathfinding.graph_pathfinder import GraphPathfinder
 from jarvis.perception.context_harvester import ContextHarvester
@@ -44,19 +45,33 @@ class Orchestrator:
         router: LLMRouter,
         bus: SkillBus,
         episodic: Optional[EpisodicMemory] = None,
+        temporal: Optional[TemporalMemory] = None,
         verification_loop=None,
         learning_enabled: bool = False,
+        agent_bus=None,
+        mcp_bus=None,
     ):
         self._memory = memory
         self._router = router
         self._bus = bus
         self._episodic = episodic or EpisodicMemory()
+        self._temporal = temporal or getattr(self._episodic, "_temporal", None) or TemporalMemory()
         self._verification_loop = verification_loop
         self._learning_enabled = learning_enabled
 
+
+        from jarvis.agents.agent_bus import AgentBus
+        from jarvis.mcp.mcp_bus import MCPBus
+        self.agent_bus = agent_bus or AgentBus(self._memory)
+        self.mcp_bus = mcp_bus or MCPBus()
+
         self._nlu = NLU()
+        from jarvis.perception.context_fusion import ContextFusionLayer
+        self._context_fusion = ContextFusionLayer()
+        from jarvis.brain.safety_layer import IntentSafetyLayer
+        self._safety_layer = IntentSafetyLayer()
         self._context = ContextHarvester(episodic=self._episodic)
-        self._planner = Planner(memory, router, bus)
+        self._planner = Planner(memory, router, bus, agent_bus=self.agent_bus, mcp_bus=self.mcp_bus)
         self._learner = ReactiveLearner(memory)
         self._pathfinder: Optional[GraphPathfinder] = None
 
@@ -67,6 +82,10 @@ class Orchestrator:
         # Discover skills
         self._bus.discover()
         logger.info(f"[Orchestrator] Skills: {self._bus.list_skills()}")
+
+        # Discover agents and MCP tools
+        self.agent_bus.discover()
+        self.mcp_bus.discover()
 
         # Wire pathfinder into memory
         db = self._memory.get_db()
@@ -107,6 +126,12 @@ class Orchestrator:
 
         # NLU
         packet = self._nlu.parse(utterance, app_context=snapshot.active_app)
+        
+        # Intent Safety Layer
+        packet = self._safety_layer.check_safety(packet)
+        
+        # Coreference and context fusion
+        packet = self._context_fusion.fuse(packet, snapshot=snapshot)
         packet.context_snapshot = snapshot # Store for planner
         
         procedural_ctx = self._memory.get_relevant_context(
@@ -150,11 +175,16 @@ class Orchestrator:
         
         for call in plan:
             call.params["_interface"] = snapshot.interface
+            call.params["_agent_bus"] = self.agent_bus
+            call.params["_mcp_bus"] = self.mcp_bus
+            call.params["_router"] = self._router
             if getattr(call, "source", "") == "llm":
                 has_llm_source = True
             if self._bus.is_cognitive(call.skill):
                 has_unsafe_skill = True
 
+            import time
+            start_time = time.perf_counter()
             if self._verification_loop:
                 result = self._verification_loop.execute_and_verify(
                     call=call,
@@ -166,6 +196,7 @@ class Orchestrator:
             else:
                 # Phase 5 mode: execute without verification
                 result = self._bus.dispatch(call)
+            duration_ms = int((time.perf_counter() - start_time) * 1000)
 
             results.append(result)
             
@@ -177,6 +208,20 @@ class Orchestrator:
                 skill=call.skill,
             )
 
+            # Log to temporal memory
+            action_desc = f"executed {call.skill}"
+            if call.params:
+                clean_params = {k: v for k, v in call.params.items() if not k.startswith("_")}
+                if clean_params:
+                    action_desc += f" with params: {clean_params}"
+            
+            self._temporal.log_event(
+                app_context=snapshot.active_app or "system",
+                action=action_desc,
+                status="SUCCESS" if result.success else "FAILED",
+                duration_ms=duration_ms
+            )
+
             # Record state transition for lineage tracking
             if result.success:
                 self._episodic.record_state_transition(
@@ -186,6 +231,7 @@ class Orchestrator:
                     skill_used=call.skill,
                     app_context=snapshot.active_app or ""
                 )
+
 
             # Stop plan on failure
             if not result.success:
