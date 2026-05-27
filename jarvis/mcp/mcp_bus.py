@@ -79,7 +79,13 @@ class MCPBus:
 
         try:
             with open(path, "r", encoding="utf-8") as fh:
-                entries = yaml.safe_load(fh) or []
+                data = yaml.safe_load(fh) or []
+                if isinstance(data, dict):
+                    entries = data.get("mcp_servers", [])
+                    if entries is None:
+                        entries = []
+                else:
+                    entries = data
         except Exception as exc:
             logger.error(f"[MCPBus] Failed to read config {path}: {exc}")
             return 0

@@ -1,7 +1,7 @@
 # MCP Server Registry
 # Add your MCP servers here. Jarvis discovers them at boot.
 # Transport: 'stdio' (subprocess) or 'http' (HTTP/SSE endpoint)
-mcp_servers:
+mcp_servers: []
   # Example stdio server:
   # - name: filesystem
   #   transport: stdio

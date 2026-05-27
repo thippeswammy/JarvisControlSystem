@@ -274,6 +274,8 @@ class AgentBus:
             with open(path, "r", encoding="utf-8") as fh:
                 data = yaml.safe_load(fh) or {}
                 entries = data.get("agents", [])
+                if entries is None:
+                    entries = []
         except Exception as exc:
             logger.error(f"[AgentBus] Failed to load config {path}: {exc}")
             return 0

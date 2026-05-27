@@ -222,38 +222,22 @@ class EpisodicMemory:
 
     # ── LLM Context (RAG) ────────────────────────────────────────────────────
 
-    def as_llm_context(self, max_sessions: int = 3, top_n: int = 5, include_current: bool = True) -> str:
+    def as_llm_context(self, max_sessions: int = 3, include_current: bool = True) -> str:
         """
         Return a compact string summarising recent session history and temporal events for LLM injection.
-        Token budget: ~150 tokens max.
+        Provides a chronological session transcript for reference resolution.
         """
-        cmd_counter: Counter = Counter()
-        
-        # 1. Past sessions
-        logs = sorted(_SESSION_DIR.glob("*.md"))
-        recent_logs = logs[-max_sessions:] if logs else []
-        for log_path in recent_logs:
-            for line in log_path.read_text(encoding="utf-8").splitlines():
-                if not line.startswith("- ") or "[OK]" not in line:
-                    continue
-                parts = line.split("`")
-                if len(parts) >= 3:
-                    cmd_counter[parts[1]] += 1
-
-        # 2. Current session (most recent first)
-        if include_current and self._log:
-            for entry in reversed(self._log[-10:]):
-                if entry["ok"]:
-                    cmd_counter[entry["cmd"]] += 1
-
-        top = cmd_counter.most_common(top_n)
         parts = []
-        if top:
-            parts.append("Recent successful commands:")
-            for cmd, count in top:
-                parts.append(f"  - '{cmd}' (×{count})")
 
-        # 3. Add temporal timeline for time-awareness
+        # 1. Chronological current session history (critical for coreference resolution!)
+        if include_current and self._log:
+            parts.append("Current Session Transcript:")
+            for entry in self._log[-10:]:  # last 10 commands in chronological order
+                status = "SUCCESS" if entry["ok"] else "FAILED"
+                app_info = f" (app: {entry['app']})" if entry.get("app") else ""
+                parts.append(f"  - User: \"{entry['cmd']}\" -> Jarvis: {status}{app_info}")
+
+        # 2. Add temporal timeline for time-awareness
         if hasattr(self, "_temporal") and self._temporal:
             temporal_ctx = self._temporal.as_llm_context(limit=3)
             if temporal_ctx and "(no recent activity" not in temporal_ctx:
@@ -264,6 +248,7 @@ class EpisodicMemory:
 
         return "\n\n".join(parts)
 
+        return None
 
     # ── Current session view ─────────────────────────────────────────────────
 

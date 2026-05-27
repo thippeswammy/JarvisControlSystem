@@ -31,8 +31,50 @@ class MockLLM(LLMInterface):
         return True  # Always available
 
     def plan(self, prompt: str, memory_context: str = "") -> Optional[Plan]:
+        self.last_raw_response = "Mock Emergency Fallback Activated"
         text = prompt.lower().strip()
         logger.debug(f"[MockLLM] Planning for: {text!r}")
+
+        # ── Heuristic Compound Command Splitter ──────────
+        if "[this is a compound command with" in text:
+            match = re.search(r"parts:\s*(.+?)\]\.\s*plan", text)
+            if match:
+                parts_str = match.group(1)
+                raw_parts = parts_str.split('", "')
+                parts = [p.strip().strip('"') for p in raw_parts if p.strip()]
+                if not parts:
+                    parts = re.findall(r'"([^"]+)"', parts_str)
+                if parts:
+                    plan_steps = []
+                    for part in parts:
+                        part_plan = self.plan(part, memory_context)
+                        if part_plan:
+                            plan_steps.extend(part_plan)
+                    return plan_steps
+
+        separators = [" and then ", " then ", " after that ", " also ", " and navigate to ", " and write ", " and type ", " and open "]
+        for sep in separators:
+            if sep in text:
+                parts = []
+                if sep in [" and write ", " and type "]:
+                    split_parts = text.split(sep, 1)
+                    parts = [split_parts[0], sep.replace(" and ", "").strip() + " " + split_parts[1]]
+                elif sep == " and navigate to ":
+                    split_parts = text.split(sep, 1)
+                    parts = [split_parts[0], "navigate to " + split_parts[1]]
+                elif sep == " and open ":
+                    split_parts = text.split(sep, 1)
+                    parts = [split_parts[0], "open " + split_parts[1]]
+                else:
+                    parts = [p.strip() for p in text.split(sep) if p.strip()]
+                
+                plan_steps = []
+                for part in parts:
+                    part_plan = self.plan(part, memory_context)
+                    if part_plan:
+                        plan_steps.extend(part_plan)
+                if plan_steps:
+                    return plan_steps
 
         # ── Safe Quoted-Block Protection ──────────
         has_quotes = '"' in text or "'" in text
@@ -124,6 +166,12 @@ class MockLLM(LLMInterface):
             return [SkillCallSpec(skill="set_brightness", params={"level": int(m.group(2))})]
 
         # ── Window management ─────────────────────────
+        bring_back_match = re.search(r"\b(bring|restore|focus|activate)\s+(?:back\s+)?([\w\s]+?)(?:\s+back)?$", text)
+        if bring_back_match:
+            target = bring_back_match.group(2).strip()
+            if target not in ["window", "it", "them", "this", "that", "the app", "the window", ""]:
+                return [SkillCallSpec(skill="activate_window", params={"target": target, "_source": "mock"})]
+
         if re.search(r"^\s*(?:minimize|minimise)\b", text):
             return [SkillCallSpec(skill="minimize_window", params={"_source": "mock"})]
         if re.search(r"^\s*(?:maximize|maximise|fullscreen)\b", text):
@@ -154,6 +202,7 @@ class MockLLM(LLMInterface):
         )]
 
     def decide(self, prompt: str, context: str = "") -> Optional[LLMDecision]:
+        self.last_raw_response = "Mock emergency cognitive fallback response"
         logger.debug(f"[MockLLM] Deciding for: {prompt!r}")
         plan = self.plan(prompt, context)
         if plan:
