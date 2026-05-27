@@ -182,8 +182,56 @@ class LLMInterface(ABC):
                 actions=actions,
                 summary=decision.message,
             )
+        elif decision.type == "agent":
+            actions = []
+            if decision.agent and decision.agent_task:
+                actions.append(SkillCallSpec(
+                    skill="run_agent",
+                    params={
+                        "agent": decision.agent,
+                        "task": decision.agent_task,
+                    }
+                ))
+            return ClosedLoopDecision(
+                status="in_progress" if actions else "done",
+                reasoning="LLM delegated to sub-agent",
+                actions=actions,
+                summary=decision.message,
+            )
+        elif decision.type == "multiagent":
+            actions = []
+            if decision.agent_tasks:
+                actions.append(SkillCallSpec(
+                    skill="run_agent_pipeline",
+                    params={
+                        "tasks": decision.agent_tasks,
+                    }
+                ))
+            return ClosedLoopDecision(
+                status="in_progress" if actions else "done",
+                reasoning="LLM delegated to multi-agent pipeline",
+                actions=actions,
+                summary=decision.message,
+            )
+        elif decision.type == "mcp":
+            actions = []
+            if decision.mcp_server and decision.mcp_tool:
+                actions.append(SkillCallSpec(
+                    skill="call_mcp_tool",
+                    params={
+                        "server": decision.mcp_server,
+                        "tool": decision.mcp_tool,
+                        "params": decision.mcp_params or {},
+                    }
+                ))
+            return ClosedLoopDecision(
+                status="in_progress" if actions else "done",
+                reasoning="LLM called MCP tool",
+                actions=actions,
+                summary=decision.message,
+            )
         else:
-            # agent, multiagent, mcp, etc — treat as in_progress with steps
+            # Fallback for any other decision type
             actions = decision.steps or []
             return ClosedLoopDecision(
                 status="in_progress" if actions else "done",

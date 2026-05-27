@@ -19,6 +19,7 @@ are excluded from verification via SKIP_VERIFY_SKILLS set.
 """
 
 import logging
+import os
 import time
 from typing import Optional
 
@@ -170,6 +171,8 @@ class VerificationLoop:
     # ── Explicit Verification Helpers ────────────────
 
     def verify_window_exists(self, app_id: str) -> bool:
+        if os.environ.get("JARVIS_ALLOW_MOCK") == "true":
+            return False
         try:
             from pywinauto import Desktop
             windows = Desktop(backend="uia").windows()
@@ -183,6 +186,8 @@ class VerificationLoop:
             return False
 
     def verify_focus(self, app_id: str) -> bool:
+        if os.environ.get("JARVIS_ALLOW_MOCK") == "true":
+            return False
         try:
             import win32gui
             from jarvis.perception.context_harvester import ContextHarvester
@@ -194,6 +199,8 @@ class VerificationLoop:
             return False
 
     def verify_navigation(self, target_label: str) -> bool:
+        if os.environ.get("JARVIS_ALLOW_MOCK") == "true":
+            return False
         try:
             import win32gui
             hwnd = win32gui.GetForegroundWindow()
