@@ -151,6 +151,24 @@ class LLMRouter:
 
         return cls(primary=primary, fallback=fallback, emergency=emergency)
 
+    def _write_to_raw_log(self, mode: str, backend_name: str, raw_input: dict, raw_response: str):
+        import json
+        from datetime import datetime
+        log_path = Path(__file__).parent.parent.parent / "logs" / "llm_raw.log"
+        log_path.parent.mkdir(exist_ok=True)
+        
+        timestamp = datetime.now().isoformat()
+        log_entry = {
+            "timestamp": timestamp,
+            "mode": mode,
+            "backend": backend_name,
+            "raw_input_payload": raw_input,
+            "raw_output_response": raw_response
+        }
+        
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(log_entry, indent=2, ensure_ascii=False) + "\n\n" + "="*80 + "\n\n")
+
     def route(self, prompt: str, memory_context: str = "") -> Plan:
         """
         Route a prompt through the backend chain.
@@ -164,17 +182,50 @@ class LLMRouter:
                 continue
 
             logger.info(f"[LLMRouter] Trying backend: {backend.name}")
+            
+            # Reconstruct raw system prompt payload
+            system_instructions = backend.build_system_prompt()
+            raw_input = {
+                "messages": [
+                    {"role": "system", "content": system_instructions},
+                    {"role": "system", "content": f"Relevant memory from past sessions:\n{memory_context}"} if memory_context.strip() else None,
+                    {"role": "user", "content": prompt}
+                ]
+            }
+            raw_input["messages"] = [m for m in raw_input["messages"] if m is not None]
+
+            # Intercept post requests to capture exact response content
+            import requests
+            original_post = requests.post
+            raw_response_text = "N/A or Connection Exception"
+            
+            def intercepted_post(*args, **kwargs):
+                nonlocal raw_response_text
+                resp = original_post(*args, **kwargs)
+                try:
+                    raw_response_text = resp.json()["choices"][0]["message"]["content"]
+                except Exception as e:
+                    raw_response_text = f"Failed to extract raw content: {e}"
+                return resp
+
+            requests.post = intercepted_post
             try:
                 plan = backend.plan(prompt, memory_context)
-                if plan:
-                    logger.info(f"[LLMRouter] Plan from {backend.name}: {[s.skill for s in plan]}")
-                    return plan
-                else:
-                    logger.warning(f"[LLMRouter] {backend.name} returned empty plan — trying next.")
             except Exception as e:
                 logger.error(f"[LLMRouter] {backend.name} raised: {e} — trying next.")
                 with self._lock:
                     self._health[backend.name] = False
+                continue
+            finally:
+                requests.post = original_post
+
+            self._write_to_raw_log("PLAN", backend.name, raw_input, raw_response_text)
+
+            if plan:
+                logger.info(f"[LLMRouter] Plan from {backend.name}: {[s.skill for s in plan]}")
+                return plan
+            else:
+                logger.warning(f"[LLMRouter] {backend.name} returned empty plan — trying next.")
 
         # Final fallback: mock always works
         logger.warning("[LLMRouter] All backends failed. Using mock emergency fallback.")
@@ -193,17 +244,58 @@ class LLMRouter:
                 continue
 
             logger.info(f"[Cognitive] Requesting decision from {backend.name}...")
+
+            # Reconstruct raw system prompt payload
+            sys_prompt = (
+                "You are JARVIS, an advanced AI desktop assistant.\n"
+                "You must ALWAYS return a SINGLE valid JSON object and absolutely nothing else. No markdown, no explanations.\n"
+                "If you just want to talk (greetings, quick help), return a 'chat' type JSON.\n"
+                "Your JSON object must exactly match one of these 4 formats:\n"
+                "1. Chat only: {\"type\": \"chat\", \"message\": \"your reply here\"}\n"
+                "2. Plan only: {\"type\": \"plan\", \"steps\": [{\"skill\": \"skill_name\", \"params\": {}}]}\n"
+                "3. Mixed (talk AND act): {\"type\": \"mixed\", \"message\": \"your reply\", \"steps\": [{\"skill\": \"skill_name\", \"params\": {}}]}\n"
+                "4. Clarify (ask user): {\"type\": \"clarify\", \"question\": \"your question\"}"
+            )
+            raw_input = {
+                "messages": [
+                    {"role": "system", "content": sys_prompt},
+                    {"role": "system", "content": context},
+                    {"role": "user", "content": prompt}
+                ]
+            }
+
+            # Intercept post requests to capture exact response content
+            import requests
+            original_post = requests.post
+            raw_response_text = "N/A or Connection Exception"
+            
+            def intercepted_post(*args, **kwargs):
+                nonlocal raw_response_text
+                resp = original_post(*args, **kwargs)
+                try:
+                    raw_response_text = resp.json()["choices"][0]["message"]["content"]
+                except Exception as e:
+                    raw_response_text = f"Failed to extract raw content: {e}"
+                return resp
+
+            requests.post = intercepted_post
             try:
                 decision = backend.decide(prompt, context)
-                if decision:
-                    logger.info(f"[Decision] Mode identified: {decision.type.upper()}")
-                    return decision
-                else:
-                    logger.warning(f"[LLMRouter] {backend.name} returned empty decision — trying next.")
             except Exception as e:
                 logger.error(f"[LLMRouter] {backend.name} raised: {e} — trying next.")
                 with self._lock:
                     self._health[backend.name] = False
+                continue
+            finally:
+                requests.post = original_post
+
+            self._write_to_raw_log("DECIDE", backend.name, raw_input, raw_response_text)
+
+            if decision:
+                logger.info(f"[Decision] Mode identified: {decision.type.upper()}")
+                return decision
+            else:
+                logger.warning(f"[LLMRouter] {backend.name} returned empty decision — trying next.")
 
         # Final fallback (should never be reached as emergency is always healthy)
         logger.warning("[LLMRouter] All backends failed. Returning emergency offline chat.")
