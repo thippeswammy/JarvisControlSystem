@@ -124,3 +124,60 @@ def log_analysis(params: dict) -> SkillResult:
         return SkillResult(success=True, action_taken="Analyzed recent logs", message=msg)
     except Exception as e:
         return SkillResult(success=False, message=f"Log analysis failed: {e}")
+
+
+@skill(triggers=["get active window title", "get focused window title", "current window title"], name="get_active_window_title", category="system")
+def get_active_window_title(params: dict) -> SkillResult:
+    """Gets the window title of the currently focused/active foreground window."""
+    try:
+        import win32gui
+        hwnd = win32gui.GetForegroundWindow()
+        title = win32gui.GetWindowText(hwnd)
+        return SkillResult(success=True, action_taken="Retrieved active window title", data={"title": title})
+    except Exception as e:
+        return SkillResult(success=False, message=f"Failed to get active window title: {e}")
+
+
+@skill(triggers=["verify element exists", "check element exists"], name="verify_element_exists", category="system")
+def verify_element_exists(params: dict) -> SkillResult:
+    """Verifies if a specific element (by text label, ID, class, or selector) exists in the active window or browser."""
+    locator = params.get("locator", params.get("label", "")).strip()
+    if not locator:
+        return SkillResult(success=False, message="No locator/label provided to verify.")
+    
+    # 1. Try pywinauto Desktop verification for native windows
+    try:
+        from pywinauto import Desktop
+        import win32gui
+        hwnd = win32gui.GetForegroundWindow()
+        fore_title = win32gui.GetWindowText(hwnd).lower()
+        windows = Desktop(backend="uia").windows()
+        
+        for win in windows:
+            if fore_title and fore_title in win.window_text().lower():
+                # Found active window, look for children matching locator
+                try:
+                    descendants = win.descendants()
+                    for child in descendants:
+                        child_text = child.window_text()
+                        if locator.lower() in child_text.lower():
+                            return SkillResult(success=True, action_taken=f"Verified element exists: '{child_text}'", data={"found": True})
+                except Exception:
+                    pass
+    except Exception as e:
+        logger.debug(f"[verify_element_exists] pywinauto search failed: {e}")
+        
+    # 2. Try Playwright/Browser element verification if active browser page is open
+    try:
+        from jarvis.skills.builtins.browser_skill import _MANAGER
+        if _MANAGER.playwright and _MANAGER.context:
+            for page in _MANAGER.context.pages:
+                if page.is_closed():
+                    continue
+                # Check if element exists in page
+                if page.locator(locator).count() > 0 or page.locator(f"text={locator}").count() > 0:
+                    return SkillResult(success=True, action_taken=f"Verified browser element exists: '{locator}'", data={"found": True})
+    except Exception as e:
+        logger.debug(f"[verify_element_exists] Playwright search failed: {e}")
+        
+    return SkillResult(success=False, message=f"Could not find element matching locator '{locator}' in active window or browser.", data={"found": False})
