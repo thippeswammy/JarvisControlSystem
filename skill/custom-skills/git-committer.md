@@ -87,9 +87,10 @@ WHILE (uncommitted_files_exist):
 
 ---
 
-## 📋 Dynamic Command Template & Commit Prefix Guide
+## 📋 Standard Commit Message Format & Guidelines
 
-Use the following prefixes when synthesizing Conventional Commit messages. Below is the mapping of **What** it is, **Why** we use it, and **When** to apply it.
+Every commit message produced by this skill must follow the **Conventional Commits** specification. This ensures that repository history is highly structured, readable, and machine-parsable for changelog generation.
+
 
 | Prefix | Type | What it is | Why we use it | When to apply it |
 | --- | --- | --- | --- | --- |
@@ -102,6 +103,122 @@ Use the following prefixes when synthesizing Conventional Commit messages. Below
 | **`perf`** | Performance | Code modification specifically aimed at optimizing speed or resource usage. | Improves runtime efficiency, latency, or memory consumption. | When adding caches, optimizing database queries, or refactoring algorithms. |
 | **`chore`** | Maintenance | Operations on build scripts, dependencies, build files, or tools. | Separates utility tasks from real functional codebase changes. | When modifying package.json, requirements.txt, .gitignore, or build pipelines. |
 | **`ci`** | CI/CD | Changes to continuous integration configurations and scripts. | Keeps deployment pipelines and testing workflows functional and updated. | When modifying GitHub Actions, GitLab pipelines, or build environment configurations. |
+=======
+### 1. Standard Commit Structure
+```text
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+* **Header (Required):** Must contain a `<type>`, an optional but highly recommended `<scope>`, and a `<subject>`.
+  - **Character Limit:** Keep the subject line to **50 characters or less** (strict limit of 72).
+  - **Formatting:** Write the subject in lowercase, start without a capital letter, and do NOT end with a period.
+  - **Mood:** Use the **imperative mood** (e.g., "add support" instead of "added support" or "adds support").
+* **Body (Recommended for complex changes):** Separated from the header by a single blank line. Explains the *motivation* for the change and contrasts it with previous behavior.
+  - **Formatting:** Keep lines wrapped at **72 characters**. Use bulleted points for readability.
+* **Footer (Optional):** Used to reference issue trackers (e.g., `Refs: #123`) or denote breaking changes (`BREAKING CHANGE: <description>`).
+
+---
+
+### 2. Commit Prefix & Scope Guide
+
+The following table defines the allowed prefixes, when to apply them, and recommended scopes for this project:
+
+| Prefix | Type | When to apply it | Recommended Scopes | Concrete Example |
+| :--- | :--- | :--- | :--- | :--- |
+| **`feat`** | Feature | Introducing a new functional capability or user-facing feature. | `brain`, `gateway`, `skills`, `cli`, `agent` | `feat(brain): implement asynchronous ReAct closed-loop engine` |
+| **`fix`** | Bug Fix | Correcting functional errors, syntax bugs, logic mismatches, or crashes. | `memory`, `skills`, `nlu`, `safety`, `gateway` | `fix(skills): support volume and brightness parameter fallbacks` |
+| **`refactor`** | Refactor | Modifying code structure or readability without changing logic/behavior. | `brain`, `utils`, `core`, `adapters` | `refactor(brain): clean up closed-loop state representation` |
+| **`test`** | Tests | Adding new tests, upgrading mock architectures, or fixing existing assertions. | `integration`, `unit`, `regression`, `live` | `test(integration): run gateway tests against real Ollama LLM` |
+| **`docs`** | Docs | Modifying markdown files, developer documentation, READMEs, or API docstrings. | `plans`, `skills`, `readme`, `api` | `docs(readme): add troubleshooting section for Ollama timeouts` |
+| **`perf`** | Performance | Logic changes specifically targetting latency, memory usage, or query speed. | `memory`, `caching`, `db`, `nlu` | `perf(memory): warm trigger embeddings in background thread` |
+| **`chore`** | Maintenance | Operations on dependencies, package files, configs, or ignored files. | `config`, `deps`, `git` | `chore(git): ignore local binary files and database backups` |
+| **`style`** | Style | Format changes that don't affect code meaning (whitespace, lint errors). | `lint`, `format`, `semicolons` | `style(lint): resolve black formatting warnings in app_skill` |
+| **`ci`** | CI/CD | Modifying automated build, test execution, or deployment pipelines. | `actions`, `pytest-runner` | `ci(actions): run integration suite on windows-latest runner` |
+
+---
+
+### 3. Golden Rules of High-Quality Commits
+
+1. **Focus on "Why", Not "What":** The git diff shows *what* changed. Your commit message body should explain *why* it was changed, what problem it solves, and what side effects it prevents.
+2. **Never Use Lazy Messages:** Avoid messages like `fix bug`, `cleanup`, `updates`, or `working on files`. Be specific.
+3. **Keep Commits Atomic:** Stage and commit logical changes independently. For example, do not mix a performance optimization in memory logic with formatting improvements in standard skills.
+4. **Clean up before Committing:** Actively review staged files (`git diff --cached`) to ensure no temp logs, backup files, or private tokens are accidentally staged.
+
+---
+
+### 4. 🚀 JARVIS Project-Specific Commit Message Templates
+
+Use the following project-specific templates as drop-in patterns for common modifications in each JARVIS repository layer:
+
+#### A. Core Engine & Cognitive Planning (`brain`)
+* **Use case:** Modifying reasoning, closed-loop engine, context, preference routing, or recovery logic.
+* **Template:**
+```text
+<type>(brain): <action_in_imperative_mood>
+
+- Detail 1: what was changed in reasoning, orchestrator, or execution loop
+- Detail 2: why it was changed and how it handles planning edge cases
+```
+* **Real-world Examples:**
+  - `feat(brain): add dynamic re-planning on mid-flight user updates`
+  - `fix(brain): implement robust fallback to decide() when closed-loop is mocked`
+
+#### B. Graph Memory & Embeddings (`memory`)
+* **Use case:** Modifying vector search, trigger cache-warming, GraphDB SQLite, or pathfinding.
+* **Template:**
+```text
+<type>(memory): <action_in_imperative_mood>
+
+- Detail 1: changes to vector search, GraphDB schema, or trigger warming
+- Detail 2: impact on recall latency or embedding retrieval stability
+```
+* **Real-world Examples:**
+  - `fix(memory): pre-load nomic-embed-text to prevent startup warmup timeouts`
+  - `perf(memory): warm trigger embeddings using background thread`
+
+#### C. Settings Control Skills (`skills`)
+* **Use case:** Modifying display brightness, volume control, app orchestration, WMI, or other built-ins.
+* **Template:**
+```text
+<type>(skills): <action_in_imperative_mood>
+
+- Detail 1: exact fallback keys or skill parameter definitions added
+- Detail 2: specific OS panel or hardware compatibility addressed
+```
+* **Real-world Examples:**
+  - `fix(skills): support fallback brightness and volume parameter keys`
+  - `feat(skills): implement native WMI monitors control interface`
+
+#### D. Session Management & Input Adapters (`gateway`)
+* **Use case:** Refactoring Telegram adapters, TUI/CLI interfaces, long-polling, thread pools, or event queues.
+* **Template:**
+```text
+<type>(gateway): <action_in_imperative_mood>
+
+- Detail 1: changes to channel adapters, stream streams, or thread states
+- Detail 2: how it preserves non-blocking user interaction during tasks
+```
+* **Real-world Examples:**
+  - `feat(gateway): implement thread-safe session queue for async execution`
+  - `fix(gateway): avoid blocking long-polling during active task runs`
+
+#### E. Test Architecture & Assertions (`test`)
+* **Use case:** Adding unit, integration, or regression tests, or adapting test runs to real/mock LLM.
+* **Template:**
+```text
+test(<scope>): <action_in_imperative_mood>
+
+- Detail 1: test cases added or modified
+- Detail 2: specific fixtures, environment variables, or LLM configurations
+```
+* **Real-world Examples:**
+  - `test(integration): upgrade gateway flow assertions to support real LLM replies`
+  - `test(regression): add timeout and crash detection tests for multi-step tasks`
+
 
 ---
 
