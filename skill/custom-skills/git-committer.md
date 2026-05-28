@@ -138,6 +138,77 @@ The following table defines the allowed prefixes, when to apply them, and recomm
 
 ---
 
+### 4. 🚀 JARVIS Project-Specific Commit Message Templates
+
+Use the following project-specific templates as drop-in patterns for common modifications in each JARVIS repository layer:
+
+#### A. Core Engine & Cognitive Planning (`brain`)
+* **Use case:** Modifying reasoning, closed-loop engine, context, preference routing, or recovery logic.
+* **Template:**
+```text
+<type>(brain): <action_in_imperative_mood>
+
+- Detail 1: what was changed in reasoning, orchestrator, or execution loop
+- Detail 2: why it was changed and how it handles planning edge cases
+```
+* **Real-world Examples:**
+  - `feat(brain): add dynamic re-planning on mid-flight user updates`
+  - `fix(brain): implement robust fallback to decide() when closed-loop is mocked`
+
+#### B. Graph Memory & Embeddings (`memory`)
+* **Use case:** Modifying vector search, trigger cache-warming, GraphDB SQLite, or pathfinding.
+* **Template:**
+```text
+<type>(memory): <action_in_imperative_mood>
+
+- Detail 1: changes to vector search, GraphDB schema, or trigger warming
+- Detail 2: impact on recall latency or embedding retrieval stability
+```
+* **Real-world Examples:**
+  - `fix(memory): pre-load nomic-embed-text to prevent startup warmup timeouts`
+  - `perf(memory): warm trigger embeddings using background thread`
+
+#### C. Settings Control Skills (`skills`)
+* **Use case:** Modifying display brightness, volume control, app orchestration, WMI, or other built-ins.
+* **Template:**
+```text
+<type>(skills): <action_in_imperative_mood>
+
+- Detail 1: exact fallback keys or skill parameter definitions added
+- Detail 2: specific OS panel or hardware compatibility addressed
+```
+* **Real-world Examples:**
+  - `fix(skills): support fallback brightness and volume parameter keys`
+  - `feat(skills): implement native WMI monitors control interface`
+
+#### D. Session Management & Input Adapters (`gateway`)
+* **Use case:** Refactoring Telegram adapters, TUI/CLI interfaces, long-polling, thread pools, or event queues.
+* **Template:**
+```text
+<type>(gateway): <action_in_imperative_mood>
+
+- Detail 1: changes to channel adapters, stream streams, or thread states
+- Detail 2: how it preserves non-blocking user interaction during tasks
+```
+* **Real-world Examples:**
+  - `feat(gateway): implement thread-safe session queue for async execution`
+  - `fix(gateway): avoid blocking long-polling during active task runs`
+
+#### E. Test Architecture & Assertions (`test`)
+* **Use case:** Adding unit, integration, or regression tests, or adapting test runs to real/mock LLM.
+* **Template:**
+```text
+test(<scope>): <action_in_imperative_mood>
+
+- Detail 1: test cases added or modified
+- Detail 2: specific fixtures, environment variables, or LLM configurations
+```
+* **Real-world Examples:**
+  - `test(integration): upgrade gateway flow assertions to support real LLM replies`
+  - `test(regression): add timeout and crash detection tests for multi-step tasks`
+
+---
+
 ## Invocation & Triggers
 Semantic triggers:
 * *"Format and commit all changed files"*
