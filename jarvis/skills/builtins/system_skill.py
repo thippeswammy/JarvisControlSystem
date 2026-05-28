@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 @skill(triggers=["set volume", "change volume", "volume to", "mute", "unmute"],
        name="set_volume", category="system")
 def set_volume(params: dict) -> SkillResult:
-    level = params.get("level")
+    level = params.get("level") or params.get("volume")
     mute = params.get("mute")
     if mute is not None:
         if isinstance(mute, str):
@@ -65,7 +65,7 @@ def set_volume(params: dict) -> SkillResult:
 @skill(triggers=["set brightness", "brightness to", "change brightness"],
        name="set_brightness", category="system")
 def set_brightness(params: dict) -> SkillResult:
-    level = params.get("level")
+    level = params.get("level") or params.get("brightness")
     if level is None:
         return SkillResult(success=False, message="No brightness level specified")
     try:
