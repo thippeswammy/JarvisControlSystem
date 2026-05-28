@@ -69,7 +69,7 @@ class SemanticEncoder:
             
         return vector
 
-    def embed(self, text: str) -> Optional[List[float]]:
+    def embed(self, text: str, fallback: bool = True) -> Optional[List[float]]:
         """
         Get the vector embedding for a single text string.
         Returns local fallback embeddings if the request fails or is in cooldown.
@@ -79,7 +79,7 @@ class SemanticEncoder:
 
         import time
         if time.time() < SemanticEncoder._global_next_retry:
-            return self._local_fallback_embed(text)
+            return self._local_fallback_embed(text) if fallback else None
 
         payload = {
             "model": self.model,
@@ -103,11 +103,11 @@ class SemanticEncoder:
             parsed = urlparse(self.api_url)
             base_url = f"{parsed.scheme}://{parsed.netloc}"
             ensure_ollama_running(url=base_url)
-            return self._local_fallback_embed(text)
+            return self._local_fallback_embed(text) if fallback else None
         except Exception as e:
             logger.error(f"[SemanticEncoder] Error generating embedding: {e}. Cooling down for 60s.")
             SemanticEncoder._global_next_retry = time.time() + 60.0
-            return self._local_fallback_embed(text)
+            return self._local_fallback_embed(text) if fallback else None
 
     @staticmethod
     def cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
