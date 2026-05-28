@@ -101,7 +101,10 @@ class Orchestrator:
         source: str = "text",
         confidence: float = 1.0,
         metadata: Optional[dict] = None,
-        typing_callback: Optional[Callable] = None
+        typing_callback: Optional[Callable] = None,
+        async_run: bool = False,
+        session = None,
+        adapter = None
     ) -> list[SkillResult]:
         """
         Full pipeline: text → NLU → Plan → Execute → (Verify) → Learn.
@@ -207,38 +210,117 @@ class Orchestrator:
             #   - Explicit DONE/BLOCKED signals from LLM
             #   - Adaptive iteration limits
             #   - Integrated RecoveryEngine for self-healing
-            from jarvis.brain.preference_router import PreferenceRouter
-            try:
-                preference_router = PreferenceRouter()
-            except Exception:
-                preference_router = None
+            
+            if async_run and session and adapter:
+                import threading
+                
+                def _async_worker():
+                    try:
+                        # Let the user know we started
+                        adapter.send(session.id, "🚀 *Starting autonomous task execution...*")
+                        
+                        from jarvis.brain.preference_router import PreferenceRouter
+                        try:
+                            preference_router = PreferenceRouter()
+                        except Exception:
+                            preference_router = None
 
-            engine = ClosedLoopEngine(
-                router=self._router,
-                bus=self._bus,
-                context_harvester=self._context,
-                episodic=self._episodic,
-                temporal=self._temporal,
-                verification_loop=self._verification_loop,
-                learner=self._learner,
-                agent_bus=self.agent_bus,
-                mcp_bus=self.mcp_bus,
-                preference_router=preference_router,
-                max_iterations=10,
-            )
+                        engine = ClosedLoopEngine(
+                            router=self._router,
+                            bus=self._bus,
+                            context_harvester=self._context,
+                            episodic=self._episodic,
+                            temporal=self._temporal,
+                            verification_loop=self._verification_loop,
+                            learner=self._learner,
+                            agent_bus=self.agent_bus,
+                            mcp_bus=self.mcp_bus,
+                            preference_router=preference_router,
+                            max_iterations=10,
+                        )
 
-            loop_result = engine.run(
-                goal=text,
-                packet=packet,
-                initial_snapshot=snapshot,
-            )
+                        loop_result = engine.run(
+                            goal=text,
+                            packet=packet,
+                            initial_snapshot=snapshot,
+                            session=session,
+                            adapter=adapter
+                        )
+                        
+                        # Map results back for logging / macro learning
+                        plan_inner = loop_result.plan
+                        results_inner = loop_result.results
+                        all_success_inner = loop_result.completed or all(r.success for r in results_inner)
+                        
+                        # Log command execution exactly once per turn in episodic memory
+                        last_app_inner = ""
+                        last_skill_inner = ""
+                        if plan_inner:
+                            last_skill_inner = plan_inner[-1].skill
+                        try:
+                            last_app_inner = self._context.capture().active_app or ""
+                        except Exception:
+                            pass
+                        self._episodic.log_command(
+                            command=text,
+                            success=all_success_inner,
+                            app=last_app_inner,
+                            skill=last_skill_inner,
+                            from_memory=False
+                        )
+                    except Exception as e:
+                        logger.error(f"[Orchestrator] Error in background task thread: {e}", exc_info=True)
+                        try:
+                            adapter.send(session.id, f"❌ *System Error in dynamic execution:* {e}")
+                        except: pass
+                    finally:
+                        # Guarantee that session.active_task is cleared when done
+                        session.active_task = None
+                        # Stop typing
+                        try:
+                            adapter.stop_typing(session.id)
+                        except: pass
+                
+                t = threading.Thread(target=_async_worker, name=f"JarvisTask-{session.id}", daemon=True)
+                session.active_task = t
+                t.start()
+                
+                # Return lightweight acknowledgment immediately
+                return [SkillResult(success=True, action_taken="Dispatched background task.")]
 
-            # Map engine results back to orchestrator variables
-            results = loop_result.results
-            plan = loop_result.plan
-            has_llm_source = loop_result.has_llm_source
-            has_unsafe_skill = loop_result.has_unsafe_skill
-            all_success = loop_result.completed or all(r.success for r in results)
+            else:
+                from jarvis.brain.preference_router import PreferenceRouter
+                try:
+                    preference_router = PreferenceRouter()
+                except Exception:
+                    preference_router = None
+
+                engine = ClosedLoopEngine(
+                    router=self._router,
+                    bus=self._bus,
+                    context_harvester=self._context,
+                    episodic=self._episodic,
+                    temporal=self._temporal,
+                    verification_loop=self._verification_loop,
+                    learner=self._learner,
+                    agent_bus=self.agent_bus,
+                    mcp_bus=self.mcp_bus,
+                    preference_router=preference_router,
+                    max_iterations=10,
+                )
+
+                loop_result = engine.run(
+                    goal=text,
+                    packet=packet,
+                    initial_snapshot=snapshot,
+                )
+
+                # Map engine results back to orchestrator variables
+                results = loop_result.results
+                plan = loop_result.plan
+                has_llm_source = loop_result.has_llm_source
+                has_unsafe_skill = loop_result.has_unsafe_skill
+                all_success = loop_result.completed or all(r.success for r in results)
 
         # Auto-Learn Semantic Macro (The Reflex)
         # Only runs when --learn-macros flag is active AND plan wasn't from mock backend

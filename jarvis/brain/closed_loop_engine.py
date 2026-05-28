@@ -182,6 +182,8 @@ class ClosedLoopEngine:
         goal: str,
         packet: PerceptionPacket,
         initial_snapshot: ContextSnapshot,
+        session = None,
+        adapter = None,
     ) -> ClosedLoopResult:
         """
         Execute the closed loop until goal is satisfied.
@@ -198,6 +200,35 @@ class ClosedLoopEngine:
 
         for iteration in range(1, adaptive_limit + 1):
             logger.info(f"[ClosedLoop] === Iteration {iteration}/{adaptive_limit} ===")
+
+            # 0. Check for mid-flight user events / interruptions
+            if session and adapter:
+                import queue
+                interrupted = False
+                new_goal_parts = []
+                while True:
+                    try:
+                        evt = session.event_queue.get_nowait()
+                        text = evt.text.strip()
+                        logger.info(f"[ClosedLoop] Intercepted mid-flight user event: {text!r}")
+                        
+                        if text.lower() in ("stop", "cancel", "abort", "halt", "exit", "quit"):
+                            logger.info(f"[ClosedLoop] User cancelled the dynamic execution loop.")
+                            adapter.send(session.id, "🛑 *Task cancelled by user. Halting execution loop.*")
+                            result.completed = False
+                            result.summary = "Cancelled by user"
+                            return result
+                        
+                        new_goal_parts.append(text)
+                        interrupted = True
+                    except queue.Empty:
+                        break
+                
+                if interrupted:
+                    combined_additions = " AND ".join(new_goal_parts)
+                    goal = f"{goal} (UPDATE: {combined_additions})"
+                    logger.info(f"[ClosedLoop] Dynamic goal updated to: {goal!r}")
+                    adapter.send(session.id, f"🔄 *Goal updated dynamically:* {combined_additions!r}\n*Re-planning next actions...*")
 
             # 1. SENSE — capture current world state
             current_snapshot = self._context_harvester.capture()
@@ -247,6 +278,8 @@ class ClosedLoopEngine:
                     chat_call.params["_interface"] = initial_snapshot.interface
                     chat_result = self._bus.dispatch(chat_call)
                     result.results.append(chat_result)
+                    if adapter and session:
+                        adapter.send(session.id, f"🤖 *Goal Complete!*\n{decision.summary}")
                 break
 
             # Check for BLOCKED
@@ -256,6 +289,10 @@ class ClosedLoopEngine:
                 recovery_result = self._try_recovery(decision, current_snapshot)
                 if recovery_result:
                     result.results.extend(recovery_result)
+                    if adapter and session:
+                        from jarvis.brain.message_formatter import MessageFormatter
+                        step_reply = MessageFormatter.format(recovery_result, source=initial_snapshot.interface)
+                        adapter.send(session.id, f"🩹 *[Recovery Attempt]*\n{step_reply}")
                 else:
                     # Escalate to user
                     ask_call = SkillCall(
@@ -268,6 +305,8 @@ class ClosedLoopEngine:
                     ask_call.params["_interface"] = initial_snapshot.interface
                     ask_result = self._bus.dispatch(ask_call)
                     result.results.append(ask_result)
+                    if adapter and session:
+                        adapter.send(session.id, f"❓ *Jarvis needs help:* I'm stuck: {decision.block_reason or decision.reasoning}. Would you like me to try a different approach?")
                 break
 
             # 3. ACT — execute the actions
@@ -370,6 +409,13 @@ class ClosedLoopEngine:
                 results=step_results,
                 world_diff_text=post_diff_text,
             )
+
+            # Send real-time updates for intermediate actions executed in this step
+            if adapter and session and step_results:
+                from jarvis.brain.message_formatter import MessageFormatter
+                step_reply = MessageFormatter.format(step_results, source=initial_snapshot.interface)
+                if step_reply:
+                    adapter.send(session.id, f"⚡ *[Step {iteration} Update]*\n{step_reply}")
 
             # Small settle time between iterations
             time.sleep(0.3)
