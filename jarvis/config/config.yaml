@@ -9,7 +9,7 @@ jarvis:
 # ── LLM Router ──────────────────────────────────────────────
 llm:
   primary: local                     # Local Ollama primary
-  fallback: mock                   # Tunneled ngrok fallback
+  fallback: tunneled                   # Tunneled ngrok fallback
   emergency_fallback: mock           # always works
 
   backends:
