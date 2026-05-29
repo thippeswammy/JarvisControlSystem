@@ -35,8 +35,6 @@ class IntentSafetyLayer:
         if is_discussion:
             logger.info(f"[IntentSafety] Intercepted discussion/educational query: {packet.text!r}")
             packet.safe_mode = True
-            packet.intent = "chat_reply"
-            packet.entities = {"message": f"I detected you are asking a question or discussing: '{packet.text}'. Since this is an informational query, I will not execute any desktop actions."}
             packet.override_prompt = f"The user is asking an informational/educational question: '{packet.text}'. Answer their question clearly and conversationally. Do NOT generate any desktop execution steps or commands."
             
         return packet

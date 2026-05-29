@@ -70,11 +70,10 @@ class Planner:
     def _plan_single(self, packet: PerceptionPacket, snapshot=None, react_history: list[dict] = None) -> list[SkillCall]:
         # 0. Check safe mode for quoted blocks or text analysis
         if getattr(packet, "safe_mode", False):
-            logger.info(f"[Planner] Safe mode active for: {packet.text!r}")
-            return [SkillCall(
-                skill="chat_reply",
-                params={"message": f"I've analyzed the text, but since it is inside a cognitive text analysis query, I won't execute any commands. Text: '{packet.text}'"}
-            )]
+            logger.info(f"[Planner] Safe mode active for: {packet.text!r}. Routing to LLM with execution disabled.")
+            # We route directly to the Unified LLM to provide a natural conversational response
+            # while bypassing the fast-path Direct Map execution engine.
+            return self._plan_via_unified_llm(packet, snapshot=snapshot, react_history=react_history)
 
         # 1. Direct map (safety/session intents based on Skill registry)
         if self._bus.is_fast_path_eligible(packet.intent) and (packet.intent_category == "EXECUTION" or packet.intent == "chat_reply"):
