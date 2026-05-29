@@ -51,10 +51,9 @@ class PerceptionPacket:
     utterance: Utterance
     intent: str = ""               # e.g. "open_app", "navigate_location", "set_volume"
     entities: dict = field(default_factory=dict)  # e.g. {"target": "wifi", "level": 80}
-    app_context: str = ""          # derived active app from context
-    sub_location: str = ""         # e.g. "wifi" in "open settings wifi"
-    compound: bool = False         # True if multiple intents detected ("open notepad and type hello")
-    sub_commands: list = field(default_factory=list)  # list of (intent, entities) for compound
+    app_context: str = ""          # Active window/app name at the time
+    compound: bool = False         # Does this contain multiple instructions?
+    sub_commands: list = field(default_factory=list) # List of sub-command dicts
     memory_context: str = ""       # RAG snippets from MemoryManager
     raw_plan_override: list = field(default_factory=list)  # pre-built plan (from memory recall)
     context_snapshot: Optional[ContextSnapshot] = None # NEW

@@ -47,7 +47,7 @@ class NLU:
             "Output JSON format:\n"
             "{\n"
             '  "intent": "open_app" | "close_app" | "type_text" | "power_action" | "chat_reply" | "log_analysis",\n'
-            '  "entities": {"target": "name", "sub_location": "optional specific section"} or {"text": "some text"},\n'
+            '  "entities": {"target": "name"} or {"text": "some text"},\n'
             '  "intent_category": "EXECUTION" | "EDUCATIONAL" | "HYPOTHETICAL" | "CAPABILITY" | "TEXT_ANALYSIS",\n'
             '  "compound": false,\n'
             '  "sub_commands": []\n'
@@ -56,7 +56,6 @@ class NLU:
             "- 'intent_category' must accurately reflect if the user wants to execute a command (EXECUTION) vs asking how to do something (EDUCATIONAL), asking a hypothetical 'what if' (HYPOTHETICAL), or asking about your features (CAPABILITY).\n"
             "- If the utterance is not execution (e.g. hypothetical), set intent to 'chat_reply'.\n"
             "- If it contains multiple commands (like 'open notepad and type hello'), set compound to true and fill sub_commands array with the individual commands following the same format.\n"
-            "- For 'open_app', if a specific section is requested (like 'display settings' or 'bluetooth settings'), set target to the main app ('settings') and sub_location to the specific section ('display', 'bluetooth').\n"
             "- Prioritize quoted strings when extracting entities."
         )
 
@@ -85,14 +84,11 @@ class NLU:
             compound = response_json.get("compound", False)
             sub_commands = response_json.get("sub_commands", [])
 
-            sub_location = entities.get("sub_location", "")
-
             packet = PerceptionPacket(
                 utterance=utterance,
                 intent=intent,
                 entities=entities,
                 app_context=app_context,
-                sub_location=sub_location,
                 compound=compound,
                 sub_commands=sub_commands,
                 intent_category=intent_category,
