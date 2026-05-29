@@ -163,9 +163,16 @@ class Orchestrator:
         has_unsafe_skill = False
         plan = []
 
+        is_conversational = not packet.compound and packet.intent_category in ("EDUCATIONAL", "HYPOTHETICAL", "CAPABILITY", "TEXT_ANALYSIS")
+
+        if is_conversational and packet.intent_category == "TEXT_ANALYSIS":
+            packet.safe_mode = True
+
         is_fast_path = (
             mem_path is not None 
             or (not packet.compound and self._bus.is_fast_path_eligible(packet.intent) and (packet.intent_category == "EXECUTION" or packet.intent == "chat_reply"))
+            or getattr(packet, "safe_mode", False)
+            or is_conversational
         )
 
         if is_fast_path:
