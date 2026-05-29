@@ -20,9 +20,32 @@ __pycache__/
 .opencode.json
 .mcp.json
 
+# IDEs and Environments
+.idea/
+.venv/
+.vscode/
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+*.log
+
+.idea/workspace.xml
+/reports/
+
+.code-review-graph/
+.claude/
+.kiro/
+.opencode.json
+.mcp.json
+
 # Runtime Memory DBs
 /memory/
 
 # Process ID and runtime files
 *.pid
 
+logs/
