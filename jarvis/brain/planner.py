@@ -23,16 +23,6 @@ from jarvis.skills.skill_bus import SkillCall, SkillBus
 
 logger = logging.getLogger(__name__)
 
-# Intent → skill_name direct mapping (only safety/session intents bypass LLM)
-_DIRECT_MAP: dict[str, str] = {
-    "power_action":     "power_action",
-    "session_activate": "session_activate",
-    "session_deactivate":"session_deactivate",
-    "open_app":         "open_app",
-    "close_app":        "close_app",
-    "log_analysis":     "log_analysis",
-}
-
 
 class Planner:
     """
@@ -86,24 +76,14 @@ class Planner:
                 params={"message": f"I've analyzed the text, but since it is inside a cognitive text analysis query, I won't execute any commands. Text: '{packet.text}'"}
             )]
 
-        # 1. Direct map (safety/session intents)
-        if packet.intent in _DIRECT_MAP:
-            skill_name = _DIRECT_MAP[packet.intent]
+        # 1. Direct map (safety/session intents based on Skill registry)
+        if self._bus.is_fast_path_eligible(packet.intent) and (packet.intent_category == "EXECUTION" or packet.intent == "chat_reply"):
             logger.info(f"[Planner] Direct map bypass for intent: {packet.intent}")
-            return [SkillCall(skill=skill_name, params=packet.entities)]
-
-        # Custom Direct Map for Chat replies (Fast path)
-        if packet.intent == "chat_reply":
-            text = packet.text.lower()
-            if "hello" in text or "hi" in text or "hey" in text:
-                msg = "Hello! How can I help you today?"
-            elif "thanks" in text or "thank you" in text:
-                msg = "You're very welcome!"
-            elif "ok" in text or "okay" in text or "sure" in text:
-                msg = "Understood."
-            else:
-                msg = "Okay."
-            return [SkillCall(skill="chat_reply", params={"message": msg})]
+            # Ensure text is in entities if not present (useful for chat_reply)
+            params = packet.entities.copy()
+            if "text" not in params and packet.text:
+                params["text"] = packet.text
+            return [SkillCall(skill=packet.intent, params=params)]
 
         # 2. Pre-built plan from memory recall (pathfinder result)
         if packet.raw_plan_override:

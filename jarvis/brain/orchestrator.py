@@ -66,7 +66,7 @@ class Orchestrator:
         self.agent_bus = agent_bus or AgentBus(self._memory)
         self.mcp_bus = mcp_bus or MCPBus()
 
-        self._nlu = NLU()
+        self._nlu = NLU(router=self._router)
         from jarvis.perception.context_fusion import ContextFusionLayer
         self._context_fusion = ContextFusionLayer()
         from jarvis.brain.safety_layer import IntentSafetyLayer
@@ -163,12 +163,16 @@ class Orchestrator:
         has_unsafe_skill = False
         plan = []
 
+        is_conversational = not packet.compound and packet.intent_category in ("EDUCATIONAL", "HYPOTHETICAL", "CAPABILITY", "TEXT_ANALYSIS")
+
+        if is_conversational and packet.intent_category == "TEXT_ANALYSIS":
+            packet.safe_mode = True
+
         is_fast_path = (
             mem_path is not None 
-            or (not packet.compound and (
-                packet.intent in ("session_activate", "session_deactivate", "power_action", "open_app", "close_app", "chat_reply")
-                or getattr(packet, "safe_mode", False)
-            ))
+            or (not packet.compound and self._bus.is_fast_path_eligible(packet.intent) and (packet.intent_category == "EXECUTION" or packet.intent == "chat_reply"))
+            or getattr(packet, "safe_mode", False)
+            or is_conversational
         )
 
         if is_fast_path:

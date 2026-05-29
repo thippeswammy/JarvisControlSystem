@@ -15,7 +15,7 @@ class IntentSafetyLayer:
     """Protects against accidental execution from informational queries."""
     
     DISCUSSION_PATTERNS = [
-        re.compile(r"^\s*(how\s+(?:do|can|to|should|would)|what\s+is|why\s+does|explain|teach|tell\s+me\s+about|how\s+to\s+use|can\s+you\s+explain)\b", re.I),
+        re.compile(r"^\s*(how\s+(?:do|can|to|should|would)|what\s+is|why\s+does|explain|teach|tell\s+me\s+about|how\s+to\s+use|can\s+you(\s+explain)?|if\s+i\s+asked\s+you|summarize|translate|analyze)\b", re.I),
         re.compile(r"\b(how\s+do\s+i|how\s+can\s+i|what\s+does|how\s+does)\b", re.I)
     ]
 

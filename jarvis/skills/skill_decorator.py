@@ -26,6 +26,7 @@ def skill(
     requires: Optional[list[str]] = None,
     is_cognitive: bool = False,
     settle_ms: int = 0,
+    fast_path_eligible: bool = False,
 ):
     """
     Decorator to register a function as a Jarvis skill.
@@ -39,6 +40,8 @@ def skill(
                     "navigation", "media", "session", "search".
         requires:   Optional list of Python packages required at runtime.
                     SkillBus warns (but doesn't crash) if missing.
+        fast_path_eligible: If True, allows executing this skill immediately
+                    without waiting for LLM planner if intent matches directly.
     """
     def decorator(fn: Callable) -> Callable:
         fn.__skill__ = True
@@ -49,6 +52,7 @@ def skill(
         fn.__skill_requires__ = requires or []
         fn.__skill_cognitive__ = is_cognitive
         fn.__skill_settle_ms__ = settle_ms
+        fn.__skill_fast_path_eligible__ = fast_path_eligible
 
         @functools.wraps(fn)
         def wrapper(*args, **kwargs):
@@ -63,6 +67,7 @@ def skill(
         wrapper.__skill_requires__ = fn.__skill_requires__
         wrapper.__skill_cognitive__ = fn.__skill_cognitive__
         wrapper.__skill_settle_ms__ = fn.__skill_settle_ms__
+        wrapper.__skill_fast_path_eligible__ = fn.__skill_fast_path_eligible__
 
         return wrapper
     return decorator

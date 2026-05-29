@@ -46,7 +46,7 @@ class LocalLLM(LLMInterface):
         api_url: str = "http://localhost:11434/v1",
         model: str = _DEFAULT_MODEL,
         fallback_model: str = _DEFAULT_MODEL,
-        max_tokens: int = 300,
+        max_tokens: int = 30000,
         temperature: float = 0.1,
         timeout: float = 15.0,
         auto_pull: bool = True,
