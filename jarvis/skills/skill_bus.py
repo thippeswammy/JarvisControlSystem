@@ -53,6 +53,7 @@ class _SkillEntry:
     requires: list[str]
     is_cognitive: bool = False
     settle_ms: int = 0
+    fast_path_eligible: bool = False
 
 
 class SkillBus:
@@ -165,6 +166,13 @@ class SkillBus:
             return 0
         return entry.settle_ms
 
+    def is_fast_path_eligible(self, skill_name: str) -> bool:
+        """Returns True if the skill is allowed to bypass the LLM planner."""
+        entry = self._find(skill_name)
+        if not entry:
+            return False
+        return entry.fast_path_eligible
+
     def get_trigger_map(self) -> dict[str, str]:
         """Returns {trigger_phrase: skill_name} for LLM system prompt injection."""
         result = {}
@@ -220,6 +228,7 @@ class SkillBus:
             requires=fn.__skill_requires__,
             is_cognitive=fn.__skill_cognitive__,
             settle_ms=getattr(fn, "__skill_settle_ms__", 0),
+            fast_path_eligible=getattr(fn, "__skill_fast_path_eligible__", False),
         )
         if entry.name in self._registry and not override:
             existing = self._registry[entry.name]

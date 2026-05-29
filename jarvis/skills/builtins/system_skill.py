@@ -79,7 +79,7 @@ def set_brightness(params: dict) -> SkillResult:
 
 
 @skill(triggers=["shutdown", "shut down", "restart", "sleep pc", "hibernate"],
-       name="power_action", category="system")
+       name="power_action", category="system", fast_path_eligible=True)
 def power_action(params: dict) -> SkillResult:
     import subprocess, os
     action = params.get("action", "").lower()

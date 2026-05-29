@@ -8,7 +8,7 @@ from jarvis.utils.app_finder import AppFinder
 
 logger = logging.getLogger(__name__)
 
-@skill(triggers=["open app", "launch app", "start app", "run app"], name="open_app", category="app")
+@skill(triggers=["open app", "launch app", "start app", "run app"], name="open_app", category="app", fast_path_eligible=True)
 def open_app(params: dict) -> SkillResult:
     target = params.get("target", "").strip()
     if not target:
@@ -81,7 +81,7 @@ def open_app(params: dict) -> SkillResult:
         return SkillResult(success=False, message=f"Failed to open {target!r}: {e}")
 
 
-@skill(triggers=["close app", "quit app", "exit app"], name="close_app", category="app")
+@skill(triggers=["close app", "quit app", "exit app"], name="close_app", category="app", fast_path_eligible=True)
 def close_app(params: dict) -> SkillResult:
     target = params.get("target", "active").strip()
     import pyautogui
