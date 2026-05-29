@@ -104,3 +104,5 @@ NOT rely on static automation rules.
 
 ---
 
+
+[context_fusion.py#L32-32](textBlock;file:///f%3A/RunningProjects/JarvisControlSystem/jarvis/perception/context_fusion.py#L32-32) even this lest, llm do it, only., where llm need t waht  tool it has, but need to plant how use all that tools, while bracking,a nd find, where i only select and to say what tool, codes it need to, and where, llln get data, or prest systm that feed it , and again re-plan like loop. and basssed on this it need to happen. and 
