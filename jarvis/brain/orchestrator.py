@@ -165,7 +165,7 @@ class Orchestrator:
 
         is_fast_path = (
             mem_path is not None 
-            or (not packet.compound and self.agent_bus.skill_bus.is_fast_path_eligible(packet.intent))
+            or (not packet.compound and self._bus.is_fast_path_eligible(packet.intent))
         )
 
         if is_fast_path:
