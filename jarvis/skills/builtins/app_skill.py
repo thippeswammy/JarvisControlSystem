@@ -59,26 +59,13 @@ def open_app(params: dict) -> SkillResult:
             return SkillResult(success=True, action_taken=f"Discovered and launched: {target}", data={"exe": exe})
         except Exception as e:
             logger.error(f"[app_skill] Launch failed for {exe}: {e}")
-
-    # Smart Fallback: Windows Search (Guarded)
-    # Prevent long conversational sentences from triggering Edge web searches
-    if len(target.split()) > 3 or len(target) > 25 or "?" in target or "'" in target or '"' in target:
-        logger.warning(f"[app_skill] Target {target!r} failed validation for Windows Search fallback.")
+            return SkillResult(success=False, message=f"Failed to open {target!r}: {e}")
+    else:
+        # AppFinder completely failed to find the executable path.
+        # We NO LONGER fall back to blind UI automation (pyautogui -> Windows Search)
+        # because it caused severe false-positives (browser search tabs masquerading as apps).
+        logger.warning(f"[app_skill] AppFinder could not locate {target!r}.")
         return SkillResult(success=False, message=f"NOT_FOUND: Application {target!r} could not be found locally.")
-
-    import pyautogui, time
-    try:
-        pyautogui.hotkey("win", "s")
-        time.sleep(0.8)
-        pyautogui.typewrite(target, interval=0.05)
-        time.sleep(1.0) # Settle for search results to appear
-        
-        # We press enter assuming the short target brings up a local app.
-        # If further inspection is needed to strictly prevent web results, UI automation could check the pane here.
-        pyautogui.press("enter")
-        return SkillResult(success=True, action_taken=f"Searched and launched fallback: {target}")
-    except Exception as e:
-        return SkillResult(success=False, message=f"Failed to open {target!r}: {e}")
 
 
 @skill(triggers=["close app", "quit app", "exit app"], name="close_app", category="app", fast_path_eligible=True)
