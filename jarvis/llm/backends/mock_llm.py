@@ -12,7 +12,7 @@ import logging
 import re
 from typing import Optional
 
-from jarvis.llm.llm_interface import LLMInterface, Plan, SkillCallSpec, LLMDecision
+from jarvis.llm.llm_interface import LLMInterface, Plan, SkillCallSpec, LLMDecision, ClosedLoopDecision
 
 logger = logging.getLogger(__name__)
 

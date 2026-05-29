@@ -30,7 +30,7 @@ from typing import Optional
 
 import yaml
 
-from jarvis.llm.llm_interface import LLMInterface, Plan, LLMDecision
+from jarvis.llm.llm_interface import LLMInterface, Plan, LLMDecision, ClosedLoopDecision
 from jarvis.llm.backends.mock_llm import MockLLM
 from jarvis.llm.backends.local_llm import LocalLLM
 from jarvis.llm.backends.openai_llm import OpenAILLM
@@ -108,9 +108,9 @@ class LLMRouter:
                     api_url=bc.get("api_url", "http://localhost:11434/v1"),
                     model=bc.get("model", "gemma3:4b"),
                     fallback_model=bc.get("fallback_model", "gemma3:4b"),
-                    max_tokens=bc.get("max_tokens", 300),
+                    max_tokens=bc.get("max_tokens", 30000),
                     temperature=bc.get("temperature", 0.1),
-                    timeout=bc.get("timeout_seconds", 15),
+                    timeout=bc.get("timeout_seconds", 60),
                     auto_pull=bc.get("auto_pull", True),
                 )
             if name == "openai":
@@ -118,28 +118,28 @@ class LLMRouter:
                     provider=bc.get("provider", "openai"),
                     api_key=_resolve(bc.get("api_key", "")),
                     model=bc.get("model", "gpt-4o-mini"),
-                    max_tokens=bc.get("max_tokens", 300),
+                    max_tokens=bc.get("max_tokens", 30000),
                     temperature=bc.get("temperature", 0.1),
-                    timeout=bc.get("timeout_seconds", 20),
+                    timeout=bc.get("timeout_seconds", 60),
                 )
             if name == "tunneled":
                 return TunneledLLM(
                     api_url=_resolve(bc.get("api_url", "")),
                     api_key=_resolve(bc.get("api_key", "")),
                     model=_resolve(bc.get("model", "")),
-                    max_tokens=bc.get("max_tokens", 300),
+                    max_tokens=bc.get("max_tokens", 30000),
                     temperature=bc.get("temperature", 0.1),
-                    timeout=bc.get("timeout_seconds", 10),
+                    timeout=bc.get("timeout_seconds", 60),
                 )
             if name == "nvidia":
                 return NvidiaLLM(
                     model=bc.get("model", "qwen/qwen3-coder-480b-a35b-instruct"),
                     api_key=_resolve(bc.get("api_key", "")),
                     base_url=bc.get("base_url", "https://integrate.api.nvidia.com/v1"),
-                    max_tokens=bc.get("max_tokens", 4096),
+                    max_tokens=bc.get("max_tokens", 40960),
                     temperature=bc.get("temperature", 0.7),
                     top_p=bc.get("top_p", 0.8),
-                    timeout=bc.get("timeout_seconds", 30),
+                    timeout=bc.get("timeout_seconds", 60),
                 )
             if name == "mock":
                 return MockLLM()
@@ -219,7 +219,7 @@ class LLMRouter:
         import json
         import os
         from datetime import datetime
-        log_path = Path(__file__).parent.parent.parent / "logs" / "llm_raw.log"
+        log_path = Path(__file__).parent.parent.parent / "logs" / "runtime" / "llm_raw.log"
         log_path.parent.mkdir(exist_ok=True)
         
         # Clean and parse for the user-friendly output_response
@@ -229,19 +229,20 @@ class LLMRouter:
         log_entry = {
             "timestamp": timestamp,
             "mode": mode,
-            "backend": backend_name,
+            "backend": str(backend_name),
             "raw_input_payload": raw_input,
             "raw_output_response": raw_response,
             "output_response": output_response
         }
         
         with open(log_path, "a", encoding="utf-8") as f:
-            f.write(json.dumps(log_entry, indent=2, ensure_ascii=False) + "\n\n" + "="*80 + "\n\n")
+            f.write(json.dumps(log_entry, indent=2, ensure_ascii=False, default=str) + "\n\n" + "="*80 + "\n\n")
             f.flush()
             try:
                 os.fsync(f.fileno())
             except Exception:
                 pass
+
 
     def route(self, prompt: str, memory_context: str = "") -> Plan:
         """
@@ -272,6 +273,11 @@ class LLMRouter:
             if hasattr(backend, "last_raw_response"):
                 backend.last_raw_response = ""
 
+            # Check if MockLLM is disallowed
+            if "mock" in backend.name.lower() and os.environ.get("JARVIS_ALLOW_MOCK") != "true":
+                logger.info(f"[LLMRouter] Disallowing MockLLM fallback for PLAN.")
+                continue
+
             try:
                 plan = backend.plan(prompt, memory_context)
             except Exception as e:
@@ -289,9 +295,8 @@ class LLMRouter:
             else:
                 logger.warning(f"[LLMRouter] {backend.name} returned empty plan — trying next.")
 
-        # Final fallback: mock always works
-        logger.warning("[LLMRouter] All backends failed. Using mock emergency fallback.")
-        return self._emergency.plan(prompt, memory_context) or []
+        # Final fallback: Raise error instead of falling back to Mock
+        raise RuntimeError("Jarvis local cognitive core (Ollama gemma3) is offline. Please make sure the service is running ('ollama serve').")
 
     def decide(self, prompt: str, context: str = "") -> LLMDecision:
         """
@@ -303,6 +308,11 @@ class LLMRouter:
                 continue
             if not self._is_healthy(backend):
                 logger.info(f"[LLMRouter] Skipping unhealthy backend: {backend.name}")
+                continue
+
+            # Check if MockLLM is disallowed
+            if "mock" in backend.name.lower() and os.environ.get("JARVIS_ALLOW_MOCK") != "true":
+                logger.info(f"[LLMRouter] Disallowing MockLLM fallback for DECIDE.")
                 continue
 
             logger.info(f"[Cognitive] Requesting decision from {backend.name}...")
@@ -347,10 +357,59 @@ class LLMRouter:
             else:
                 logger.warning(f"[LLMRouter] {backend.name} returned empty decision — trying next.")
 
-        # Final fallback (should never be reached as emergency is always healthy)
-        logger.warning("[LLMRouter] All backends failed. Returning emergency offline chat.")
-        return LLMDecision(type="chat", message="Sorry, my cognitive core is currently offline.")
+        # Final fallback: Raise error instead of falling back to Mock
+        raise RuntimeError("Jarvis local cognitive core (Ollama gemma3) is offline. Please make sure the service is running ('ollama serve').")
 
+    def decide_closed_loop(self, prompt: str, context: str = "") -> ClosedLoopDecision:
+        """
+        Closed-loop decision routing: primary → fallback → emergency.
+        Returns ClosedLoopDecision with status/actions/summary.
+        """
+        for backend in [self._primary, self._fallback, self._emergency]:
+            if not backend:
+                continue
+            if not self._is_healthy(backend):
+                logger.info(f"[LLMRouter] Skipping unhealthy backend for closed-loop: {backend.name}")
+                continue
+
+            # Check if MockLLM is disallowed
+            if "mock" in backend.name.lower() and os.environ.get("JARVIS_ALLOW_MOCK") != "true":
+                logger.info(f"[LLMRouter] Disallowing MockLLM fallback for CLOSED_LOOP.")
+                continue
+
+            logger.info(f"[ClosedLoop] Requesting decision from {backend.name}...")
+
+            # Clear last raw response
+            if hasattr(backend, "last_raw_response"):
+                backend.last_raw_response = ""
+
+            try:
+                decision = backend.decide_closed_loop(prompt, context)
+            except NotImplementedError:
+                logger.warning(f"[LLMRouter] {backend.name} does not support closed-loop. Trying next.")
+                continue
+            except Exception as e:
+                logger.error(f"[LLMRouter] {backend.name} closed-loop raised: {e} — trying next.")
+                with self._lock:
+                    self._health[backend.name] = False
+                continue
+
+            raw_response_text = getattr(backend, "last_raw_response", "") or "No raw response captured"
+            self._write_to_raw_log("CLOSED_LOOP", backend.name, {"prompt": prompt[:200]}, raw_response_text)
+
+            if decision:
+                logger.info(f"[ClosedLoop] Status: {decision.status.upper()} | Actions: {len(decision.actions)}")
+                return decision
+            else:
+                logger.warning(f"[LLMRouter] {backend.name} returned empty closed-loop decision — trying next.")
+
+        # Final fallback: return blocked
+        from jarvis.llm.llm_interface import ClosedLoopDecision as CLD
+        return CLD(
+            status="blocked",
+            reasoning="All LLM backends failed or unavailable",
+            block_reason="No available backend",
+        )
     def stop(self):
         """Stop the health monitor thread."""
         self._stop_event.set()

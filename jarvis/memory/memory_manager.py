@@ -222,11 +222,41 @@ class MemoryManager:
         Uses a short timeout per call so a busy Ollama doesn't block startup.
         """
         logger.info("[MemoryManager] Warming semantic embedding cache...")
+        
+        from jarvis.utils.ollama_utils import is_ollama_running
+        from urllib.parse import urlparse
+        import urllib.request
+        
+        parsed = urlparse(self._encoder.api_url)
+        base_url = f"{parsed.scheme}://{parsed.netloc}"
+        ollama_active = is_ollama_running(base_url)
+        
+        if ollama_active:
+            # Pre-load/warm model with a generous timeout to ensure Ollama has loaded it into GPU/RAM
+            try:
+                logger.info(f"[MemoryManager] Pre-loading embedding model '{self._encoder.model}' in Ollama...")
+                preload_payload = {
+                    "model": self._encoder.model,
+                    "prompt": "warmup"
+                }
+                req = urllib.request.Request(
+                    self._encoder.api_url,
+                    data=json.dumps(preload_payload).encode("utf-8"),
+                    headers={"Content-Type": "application/json"}
+                )
+                with urllib.request.urlopen(req, timeout=30.0) as resp:
+                    resp.read()
+                logger.info(f"[MemoryManager] Model '{self._encoder.model}' loaded successfully.")
+            except Exception as e:
+                logger.warning(f"[MemoryManager] Model pre-load warning: {e}. Proceeding with warm-up.")
+        else:
+            logger.info("[MemoryManager] Ollama service not reachable. Pre-populating cache with local keyword-aware fallback embeddings.")
+
         count = 0
         apps = self._db.list_apps()
         
         # Use a short timeout for warm-up — if Ollama is busy loading a model,
-        # we skip warm-up gracefully rather than hanging for 30s per trigger.
+        # we skip warm-up gracefully rather than hanging for 5s per trigger.
         original_timeout = self._encoder.timeout
         self._encoder.timeout = 5.0
         
@@ -236,12 +266,19 @@ class MemoryManager:
                     for trigger in edge.triggers:
                         trigger_clean = trigger.lower().strip()
                         if trigger_clean not in self._trigger_embeddings:
-                            vec = self._encoder.embed(trigger_clean)
+                            if ollama_active:
+                                # Ollama is active, so we want real embeddings. 
+                                # If it fails/cooldown, return None instead of fallback, so we abort.
+                                vec = self._encoder.embed(trigger_clean, fallback=False)
+                            else:
+                                # Ollama is offline, so we use fallback embeddings directly.
+                                vec = self._encoder._local_fallback_embed(trigger_clean)
+                                
                             if vec:
                                 self._trigger_embeddings[trigger_clean] = vec
                                 count += 1
                             else:
-                                # Ollama unavailable — abort warm-up, will retry on demand
+                                # Ollama returned None — abort warm-up, will retry on demand
                                 logger.info(f"[MemoryManager] Embedding service busy — skipping warm-up after {count} entries.")
                                 return
         finally:

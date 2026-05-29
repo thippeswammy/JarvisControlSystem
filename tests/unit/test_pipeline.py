@@ -295,8 +295,19 @@ class TestOrchestratorPipeline(unittest.TestCase):
         memory.get_relevant_context.return_value = ""
         memory.get_db.return_value = MagicMock()
         router = MagicMock()
-        from jarvis.llm.llm_interface import LLMDecision, SkillCallSpec
+        from jarvis.llm.llm_interface import LLMDecision, SkillCallSpec, ClosedLoopDecision
         router.decide.return_value = LLMDecision(type="chat", message="OK")
+        
+        def mock_decide_closed_loop(prompt, context=""):
+            dec = router.decide(prompt, context)
+            if not dec:
+                return None
+            if dec.type == "chat":
+                return ClosedLoopDecision(status="done", summary=dec.message)
+            else:
+                return ClosedLoopDecision(status="in_progress", actions=dec.steps or [])
+        router.decide_closed_loop.side_effect = mock_decide_closed_loop
+        
         bus = self._make_bus(success)
         orch = Orchestrator(memory=memory, router=router, bus=bus)
         # Bypass boot (no DB needed)

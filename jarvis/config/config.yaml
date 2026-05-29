@@ -18,9 +18,9 @@ llm:
       api_url: "http://localhost:11434/v1"
       model: "gemma3:4b"
       fallback_model: "gemma3:4b"   # stable for 4GB VRAM
-      max_tokens: 300
+      max_tokens: 8000
       temperature: 0.1
-      timeout_seconds: 45
+      timeout_seconds: 60
       auto_pull: true
 
     # Cloud: OpenAI or Anthropic
@@ -47,7 +47,7 @@ llm:
       api_url: "https://petri-crowbar-occupier.ngrok-free.dev/v1"
       api_key: ""
       model: "gemma4:e2b"
-      max_tokens: 131072
+      max_tokens: 101072
       temperature: 0.6
       timeout_seconds: 45
 

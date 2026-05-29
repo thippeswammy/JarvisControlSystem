@@ -28,7 +28,7 @@ class Scenario07(LiveScenario):
         mem = MemoryManager()
         self.orch = Orchestrator(memory=mem, router=LLMRouter.from_config(), bus=SkillBus())
         self.orch.boot()
-        self.adapter = MockTelegramAdapter(log_path="logs/telegram_test.log")
+        self.adapter = MockTelegramAdapter(log_path = "logs/runtime/telegram_test.log")
         self.chat_id = 998877
         self._stream_gen = self.adapter.stream()
 

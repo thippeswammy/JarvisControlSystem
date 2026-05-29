@@ -16,6 +16,7 @@ from typing import Optional, Callable
 
 from jarvis.brain.planner import Planner
 from jarvis.brain.reactive_learner import ReactiveLearner
+from jarvis.brain.closed_loop_engine import ClosedLoopEngine
 from jarvis.llm.llm_router import LLMRouter
 from jarvis.memory.layers.episodic import EpisodicMemory
 from jarvis.memory.layers.temporal import TemporalMemory
@@ -100,7 +101,10 @@ class Orchestrator:
         source: str = "text",
         confidence: float = 1.0,
         metadata: Optional[dict] = None,
-        typing_callback: Optional[Callable] = None
+        typing_callback: Optional[Callable] = None,
+        async_run: bool = False,
+        session = None,
+        adapter = None
     ) -> list[SkillResult]:
         """
         Full pipeline: text → NLU → Plan → Execute → (Verify) → Learn.
@@ -143,13 +147,6 @@ class Orchestrator:
         
         packet.memory_context = f"{episodic_ctx}\n\n{procedural_ctx}"
 
-        logger.info(
-            f"[Orchestrator] '{text}' → intent={packet.intent}, "
-            f"app={snapshot.active_app}"
-        )
-
-        # Plan
-        # Compound commands go directly to the LLM (full sentence, one call).
         # Single commands: try memory recall first (fast path), then fall to LLM.
         mem_path = None
         if not packet.compound:
@@ -158,86 +155,178 @@ class Orchestrator:
                 app_id=snapshot.active_app or None,
                 state_sig=snapshot.state_sig
             )
-        
-        if mem_path:
-            logger.info(f"[Orchestrator] Memory HIT (state-aware) for '{text}'")
-            plan = self._planner._path_to_skill_calls(mem_path)
-        else:
-            if packet.compound:
-                logger.info("[Orchestrator] Compound command → single LLM call")
-            plan = self._planner.plan(packet)
 
-        # Execute each skill call in the plan
+        # Plan & Execute via Closed-Loop ReAct Engine
         results = []
         all_success = True
         has_llm_source = False
         has_unsafe_skill = False
-        
-        for call in plan:
-            call.params["_interface"] = snapshot.interface
-            call.params["_agent_bus"] = self.agent_bus
-            call.params["_mcp_bus"] = self.mcp_bus
-            call.params["_router"] = self._router
-            if getattr(call, "source", "") == "llm":
-                has_llm_source = True
-            if self._bus.is_cognitive(call.skill):
-                has_unsafe_skill = True
+        plan = []
 
-            import time
-            start_time = time.perf_counter()
-            if self._verification_loop:
-                result = self._verification_loop.execute_and_verify(
-                    call=call,
-                    bus=self._bus,
-                    packet=packet,
-                    snapshot=snapshot,
-                    learner=self._learner,
-                )
+        is_fast_path = (
+            mem_path is not None 
+            or (not packet.compound and (
+                packet.intent in ("session_activate", "session_deactivate", "power_action", "open_app", "close_app", "chat_reply")
+                or getattr(packet, "safe_mode", False)
+            ))
+        )
+
+        if is_fast_path:
+            if mem_path:
+                logger.info(f"[Orchestrator] Memory HIT (state-aware) for '{text}'")
+                plan = self._planner._path_to_skill_calls(mem_path)
             else:
-                # Phase 5 mode: execute without verification
-                result = self._bus.dispatch(call)
-            duration_ms = int((time.perf_counter() - start_time) * 1000)
+                logger.info(f"[Orchestrator] Direct-map fast path for intent: {packet.intent}")
+                plan = self._planner.plan(packet)
 
-            results.append(result)
+            # Execute the plan sequentially
+            for call in plan:
+                call.params["_interface"] = snapshot.interface
+                call.params["_agent_bus"] = self.agent_bus
+                call.params["_mcp_bus"] = self.mcp_bus
+                call.params["_router"] = self._router
+                
+                import time
+                start_time = time.perf_counter()
+                if self._verification_loop:
+                    result = self._verification_loop.execute_and_verify(
+                        call=call,
+                        bus=self._bus,
+                        packet=packet,
+                        snapshot=snapshot,
+                        learner=self._learner,
+                    )
+                else:
+                    result = self._bus.dispatch(call)
+                duration_ms = int((time.perf_counter() - start_time) * 1000)
+                results.append(result)
+                
+                self._temporal.log_event(app_context=snapshot.active_app or "system", action=f"executed {call.skill}", status="SUCCESS" if result.success else "FAILED", duration_ms=duration_ms)
+                
+                if not result.success:
+                    logger.warning(f"[Orchestrator] Fast path plan halted at skill: {call.skill}")
+                    all_success = False
+                    break
+
+        else:
+            # ═══ Closed-Loop Engine (replaces old inline ReAct loop) ═══
+            # The engine autonomously cycles System ↔ LLM with:
+            #   - Clean empty ExecutionLedger at start (no stale data)
+            #   - World-state diffs injected per iteration
+            #   - Explicit DONE/BLOCKED signals from LLM
+            #   - Adaptive iteration limits
+            #   - Integrated RecoveryEngine for self-healing
             
-            # Log to episodic memory
-            self._episodic.log_command(
-                command=text,
-                success=result.success,
-                app=snapshot.active_app or "",
-                skill=call.skill,
-            )
+            if async_run and session and adapter:
+                import threading
+                
+                def _async_worker():
+                    try:
+                        # Let the user know we started
+                        adapter.send(session.id, "🚀 *Starting autonomous task execution...*")
+                        
+                        from jarvis.brain.preference_router import PreferenceRouter
+                        try:
+                            preference_router = PreferenceRouter()
+                        except Exception:
+                            preference_router = None
 
-            # Log to temporal memory
-            action_desc = f"executed {call.skill}"
-            if call.params:
-                clean_params = {k: v for k, v in call.params.items() if not k.startswith("_")}
-                if clean_params:
-                    action_desc += f" with params: {clean_params}"
-            
-            self._temporal.log_event(
-                app_context=snapshot.active_app or "system",
-                action=action_desc,
-                status="SUCCESS" if result.success else "FAILED",
-                duration_ms=duration_ms
-            )
+                        engine = ClosedLoopEngine(
+                            router=self._router,
+                            bus=self._bus,
+                            context_harvester=self._context,
+                            episodic=self._episodic,
+                            temporal=self._temporal,
+                            verification_loop=self._verification_loop,
+                            learner=self._learner,
+                            agent_bus=self.agent_bus,
+                            mcp_bus=self.mcp_bus,
+                            preference_router=preference_router,
+                            max_iterations=10,
+                        )
 
-            # Record state transition for lineage tracking
-            if result.success:
-                self._episodic.record_state_transition(
-                    state_sig="", # post-execution state (unknown until next cycle)
-                    cause="JARVIS",
-                    action=f"executed {call.skill}",
-                    skill_used=call.skill,
-                    app_context=snapshot.active_app or ""
+                        loop_result = engine.run(
+                            goal=text,
+                            packet=packet,
+                            initial_snapshot=snapshot,
+                            session=session,
+                            adapter=adapter
+                        )
+                        
+                        # Map results back for logging / macro learning
+                        plan_inner = loop_result.plan
+                        results_inner = loop_result.results
+                        all_success_inner = loop_result.completed or all(r.success for r in results_inner)
+                        
+                        # Log command execution exactly once per turn in episodic memory
+                        last_app_inner = ""
+                        last_skill_inner = ""
+                        if plan_inner:
+                            last_skill_inner = plan_inner[-1].skill
+                        try:
+                            last_app_inner = self._context.capture().active_app or ""
+                        except Exception:
+                            pass
+                        self._episodic.log_command(
+                            command=text,
+                            success=all_success_inner,
+                            app=last_app_inner,
+                            skill=last_skill_inner,
+                            from_memory=False
+                        )
+                    except Exception as e:
+                        logger.error(f"[Orchestrator] Error in background task thread: {e}", exc_info=True)
+                        try:
+                            adapter.send(session.id, f"❌ *System Error in dynamic execution:* {e}")
+                        except: pass
+                    finally:
+                        # Guarantee that session.active_task is cleared when done
+                        session.active_task = None
+                        # Stop typing
+                        try:
+                            adapter.stop_typing(session.id)
+                        except: pass
+                
+                t = threading.Thread(target=_async_worker, name=f"JarvisTask-{session.id}", daemon=True)
+                session.active_task = t
+                t.start()
+                
+                # Return lightweight acknowledgment immediately
+                return [SkillResult(success=True, action_taken="Dispatched background task.")]
+
+            else:
+                from jarvis.brain.preference_router import PreferenceRouter
+                try:
+                    preference_router = PreferenceRouter()
+                except Exception:
+                    preference_router = None
+
+                engine = ClosedLoopEngine(
+                    router=self._router,
+                    bus=self._bus,
+                    context_harvester=self._context,
+                    episodic=self._episodic,
+                    temporal=self._temporal,
+                    verification_loop=self._verification_loop,
+                    learner=self._learner,
+                    agent_bus=self.agent_bus,
+                    mcp_bus=self.mcp_bus,
+                    preference_router=preference_router,
+                    max_iterations=10,
                 )
 
+                loop_result = engine.run(
+                    goal=text,
+                    packet=packet,
+                    initial_snapshot=snapshot,
+                )
 
-            # Stop plan on failure
-            if not result.success:
-                logger.warning(f"[Orchestrator] Plan halted at skill: {call.skill}")
-                all_success = False
-                break
+                # Map engine results back to orchestrator variables
+                results = loop_result.results
+                plan = loop_result.plan
+                has_llm_source = loop_result.has_llm_source
+                has_unsafe_skill = loop_result.has_unsafe_skill
+                all_success = loop_result.completed or all(r.success for r in results)
 
         # Auto-Learn Semantic Macro (The Reflex)
         # Only runs when --learn-macros flag is active AND plan wasn't from mock backend
@@ -259,8 +348,16 @@ class Orchestrator:
                         is_dynamic_payload = True
                         break
 
-            if has_unsafe_skill or is_dynamic_payload:
-                reason = "dynamic cognitive skill" if has_unsafe_skill else "dynamic payload content"
+            # Explicitly blacklist dynamic cognitive skills from automatic memorization
+            MACRO_BLACKLIST = {
+                "type_text", "press_key", "click_browser_node", "fill_browser_node", 
+                "click_web_element", "search_web", "run_agent", "run_agent_pipeline", 
+                "call_mcp_tool", "extract_browser_dom_tree", "click_element", "scroll_page"
+            }
+            has_blacklisted_skill = any(call.skill in MACRO_BLACKLIST for call in plan)
+
+            if has_unsafe_skill or is_dynamic_payload or has_blacklisted_skill:
+                reason = "dynamic/cognitive blacklisted skill" if has_blacklisted_skill else ("dynamic cognitive skill" if has_unsafe_skill else "dynamic payload content")
                 logger.info(f"[Orchestrator] Skipping macro learning: plan contains {reason}")
             else:
                 import json
@@ -308,6 +405,23 @@ class Orchestrator:
                     )
                     self._memory.add_learned_macro(new_edge)
                     logger.info(f"[Orchestrator] Learned new state-aware macro for trigger: {text!r}")
+
+        # Log command execution exactly once per turn in episodic memory
+        last_app = ""
+        last_skill = ""
+        if plan:
+            last_skill = plan[-1].skill
+        try:
+            last_app = self._context.capture().active_app or ""
+        except Exception:
+            pass
+        self._episodic.log_command(
+            command=text,
+            success=all_success,
+            app=last_app,
+            skill=last_skill,
+            from_memory=bool(mem_path)
+        )
 
         return results
 

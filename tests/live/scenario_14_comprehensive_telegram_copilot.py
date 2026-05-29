@@ -38,7 +38,7 @@ class Scenario14(LiveScenario):
         self.orch.boot()
         
         # Set up mock telegram adapter focused on telegram_test.log
-        self.adapter = MockTelegramAdapter(log_path="logs/telegram_test.log")
+        self.adapter = MockTelegramAdapter(log_path = "logs/runtime/telegram_test.log")
         self.chat_id = 998877
         self._stream_gen = self.adapter.stream()
 

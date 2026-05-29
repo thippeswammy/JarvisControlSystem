@@ -391,7 +391,7 @@ class MockTelegramAdapter(TelegramAdapter):
     """
     name = "telegram-test"
 
-    def __init__(self, log_path: str = "logs/telegram_test.log"):
+    def __init__(self, log_path: str = "logs/runtime/telegram_test.log"):
         super().__init__(token="MOCK_TOKEN", log_path=log_path)
         self._input_queue = queue.Queue()
         self._replies = []

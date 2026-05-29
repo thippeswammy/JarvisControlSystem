@@ -190,7 +190,7 @@ Examples:
     
     elif args.command == "gateway":
         if args.subcommand == "start":
-            pid_file = _PROJECT_ROOT / "logs" / "gateway.pid"
+            pid_file = _PROJECT_ROOT / "logs" / "runtime" / "gateway.pid"
             if pid_file.exists():
                 # Check if process is actually running
                 import psutil
@@ -225,7 +225,7 @@ Examples:
                 print("\n🛰 Gateway stopped.")
 
         elif args.subcommand == "stop":
-            pid_file = _PROJECT_ROOT / "logs" / "gateway.pid"
+            pid_file = _PROJECT_ROOT / "logs" / "runtime" / "gateway.pid"
             if not pid_file.exists():
                 rprint("[yellow]Gateway is not running (no PID file found).[/yellow]")
                 return
@@ -251,7 +251,7 @@ Examples:
                 rprint(f"[red]Error stopping gateway: {e}[/red]")
 
         elif args.subcommand == "status":
-            pid_file = _PROJECT_ROOT / "logs" / "gateway.pid"
+            pid_file = _PROJECT_ROOT / "logs" / "runtime" / "gateway.pid"
             is_running = False
             pid = None
             if pid_file.exists():
@@ -563,7 +563,7 @@ Examples:
     elif args.command == "logs":
         from jarvis.cli.commands.logs_cmd import LogAnalyzer
         
-        analyzer = LogAnalyzer(_PROJECT_ROOT / "logs" / "jarvis.log")
+        analyzer = LogAnalyzer(_PROJECT_ROOT / "logs" / "runtime" / "jarvis.log")
         
         if args.subcommand == "tail":
             lines = analyzer.tail(n=args.n)
@@ -600,7 +600,7 @@ Examples:
         elif args.subcommand == "export":
             import shutil
             try:
-                shutil.copy(_PROJECT_ROOT / "logs" / "jarvis.log", args.output)
+                shutil.copy(_PROJECT_ROOT / "logs" / "runtime" / "jarvis.log", args.output)
                 rprint(f"[green]OK:[/green] Logs exported to [bold]{args.output}[/bold]")
             except Exception as e:
                 rprint(f"[red]Error:[/red] Export failed: {e}")
@@ -614,7 +614,7 @@ Examples:
         elif args.subcommand == "watch":
             rprint("[dim]Starting live log watch (Ctrl+C to exit)...[/dim]")
             import time
-            log_file = _PROJECT_ROOT / "logs" / "jarvis.log"
+            log_file = _PROJECT_ROOT / "logs" / "runtime" / "jarvis.log"
             if not log_file.exists():
                 rprint(f"[red]Error:[/red] Log file not found: {log_file}")
                 return

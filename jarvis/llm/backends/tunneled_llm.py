@@ -19,7 +19,7 @@ from typing import Optional
 
 import requests
 
-from jarvis.llm.llm_interface import LLMInterface, Plan, SkillCallSpec, LLMDecision
+from jarvis.llm.llm_interface import LLMInterface, Plan, SkillCallSpec, LLMDecision, ClosedLoopDecision
 
 logger = logging.getLogger(__name__)
 
@@ -123,26 +123,89 @@ class TunneledLLM(LLMInterface):
             {"role": "user", "content": prompt}
         ]
 
-        try:
-            resp = requests.post(
-                f"{self._api_url}/chat/completions",
-                headers=self._headers(),
-                json={
-                    "model": self._model,
-                    "messages": messages,
-                    "max_tokens": self._max_tokens + 200,
-                    "temperature": 0.4,
-                    "stream": False,
-                },
-                timeout=self._timeout,
-            )
-            resp.raise_for_status()
-            content = resp.json()["choices"][0]["message"]["content"].strip()
-            self.last_raw_response = content
-            return self._parse_decision(content)
-        except Exception as e:
-            logger.error(f"[TunneledLLM] Decide request failed: {e}")
+        for attempt in range(3):
+            try:
+                resp = requests.post(
+                    f"{self._api_url}/chat/completions",
+                    headers=self._headers(),
+                    json={
+                        "model": self._model,
+                        "messages": messages,
+                        "max_tokens": self._max_tokens + 200,
+                        "temperature": 0.4 if attempt == 0 else 0.1,  # Lower temperature on retry
+                        "stream": False,
+                    },
+                    timeout=self._timeout,
+                )
+                resp.raise_for_status()
+                content = resp.json()["choices"][0]["message"]["content"].strip()
+                self.last_raw_response = content
+                
+                is_valid, error_msg = self._is_valid_json_decision(content)
+                if is_valid:
+                    return self._parse_decision(content)
+                
+                if attempt < 2:
+                    logger.warning(f"[TunneledLLM] JSON parse failure on attempt {attempt+1}: {error_msg}. Retrying self-correction...")
+                    messages.append({"role": "assistant", "content": content})
+                    messages.append({"role": "user", "content": f"Your response was not valid JSON. Parse error: {error_msg}. Please fix the JSON and return ONLY the valid JSON object matching the schema."})
+                else:
+                    logger.error(f"[TunneledLLM] JSON self-correction exhausted all attempts.")
+                    return self._parse_decision(content)
+            except Exception as e:
+                logger.error(f"[TunneledLLM] Decide request failed on attempt {attempt+1}: {e}")
+                if attempt == 2:
+                    return None
+
+    def _call_llm_closed_loop(self, prompt: str, context: str) -> Optional[str]:
+        """Native closed-loop call via tunnel. Returns raw text."""
+        if not self._api_url:
             return None
+
+        from jarvis.brain.closed_loop_prompt import build_closed_loop_system_prompt
+        sys_prompt = build_closed_loop_system_prompt()
+
+        messages = [
+            {"role": "system", "content": sys_prompt},
+            {"role": "system", "content": context},
+            {"role": "user", "content": prompt}
+        ]
+
+        for attempt in range(3):
+            try:
+                resp = requests.post(
+                    f"{self._api_url}/chat/completions",
+                    headers=self._headers(),
+                    json={
+                        "model": self._model,
+                        "messages": messages,
+                        "max_tokens": self._max_tokens + 200,
+                        "temperature": 0.3 if attempt == 0 else 0.1,
+                        "stream": False,
+                    },
+                    timeout=self._timeout,
+                )
+                resp.raise_for_status()
+                content = resp.json()["choices"][0]["message"]["content"].strip()
+                self.last_raw_response = content
+
+                if self._parse_closed_loop_decision(content):
+                    return content
+
+                if attempt < 2:
+                    logger.warning(f"[TunneledLLM] Closed-loop JSON parse failure on attempt {attempt+1}. Retrying...")
+                    messages.append({"role": "assistant", "content": content})
+                    messages.append({"role": "user", "content": (
+                        "Your response was not valid JSON for the closed-loop schema. "
+                        'Return ONLY: {"status": "in_progress"|"done"|"blocked", "reasoning": "...", "actions": [...]}'
+                    )})
+                else:
+                    return content  # Fallback to base class wrapper
+            except Exception as e:
+                logger.error(f"[TunneledLLM] Closed-loop request failed attempt {attempt+1}: {e}")
+                if attempt == 2:
+                    return None
+        return None
 
     def _headers(self) -> dict:
         h = {"Content-Type": "application/json"}
@@ -150,54 +213,3 @@ class TunneledLLM(LLMInterface):
             h["Authorization"] = f"Bearer {self._api_key}"
         return h
 
-    def _parse_plan(self, raw: str) -> Optional[Plan]:
-        raw = raw.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
-        try:
-            data = json.loads(raw)
-            if not isinstance(data, list):
-                data = [data]
-            return [
-                SkillCallSpec(skill=d["skill"], params=d.get("params", {}))
-                for d in data if isinstance(d, dict) and "skill" in d
-            ] or None
-        except Exception as e:
-            logger.warning(f"[TunneledLLM] Plan parse error: {e}")
-            return None
-
-    def _parse_decision(self, raw: str) -> Optional[LLMDecision]:
-        import re
-        cleaned = re.sub(r"```(?:json)?\s*", "", raw, flags=re.IGNORECASE).strip()
-        cleaned = cleaned.replace("```", "").strip()
-
-        obj_match = re.search(r"(\{.*\})", cleaned, re.DOTALL)
-        if obj_match:
-            candidate = obj_match.group(1)
-        else:
-            candidate = cleaned
-            
-        try:
-            data = json.loads(candidate)
-            if not isinstance(data, dict):
-                raise ValueError("Decision must be a JSON object")
-                
-            dec_type = data.get("type", "chat")
-            
-            steps = None
-            if "steps" in data and isinstance(data["steps"], list):
-                steps = []
-                for item in data["steps"]:
-                    if isinstance(item, dict) and "skill" in item:
-                        steps.append(SkillCallSpec(
-                            skill=item["skill"],
-                            params=item.get("params", {}),
-                        ))
-            
-            return LLMDecision(
-                type=dec_type,
-                message=data.get("message"),
-                steps=steps,
-                question=data.get("question")
-            )
-        except Exception as e:
-            logger.warning(f"[TunneledLLM] Failed to parse decision JSON.\nRaw: {raw[:300]}\nError: {e}")
-            return None

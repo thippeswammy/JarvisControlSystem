@@ -1,8 +1,8 @@
+from typing import Optional, Dict, Any
+from dataclasses import dataclass, field
+import queue
 import logging
-from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional, Dict
-
 from jarvis.brain.orchestrator import Orchestrator
 from jarvis.memory.layers.episodic import EpisodicMemory
 from jarvis.memory.memory_manager import MemoryManager
@@ -22,6 +22,8 @@ class Session:
     orchestrator: Orchestrator     # isolated per session
     episodic: EpisodicMemory       # isolated per channel/session
     slash_handler: SlashHandler    # shared command logic
+    active_task: Optional[Any] = None
+    event_queue: queue.Queue = field(default_factory=queue.Queue)
 
 class SessionManager:
     """

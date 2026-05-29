@@ -195,7 +195,47 @@ def extract_browser_dom_tree(params: dict) -> SkillResult:
         catalog = " | ".join(lines) if lines else "No interactive web elements detected."
         return SkillResult(success=True, action_taken="Extracted DOM Accessibility Tree", data={"dom_tree": catalog})
     except Exception as e:
-        return SkillResult(success=False, message=f"DOM extraction failed: {e}")
+        logger.warning(f"[extract_browser_dom_tree] Playwright extraction failed: {e}. Trying pywinauto fallback...")
+        try:
+            from pywinauto import Desktop
+            import win32gui
+            hwnd = win32gui.GetForegroundWindow()
+            fore_title = win32gui.GetWindowText(hwnd).lower()
+            
+            # Find matching window in Desktop
+            windows = Desktop(backend="uia").windows()
+            active_win = None
+            for win in windows:
+                if fore_title and fore_title in win.window_text().lower():
+                    active_win = win
+                    break
+                    
+            if not active_win:
+                return SkillResult(success=False, message=f"DOM extraction failed: Playwright failed ({e}) and no active foreground window found via pywinauto.")
+                
+            descendants = active_win.descendants()
+            lines = []
+            idx = 0
+            _MANAGER.cached_nodes = []
+            
+            for elem in descendants:
+                try:
+                    control_type = elem.control_type()
+                    # Only focus on interactive control types
+                    if control_type in ("Button", "Edit", "CheckBox", "RadioButton", "ComboBox", "Hyperlink", "MenuItem"):
+                        title = elem.window_text().strip()
+                        if not title:
+                            continue
+                        idx += 1
+                        _MANAGER.cached_nodes.append(elem)
+                        lines.append(f"[{idx}] {control_type.upper()}: '{title}'")
+                except:
+                    continue
+                    
+            catalog = " | ".join(lines) if lines else "No interactive window controls detected."
+            return SkillResult(success=True, action_taken="Extracted active window control tree via pywinauto fallback", data={"dom_tree": catalog})
+        except Exception as pe:
+            return SkillResult(success=False, message=f"DOM extraction failed: Playwright failed ({e}) and pywinauto fallback failed ({pe})")
 
 
 @skill(triggers=["click browser node", "click web index"], name="click_browser_node", category="browser")
@@ -210,7 +250,10 @@ def click_browser_node(params: dict) -> SkillResult:
         
     try:
         elem = _MANAGER.cached_nodes[index - 1]
-        elem.click()
+        if hasattr(elem, "click_input"):
+            elem.click_input()
+        else:
+            elem.click()
         return SkillResult(success=True, action_taken=f"Clicked browser node index: {index}")
     except Exception as e:
         return SkillResult(success=False, message=f"Failed clicking browser node: {e}")
@@ -229,7 +272,10 @@ def fill_browser_node(params: dict) -> SkillResult:
         
     try:
         elem = _MANAGER.cached_nodes[index - 1]
-        elem.fill(text)
+        if hasattr(elem, "type_keys"):
+            elem.type_keys(text, with_spaces=True)
+        else:
+            elem.fill(text)
         return SkillResult(success=True, action_taken=f"Typed '{text}' into browser node index: {index}")
     except Exception as e:
         return SkillResult(success=False, message=f"Failed typing into browser node: {e}")

@@ -11,6 +11,10 @@ from unittest.mock import MagicMock, patch
 # Ensure project root is importable
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
+# Enable Mock fallback during tests
+os.environ["JARVIS_ALLOW_MOCK"] = "true"
+
+
 
 # ── Database fixture ─────────────────────────────────────────
 

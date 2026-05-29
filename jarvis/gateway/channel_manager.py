@@ -73,20 +73,36 @@ class ChannelManager:
                     adapter.send(session.id, slash_reply)
                     continue
 
-                # Process via session-isolated orchestrator
+                # If an active closed-loop task is running in the background, enqueue the utterance as an event
+                if session.active_task and session.active_task.is_alive():
+                    logger.info(f"[ChannelManager] Active task is running for session {session.id}. Enqueuing event: {utterance.text!r}")
+                    session.event_queue.put(utterance)
+                    continue
+
+                # Process via session-isolated orchestrator (asynchronously in production)
                 logger.info(f"[ChannelManager] Processing utterance via session {session.id}")
-                results = session.orchestrator.process(
-                    utterance.text,
-                    source=name,
-                    typing_callback=lambda: adapter.start_typing(session.id)
-                )
                 
-                logger.info(f"[ChannelManager] Processed. Results count: {len(results)}")
-                
-                # Format and send reply
-                reply_text = MessageFormatter.format(results, source=name)
-                logger.info(f"[ChannelManager] Sending reply to {session.id}: {reply_text[:50]}...")
-                adapter.send(session.id, reply_text)
+                # We run asynchronously for telegram, cli, and tui production channels
+                if name in ("telegram", "cli", "tui", "telegram-test"):
+                    session.orchestrator.process(
+                        utterance.text,
+                        source=name,
+                        typing_callback=lambda: adapter.start_typing(session.id),
+                        async_run=True,
+                        session=session,
+                        adapter=adapter
+                    )
+                else:
+                    results = session.orchestrator.process(
+                        utterance.text,
+                        source=name,
+                        typing_callback=lambda: adapter.start_typing(session.id)
+                    )
+                    logger.info(f"[ChannelManager] Processed (sync). Results count: {len(results)}")
+                    # Format and send reply
+                    reply_text = MessageFormatter.format(results, source=name)
+                    logger.info(f"[ChannelManager] Sending reply to {session.id}: {reply_text[:50]}...")
+                    adapter.send(session.id, reply_text)
                 
         except Exception as e:
             logger.error(f"[ChannelManager] Error in channel {name}: {e}", exc_info=True)

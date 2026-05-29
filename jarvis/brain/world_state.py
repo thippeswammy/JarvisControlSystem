@@ -44,6 +44,91 @@ class WorldState:
             
         return "\n".join(lines)
 
+    @staticmethod
+    def diff(before: 'WorldState', after: 'WorldState') -> dict:
+        """
+        Compute semantic diff between two world state snapshots.
+        
+        Returns a dict describing what changed:
+          - focus_changed: bool + details
+          - windows_opened: list of new window titles
+          - windows_closed: list of removed window titles
+          - resource_delta: CPU/RAM changes
+          - browser_changed: bool + details
+        """
+        result = {}
+
+        # Focus change
+        before_title = before.active_window.get("title", "")
+        after_title = after.active_window.get("title", "")
+        if before_title != after_title:
+            result["focus_changed"] = {
+                "from": before_title,
+                "to": after_title,
+            }
+
+        # Window diff
+        before_wins = {w.get("title", "") for w in before.open_windows if w.get("title")}
+        after_wins = {w.get("title", "") for w in after.open_windows if w.get("title")}
+        opened = after_wins - before_wins
+        closed = before_wins - after_wins
+        if opened:
+            result["windows_opened"] = sorted(opened)
+        if closed:
+            result["windows_closed"] = sorted(closed)
+
+        # Resource delta
+        cpu_before = before.system_resources.get("cpu", 0)
+        cpu_after = after.system_resources.get("cpu", 0)
+        ram_before = before.system_resources.get("ram", 0)
+        ram_after = after.system_resources.get("ram", 0)
+        if abs(cpu_after - cpu_before) > 5 or abs(ram_after - ram_before) > 3:
+            result["resource_delta"] = {
+                "cpu": f"{cpu_before}% → {cpu_after}%",
+                "ram": f"{ram_before}% → {ram_after}%",
+            }
+
+        # Browser state change
+        if before.browser_state or after.browser_state:
+            b_tab = (before.browser_state or {}).get("tab_title", "")
+            a_tab = (after.browser_state or {}).get("tab_title", "")
+            b_url = (before.browser_state or {}).get("tab_url", "")
+            a_url = (after.browser_state or {}).get("tab_url", "")
+            if b_tab != a_tab or b_url != a_url:
+                result["browser_changed"] = {
+                    "tab_from": b_tab,
+                    "tab_to": a_tab,
+                    "url_from": b_url,
+                    "url_to": a_url,
+                }
+
+        if not result:
+            result["no_change"] = True
+
+        return result
+
+    @staticmethod
+    def diff_to_text(diff: dict) -> str:
+        """Convert a diff dict to human-readable text for LLM injection."""
+        if diff.get("no_change"):
+            return "No observable changes to the desktop environment."
+        
+        lines = []
+        if "focus_changed" in diff:
+            fc = diff["focus_changed"]
+            lines.append(f"Focus changed: '{fc['from']}' → '{fc['to']}'")
+        if "windows_opened" in diff:
+            lines.append(f"Windows opened: {', '.join(diff['windows_opened'])}")
+        if "windows_closed" in diff:
+            lines.append(f"Windows closed: {', '.join(diff['windows_closed'])}")
+        if "resource_delta" in diff:
+            rd = diff["resource_delta"]
+            lines.append(f"Resources: CPU {rd['cpu']}, RAM {rd['ram']}")
+        if "browser_changed" in diff:
+            bc = diff["browser_changed"]
+            lines.append(f"Browser: tab '{bc['tab_from']}' → '{bc['tab_to']}'")
+        return "\n".join(lines) if lines else "No significant changes."
+
 
 class WorldStateModeler:
     """Harvests and builds a unified WorldState model dynamically on demand."""
@@ -72,21 +157,23 @@ class WorldStateModeler:
             except Exception:
                 pass
 
-        # 2. Harvest Open Windows
+        # 2. Harvest Open Windows (Optimized with fast Win32 EnumWindows)
         open_windows = []
-        desktop = Desktop(backend="uia")
         try:
-            for win in desktop.windows():
-                title = win.window_text()
-                if not title:
-                    continue
-                try:
-                    _, pid = win32process.GetWindowThreadProcessId(win.handle)
-                    proc = psutil.Process(pid)
-                    proc_name = proc.name().replace(".exe", "").lower()
-                except Exception:
-                    proc_name = "unknown"
-                open_windows.append({"title": title, "process": proc_name, "hwnd": win.handle})
+            def enum_windows_callback(hwnd, extra):
+                if win32gui.IsWindowVisible(hwnd):
+                    title = win32gui.GetWindowText(hwnd) or ""
+                    if title:
+                        try:
+                            _, pid = win32process.GetWindowThreadProcessId(hwnd)
+                            proc = psutil.Process(pid)
+                            proc_name = proc.name().replace(".exe", "").lower()
+                        except Exception:
+                            proc_name = "unknown"
+                        open_windows.append({"title": title, "process": proc_name, "hwnd": hwnd})
+                return True
+
+            win32gui.EnumWindows(enum_windows_callback, None)
         except Exception as e:
             logger.debug(f"[WorldStateModeler] Enumerate windows failed: {e}")
 

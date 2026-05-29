@@ -17,7 +17,7 @@ from pathlib import Path
 _PROJECT_ROOT = Path(__file__).parent.parent
 
 # ── Ensure logs dir exists ────────────────────────────────
-(_PROJECT_ROOT / "logs").mkdir(exist_ok=True)
+(_PROJECT_ROOT / "logs" / "runtime").mkdir(parents=True, exist_ok=True)
 
 # ── Ensure UTF-8 console output (Windows fix) ─────────────
 if sys.platform == "win32":
@@ -32,7 +32,7 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler(str(_PROJECT_ROOT / "logs" / "jarvis.log"), encoding="utf-8"),
+        logging.FileHandler(str(_PROJECT_ROOT / "logs" / "runtime" / "jarvis.log"), encoding="utf-8"),
     ],
 )
 logger = logging.getLogger("jarvis.main")

@@ -40,10 +40,15 @@ def mock_browser_env():
     elem3 = MagicMock()
     elem3.is_visible.return_value = False  # Invisible element, should be skipped
     
+    # Prevent MagicMock hasattr gotcha for click_input/type_keys pywinauto fallback checks
+    del elem1.click_input
+    del elem2.type_keys
+    
     page.query_selector_all.return_value = [elem1, elem2, elem3]
     
     with patch.object(_MANAGER, "connect_or_launch", return_value=context):
         yield page, [elem1, elem2]
+
 
 def test_extract_browser_dom_tree(mock_browser_env):
     page, active_elems = mock_browser_env
