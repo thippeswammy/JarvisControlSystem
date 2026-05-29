@@ -92,6 +92,19 @@ class Planner:
             logger.info(f"[Planner] Direct map bypass for intent: {packet.intent}")
             return [SkillCall(skill=skill_name, params=packet.entities)]
 
+        # Custom Direct Map for Chat replies (Fast path)
+        if packet.intent == "chat_reply":
+            text = packet.text.lower()
+            if "hello" in text or "hi" in text or "hey" in text:
+                msg = "Hello! How can I help you today?"
+            elif "thanks" in text or "thank you" in text:
+                msg = "You're very welcome!"
+            elif "ok" in text or "okay" in text or "sure" in text:
+                msg = "Understood."
+            else:
+                msg = "Okay."
+            return [SkillCall(skill="chat_reply", params={"message": msg})]
+
         # 2. Pre-built plan from memory recall (pathfinder result)
         if packet.raw_plan_override:
             logger.info("[Planner] Using memory recall plan")

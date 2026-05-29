@@ -163,7 +163,13 @@ class Orchestrator:
         has_unsafe_skill = False
         plan = []
 
-        is_fast_path = mem_path is not None or packet.intent in ("session_activate", "session_deactivate", "power_action")
+        is_fast_path = (
+            mem_path is not None 
+            or (not packet.compound and (
+                packet.intent in ("session_activate", "session_deactivate", "power_action", "open_app", "close_app", "chat_reply")
+                or getattr(packet, "safe_mode", False)
+            ))
+        )
 
         if is_fast_path:
             if mem_path:

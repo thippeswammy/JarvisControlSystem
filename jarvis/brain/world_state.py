@@ -157,21 +157,23 @@ class WorldStateModeler:
             except Exception:
                 pass
 
-        # 2. Harvest Open Windows
+        # 2. Harvest Open Windows (Optimized with fast Win32 EnumWindows)
         open_windows = []
-        desktop = Desktop(backend="uia")
         try:
-            for win in desktop.windows():
-                title = win.window_text()
-                if not title:
-                    continue
-                try:
-                    _, pid = win32process.GetWindowThreadProcessId(win.handle)
-                    proc = psutil.Process(pid)
-                    proc_name = proc.name().replace(".exe", "").lower()
-                except Exception:
-                    proc_name = "unknown"
-                open_windows.append({"title": title, "process": proc_name, "hwnd": win.handle})
+            def enum_windows_callback(hwnd, extra):
+                if win32gui.IsWindowVisible(hwnd):
+                    title = win32gui.GetWindowText(hwnd) or ""
+                    if title:
+                        try:
+                            _, pid = win32process.GetWindowThreadProcessId(hwnd)
+                            proc = psutil.Process(pid)
+                            proc_name = proc.name().replace(".exe", "").lower()
+                        except Exception:
+                            proc_name = "unknown"
+                        open_windows.append({"title": title, "process": proc_name, "hwnd": hwnd})
+                return True
+
+            win32gui.EnumWindows(enum_windows_callback, None)
         except Exception as e:
             logger.debug(f"[WorldStateModeler] Enumerate windows failed: {e}")
 
