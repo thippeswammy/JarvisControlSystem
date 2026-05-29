@@ -219,7 +219,7 @@ class LLMRouter:
         import json
         import os
         from datetime import datetime
-        log_path = Path(__file__).parent.parent.parent / "logs" / "llm_raw.log"
+        log_path = Path(__file__).parent.parent.parent / "logs" / "runtime" / "llm_raw.log"
         log_path.parent.mkdir(exist_ok=True)
         
         # Clean and parse for the user-friendly output_response

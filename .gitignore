@@ -12,7 +12,7 @@ __pycache__/
 *.log
 
 .idea/workspace.xml
-reports/
+/reports/
 
 .code-review-graph/
 .claude/

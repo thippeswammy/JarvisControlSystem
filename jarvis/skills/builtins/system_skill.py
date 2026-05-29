@@ -105,7 +105,7 @@ def log_analysis(params: dict) -> SkillResult:
     try:
         from jarvis.cli.commands.logs_cmd import LogAnalyzer
         from pathlib import Path
-        log_path = Path("logs/jarvis.log")
+        log_path = Path("logs/runtime/jarvis.log")
         if not log_path.exists():
             return SkillResult(success=False, message="Log file not found.")
             

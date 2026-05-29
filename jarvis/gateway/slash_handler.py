@@ -94,7 +94,7 @@ def _cmd_logs(args: List[str], session, gateway) -> str:
     from pathlib import Path
     from jarvis.cli.commands.logs_cmd import LogAnalyzer
 
-    log_path = Path("logs/jarvis.log")
+    log_path = Path("logs/runtime/jarvis.log")
     analyzer = LogAnalyzer(str(log_path))
 
     if not args or args[0].lower() == "tail":
