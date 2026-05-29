@@ -60,6 +60,9 @@ class PerceptionPacket:
     context_snapshot: Optional[ContextSnapshot] = None # NEW
     override_prompt: Optional[str] = None  # If set, Planner uses this text for the LLM call instead of packet.text
     safe_mode: bool = False  # True if cognitive request inside quotes should not execute
+    intent_category: str = "EXECUTION" # e.g. EXECUTION, EDUCATIONAL, HYPOTHETICAL, CAPABILITY, TEXT_ANALYSIS
+    intent_confidence: float = 1.0
+    entity_confidence: float = 1.0
 
     @property
     def text(self) -> str:
