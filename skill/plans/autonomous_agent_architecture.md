@@ -1,295 +1,279 @@
-# Architectural Blueprint: True Autonomous Agent Orchestration in Jarvis v2
+# Complete Architectural Blueprint: Autonomous Orchestration & Windows UI Automation in Jarvis v2
 
-This document provides a highly detailed architectural analysis and design blueprint evaluating how a truly autonomous, self-healing, and state-aware AI agent system should plan tasks, communicate between components, and manage execution flow.
-
-It maps state-of-the-art agentic design theories (OODA, ReAct, Multi-Agent Networks) directly to your existing implementation in the [Jarvis Control System](file:///f:/RunningProjects/JarvisControlSystem/).
+This document provides a highly technical, end-to-end architectural evaluation of the **Jarvis Control System**. It defines exactly when and where LLM layers, specialized agents, memory hierarchies, and system skills are invoked. Furthermore, it outlines how Jarvis interfaces natively with the Windows OS via **UI Automation (UIA)** and the **On-device Agent Registry (ODR)**, referencing the official technical specifications in [Building Windows MCP Integration.md](file:///F:/RunningProjects/JarvisControlSystem/referency/Building%20Windows%20MCP%20Integration.md).
 
 ---
 
-## 1. The Autonomous Execution Cycle (Observe → Plan → Act → Verify → Reflect)
+## 1. The Autonomous Closed-Loop Cycle (Observe → Plan → Act → Verify → Reflect)
 
-Traditional software executes hardcoded, deterministic steps. In contrast, a true autonomous agent operates within a continuous, state-aware **feedback loop**. Your system's [ClosedLoopEngine](file:///f:/RunningProjects/JarvisControlSystem/jarvis/brain/closed_loop_engine.py) implements this beautifully via a System-to-LLM execution loop.
+To achieve true autonomy and eliminate manual intervention or hardcoded timeouts, Jarvis operates in a strict, unmediated **closed-loop feedback cycle**. The loop is driven **entirely by the LLM's unified cognitive capability** via the [ClosedLoopEngine](file:///f:/RunningProjects/JarvisControlSystem/jarvis/brain/closed_loop_engine.py). 
 
 ```mermaid
 graph TD
-    %% Define styles
-    classDef sense fill:#1E293B,stroke:#0EA5E9,stroke-width:2px,color:#E2E8F0;
-    classDef think fill:#1E293B,stroke:#F59E0B,stroke-width:2px,color:#E2E8F0;
-    classDef act fill:#1E293B,stroke:#10B981,stroke-width:2px,color:#E2E8F0;
-    classDef verify fill:#1E293B,stroke:#8B5CF6,stroke-width:2px,color:#E2E8F0;
-    classDef reflect fill:#1E293B,stroke:#EC4899,stroke-width:2px,color:#E2E8F0;
+    %% Styling Definitions
+    classDef llmNode fill:#3B2D54,stroke:#A78BFA,stroke-width:2px,color:#F3F4F6;
+    classDef systemNode fill:#1E293B,stroke:#0EA5E9,stroke-width:2px,color:#E2E8F0;
+    classDef actNode fill:#1E293B,stroke:#10B981,stroke-width:2px,color:#E2E8F0;
+    classDef memoryNode fill:#1E293B,stroke:#EC4899,stroke-width:2px,color:#E2E8F0;
 
-    A([User Request]) --> B(SENSE: World State Modeler)
-    B --> C(THINK: Closed-Loop Router)
-    C -->|done| D([Goal Complete])
-    C -->|blocked| E{Recovery Engine}
-    C -->|in_progress| F(ACT: Execution Bus / Agents)
-    F --> G(VERIFY: Verification & State Diff)
-    G --> H(REFLECT: Reactive Learner / Episodic Logging)
-    H --> B
+    Start([User Goal Received]) --> NLU{NLU Component}
+    
+    %% NLU LLM Call
+    NLU -->|"LLM Call 1: Intent & Entity Parsing"| ContextFuse[Context Fusion Layer]
+    
+    %% Context Fusion & Memory Check
+    ContextFuse --> PathCheck{Procedural Memory Path Check}
+    PathCheck -->|"Memory HIT: A* Macro"| FastPath[Fast Path Sequencer]
+    PathCheck -->|"Memory MISS or Cognitive Route"| ClosedLoop[ClosedLoopEngine Initialization]
 
-    class B sense;
-    class C think;
-    class F act;
-    class G verify;
-    class H reflect;
-    class E think;
+    %% Closed Loop Engine
+    subgraph Closed-Loop Autonomous Loop
+        direction TB
+        Ledger[Execution Ledger Starts EMPTY] --> Sense[SENSE: WorldStateModeler + Win32/UIA]
+        Sense --> Think{THINK: decide_closed_loop}
+        
+        %% THINK LLM Call
+        Think -->|"LLM Call 2: Cognitive Step Planning"| ActionDispatch{Status Evaluator}
+        
+        ActionDispatch -->|"status is done"| Complete[Complete & Final Summary]
+        ActionDispatch -->|"status is blocked"| Recovery{RecoveryEngine Diagnostics}
+        ActionDispatch -->|"status is in_progress"| Act[ACT: Dispatch Actions]
+        
+        %% Action paths
+        Act --> SkillBus[SkillBus Dispatcher]
+        Act --> AgentBus[AgentBus Dispatcher]
+        Act --> MCPBus[MCP Tool Router]
+        
+        %% Specialized Agent LLM Calls
+        AgentBus -->|"LLM Call 3: Specialized Agent Sub-Reasoning"| AgentExec[Agent Local Execution]
+        
+        %% Verify & Reflect
+        SkillBus & AgentExec & MCPBus --> Verify[VERIFY: StateComparator Diff]
+        Verify --> Reflect[REFLECT: Temporal Logging & Learning]
+        Reflect -->|Loop Continues| Sense
+    end
+
+    FastPath --> FastExec[Sequential Skill Executor]
+    FastExec --> StopFast([Task Finished])
+    Complete --> StopLoop([Goal Accomplished])
+    Recovery -->|"Automated Heal Plan"| Act
+    Recovery -->|"Heal Failed"| Escalation([Ask User])
+
+    class NLU,Think,AgentBus llmNode;
+    class ContextFuse,PathCheck,Sense,ActionDispatch,Verify,Recovery systemNode;
+    class FastPath,FastExec,Act,SkillBus,MCPBus actNode;
+    class Ledger,Reflect memoryNode;
 ```
-
-### Stage-by-Stage Breakdown in Jarvis
-
-#### 1. SENSE (Observation & Perception)
-Before taking any action, the agent must build a high-fidelity semantic model of its environment. Your [WorldStateModeler](file:///f:/RunningProjects/JarvisControlSystem/jarvis/brain/world_state.py#L133) achieves this on Windows by capturing:
-*   **Foreground Context**: The active application and window titles via `win32gui.GetForegroundWindow()`.
-*   **Desktop Topography**: Open application windows and potential modal child dialogs via pywinauto's `Desktop` tree enumeration.
-*   **System Telemetry**: CPU and RAM load percentages via `psutil`.
-*   **Browser Metadata**: Active tab titles, profiles, and URLs.
-
-#### 2. THINK (Task Planning & Dynamic Routing)
-Instead of hardcoding a sequence, the goal is evaluated against the current environment.
-*   The [ClosedLoopPrompt](file:///f:/RunningProjects/JarvisControlSystem/jarvis/brain/closed_loop_prompt.py) structures the system context.
-*   The agent is fed the **Execution History** (storing successful/failed steps so it never loops infinitely) and the **Current World State**.
-*   The LLM issues a [ClosedLoopDecision](file:///f:/RunningProjects/JarvisControlSystem/jarvis/llm/llm_interface.py) in structured JSON, signaling its status as:
-    *   `done`: Terminates execution and provides a final user summary.
-    *   `in_progress`: Dispatches a list of immediate skill calls or agent handoffs.
-    *   `blocked`: Halts and requests user input or initiates self-healing.
-
-#### 3. ACT (Tool & Skill Dispatch)
-Actions are translated into `SkillCalls` and executed. Jarvis categorizes action modes:
-*   **Direct Skills**: OS, window, keyboard, and browser manipulation.
-*   **MCP Tools**: File reading/writing, web searches, etc.
-*   **Autonomous Agents**: Delegation of long-running, multi-step tasks.
-
-#### 4. VERIFY (Outcome Verification)
-An action is not complete until its effects are measured. Jarvis uses a two-phase check:
-*   **State Differential**: It re-samples the world state immediately after execution and computes a `WorldState.diff()` (e.g., *focused window changed from 'Notepad' to 'Brave'*).
-*   **Verification Loop**: Compares the measured diff against the expected outcomes to confirm if an execution succeeded.
-
-#### 5. REFLECT (Memory Integration & Macro Learning)
-If the plan succeeded, the system's `ReactiveLearner` and `EpisodicMemory` record the state transition. In Jarvis, successful multi-step sequences that prove reliable are automatically learned as state-aware **Macros** (reflexes) to bypass the slow cognitive LLM paths in future attempts.
 
 ---
 
-## 2. Multi-Agent Systems: Orchestrator & Specialized Sub-Agents
+## 2. In-Depth Allocation: Where and When LLMs & Tools are Invoked
 
-For complex, heterogeneous tasks, a single monolithic agent is fragile. An elegant, modular architecture utilizes a **Main Orchestrator** acting as the central nervous system, routing requests to highly specialized **Sub-Agents**.
+To understand the coordination of intelligence and action, the table below maps the precise locations, roles, and structures of all LLM and execution components in the Jarvis Control System.
 
-Your [AgentBus](file:///f:/RunningProjects/JarvisControlSystem/jarvis/agents/agent_bus.py) and [TaskGraph](file:///f:/RunningProjects/JarvisControlSystem/jarvis/agents/task_graph.py) are perfectly positioned to manage this multi-agent choreography:
+| Architectural Phase | Component Invoked | LLM Involvement | Input Context & Sources | Output Result & Next Step |
+| :--- | :--- | :--- | :--- | :--- |
+| **Perception & NLU** | `NLU.parse()` | **Yes (LLM Call 1)** | Raw text query, focused app id. | Structured intent, categorized intent tier (e.g., `EXECUTION`, `EDUCATIONAL`), and extracted entities. |
+| **Context Fusion** | `ContextFusionLayer.fuse()` | No | NLU packet, Active window details, prior step state snapshot. | Unified context envelope containing coreference resolutions. |
+| **Fast Path Check** | `ProceduralMemory.recall()` | No | Target goal, focused application ID, start state signature. | Returns `MemoryPath` (A* macro path of pre-learned skills) on hit. Bypasses cognitive loops. |
+| **Dynamic SENSE** | `WorldStateModeler.get_current_state()` | No | Running background process tables, focused window coordinates. | Unified `WorldState` snapshot (focused HWND, process memory, active tab URL). |
+| **Cognitive THINK** | `ClosedLoopEngine._think()` | **Yes (LLM Call 2)** | System prompt, Goal, empty/running `ExecutionLedger`, current `WorldState` diff, dynamic tool schemas (Skills, Agents, MCP). | A JSON `ClosedLoopDecision` containing `status` (`in_progress`/`done`/`blocked`), `reasoning`, and an array of actions. |
+| **Skill Execution** | `SkillBus.dispatch()` | No | Target `SkillCall` with validated parameters (e.g., `open_app`, `type_text`). | `SkillResult` containing success status, raw stdout, and execution duration. |
+| **Agent Delegation** | `AgentBus.run_single()` | **Yes (LLM Call 3 - Sub-Agent)** | Local task prompt, `AgentLocalMemory` scratchpad, `SharedAgentContext` graph logs. | `AgentResult` containing the sub-agent’s specialized reasoning trace and outputs. |
+| **MCP Integration** | `MCPBus.call_tool()` | No | JSON-RPC requests bound to local stdio pipes or remote HTTP SSE streams. | Structured tool-specific data returned from native OS/Browser APIs. |
+| **Verify & Compare** | `StateComparator.diff()` | No | Pre-execution `WorldState` vs. Post-execution `WorldState`. | Semantic difference report (e.g., *"Notepad launched, focus changed"*). |
+| **Temporal Reflection**| `TemporalMemory.log_event()` | No | Skill execution status, execution durations, active process metadata. | Logs recorded to persistent SQLite database for procedural tracing. |
+| **Self-Healing** | `RecoveryEngine.diagnose_and_heal()` | **Yes (LLM Call 4 - Option)** | Error string, failed skill signature, focused app ID. | Corrective execution plan (lightweight skill sequence to bypass/fix blocking state). |
+
+---
+
+## 3. Native Windows UI Automation (UIA) & On-Device Agent Registry (ODR)
+
+Rather than using slow, error-prone visual parsing (Computer Vision/VLMs) that fails with changes to display resolution or system themes, Jarvis accesses the Windows operating system natively. It utilizes the **Windows Accessibility (a11y) Tree** to construct a deterministic, semantic DOM-like model of the desktop.
+
+### Semantic UI Automation Mechanics
+As specified in [Building Windows MCP Integration.md](file:///F:/RunningProjects/JarvisControlSystem/referency/Building%20Windows%20MCP%20Integration.md#L45), Jarvis integrates advanced UI automation layers:
+*   **Accessibility Tree Interop**: Accesses the native `IUIAutomation` COM (Component Object Model) interfaces. It queries controls by their absolute programmatic **AutomationID**, **Control Type** (e.g., `Button`, `Edit`, `Document`), and **Name**, completely independent of physical screen coordinates or scaling.
+*   **Browser DOM Mode**: For Microsoft Edge and Google Chrome, Jarvis bypasses outer window frames (like tabs or address bars) to interact directly with the web page. It accomplishes this by native extraction of the browser's `RootWebArea` element via UI Automation.
+*   **IAccessible2 Fallback**: In browsers such as Mozilla Firefox that do not natively expose standard UIA structures, Jarvis falls back to the `IAccessible2` interface to guarantee consistent, cross-browser DOM node parsing and automation.
 
 ```
-                  ┌───────────────────────┐
-                  │   Main Orchestrator   │
-                  │ (ClosedLoopEngine)    │
-                  └──────────┬────────────┘
-                             │
-                  ┌──────────▼────────────┐
-                  │       AgentBus        │
-                  └──────────┬────────────┘
-                             │
-     ┌───────────────────────┼───────────────────────┐
-     ▼                       ▼                       ▼
-┌──────────┐            ┌──────────┐            ┌──────────┐
-│ Windows  │            │  Coding  │            │ Browser  │
-│  Agent   │            │  Agent   │            │  Agent   │
-└──────────┘            └──────────┘            └──────────┘
+                  ┌──────────────────────────────────────────────┐
+                  │                 Jarvis Agent                 │
+                  └──────────────────────┬───────────────────────┘
+                                         │
+                                         ▼ (MCP JSON-RPC over stdio)
+                  ┌──────────────────────────────────────────────┐
+                  │           Windows MCP Server                 │
+                  └──────────────────────┬───────────────────────┘
+                                         │
+                    ┌────────────────────┴────────────────────┐
+                    ▼ (UIA COM Interop)                       ▼ (IAccessible2 Fallback)
+        ┌───────────────────────┐                 ┌───────────────────────┐
+        │   RootWebArea (UIA)   │                 │   IAccessible2 DOM    │
+        │  (Chrome/Edge Native) │                 │   (Firefox Web Pages) │
+        └───────────────────────┘                 └───────────────────────┘
 ```
 
-### Specialized Agents Directory & Blueprint
+### The Windows On-device Agent Registry (ODR)
+To operationalize these capabilities safely, Jarvis interfaces with the official Microsoft **On-device Agent Registry (ODR)** via `odr.exe` ([Building Windows MCP Integration.md](file:///F:/RunningProjects/JarvisControlSystem/referency/Building%20Windows%20MCP%20Integration.md#L15)):
+1.  **Server Discovery**: Jarvis host query commands scan the central Windows ODR via `odr.exe list` to discover registered system-level capabilities and MCP endpoints dynamically.
+2.  **Lifecycle Management**: Developers register local or remote MCP connectors in the ODR system using:
+    ```powershell
+    odr.exe add --manifest C:\Path\To\server_manifest.mcpb
+    ```
+3.  **Containment Sessions**: By default, Windows instantiates registered servers inside an **Isolated Agent Session**. This boundary limits the agent's access to pre-approved system directories and protects the operating system against **Cross-Prompt Injection** attacks, preventing untrusted inputs from executing unauthorized shell calls on the host machine.
 
-The tables below define how each specialized agent in your envisioned architecture should be structured, specifying their focus, standard SENSE inputs, and ACT capability sets:
+### Packaging, Sandboxing, and the MSIX Root of Trust
+To transition from experimental settings to enterprise-grade sandboxed security, Jarvis MCP servers are containerized using the modern **MSIX Packaging format** ([Building Windows MCP Integration.md](file:///F:/RunningProjects/JarvisControlSystem/referency/Building%20Windows%20MCP%20Integration.md#L131)):
+*   **The 5-Part Package Identity Tuple**: Identifies the server cryptographically to the Windows OS:
+    $$\text{Identity} = \langle \text{Name}, \text{Version}, \text{Architecture}, \text{ResourceId}, \text{Publisher} \rangle$$
+    This tuple is used by Windows to generate a secure **Package Family Name** to scope file-system access and security policies.
+*   **Registry & File Virtualization**: The MSIX container intercepts all state-altering changes. If the server tries to write to the global registry or system folders, modern Windows redirects these writes to a virtualized overlay. This ensures a 100% clean, residual-free uninstallation.
+*   **AppxBlockMap Differential Deployments**: Uses SHA-256 block mapping of the application binary in $64\text{ KB}$ segments. When updating Jarvis tool systems in a corporate fleet, Windows updates only the changed $64\text{ KB}$ blocks, drastically reducing bandwidth and deployment overhead.
 
-| Specialized Agent | Core Responsibility | SENSE Inputs (Observations) | ACT Capabilities (Tools) |
+---
+
+## 4. The Native Option: Implementing Windows MCP Servers in C / C++
+
+For maximum speed, absolute minimal memory footprints, and raw hardware access, implementing the Windows MCP and Shell Automation server in **native C or C++** is a premier architectural choice. This completely bypasses the .NET Common Language Runtime (CLR) or Python interpreters, resulting in a zero-dependency compiled binary.
+
+### Low-Level UIA & Shell Automation via C++
+C++ excels in direct Windows OS programming by eliminating wrapping layers:
+*   **Native COM Interop**: Instead of relying on intermediate Interop assemblies, a C++ MCP server compiles directly against native system headers (`Windows.h`, `UIAutomation.h`, and `Objbase.h`). This delivers microseconds-level latency when traversing the Windows accessibility tree.
+*   **Modern C++/WinRT & WIL**: Modern C++ projects leverage **C++/WinRT** (Microsoft's standard language projection for Windows Runtime APIs) and the **Windows Implementation Library (WIL)**. This provides automated, exception-safe RAII wrappers (like `wil::com_ptr`) to eliminate traditional COM reference counting leaks (`AddRef`/`Release`).
+*   **Shell Integration**: C++ has direct native access to high-impact shell libraries (e.g., `Shellapi.h` and `Shlobj.h`). Starting background tasks, resolving system shortcuts, and monitoring file directories via `ReadDirectoryChangesW` are executed natively with zero VM overhead.
+
+### Code Pattern: Native C++ UIA Control Identification
+The following C++ snippet demonstrates how a C++ Windows MCP server locates a specific UI control (such as a text box or button) semantically using native COM interfaces:
+
+```cpp
+#include <windows.h>
+#include <uiautomation.h>
+#include <wil/com.h>
+#include <iostream>
+
+// Helper to find a UI element by AutomationID semantically
+wil::com_ptr<IUIAutomationElement> FindElementByAutomationId(
+    IUIAutomation* pAutomation, 
+    IUIAutomationElement* pRoot, 
+    const wchar_t* automationId) 
+{
+    wil::com_ptr<IUIAutomationCondition> pCondition;
+    VARIANT varId;
+    VariantInit(&varId);
+    varId.vt = VT_BSTR;
+    varId.bstrVal = SysAllocString(automationId);
+
+    // Create condition: find control matching the specific AutomationId
+    HRESULT hr = pAutomation->CreatePropertyCondition(
+        UIA_AutomationIdPropertyId, 
+        varId, 
+        &pCondition
+    );
+    
+    wil::com_ptr<IUIAutomationElement> pFoundElement;
+    if (SUCCEEDED(hr) && pCondition) {
+        // Query child elements recursively matching condition
+        pRoot->FindFirst(TreeScope_Descendants, pCondition.get(), &pFoundElement);
+    }
+    
+    VariantClear(&varId);
+    return pFoundElement;
+}
+```
+
+### Strategic Tradeoffs: Python vs. C# (.NET) vs. C/C++
+When selecting a programming language to extend the Jarvis Control System's Windows MCP and shell layer, review the following performance profiles:
+
+| Dimension | Python | C# (.NET 9.0) | C / C++ Native |
 | :--- | :--- | :--- | :--- |
-| **Windows/Desktop Agent** | OS navigation, window management, app launching, native UI automation. | Open windows tree, process tree, focused Win32 HWND, active child modal window titles. | `open_app`, `close_app`, `type_text`, `press_key`, Win32 API window placement commands. |
-| **Coding Agent** | Code review, bug fixing, test suite execution, refactoring, documentation. | Knowledge graph nodes (CRG), imports list, compiler/lint errors, pytest output. | `view_file`, `write_to_file`, `replace_file_content`, `run_command` (make, pytest, linter). |
-| **Web/Browser Agent** | Web scraping, form-filling, navigating research materials, search engine queries. | Browser DOM tree, viewport snapshots, active tabs, URL histories. | `navigate_url`, `click_web_element`, `fill_web_element`, `extract_browser_dom_tree`. |
-| **Chat/Reasoning Agent** | Answering conceptual questions, text analysis, prompt refinement, educational conversations. | Conversation history, system preferences, memory context, user inputs. | `chat_reply`, `ask_user`, model temperature adjustments. |
-| **Command/Terminal Agent** | Running shell scripts, compiling binaries, monitoring environment variables, package management. | Command outputs (stdout/stderr), active background process PIDs, shell exit codes. | `run_command`, `manage_task` (kill, input, status), custom CLI tool wrappers. |
-| **File System Agent** | Organizing files, parsing formats, searching paths, directory cleanups. | OS directory layouts, file sizes, extensions, glob patterns. | `list_dir`, `grep_search`, `read_file`, `write_file`, directory creation/deletion. |
-| **Vision Agent** | Visual verification of UI state, OCR, parsing complex charts or images. | Desktop screenshot bytes, browser bounding boxes. | OpenCV analyses, Claude/Gemini multimodal image evaluations, OCR text extractions. |
-| **Memory Agent** | Vectorizing past experiences, managing state graphs, cleaning short-term caches. | SQLite memory databases, temporal event logs, semantic vectors. | Semantic search, state-aware pathfinding (A*), learned macro writing, pruning dead paths. |
+| **Execution Latency** | High ($200\text{ ms} - 500\text{ ms}$) | Low ($5\text{ ms} - 20\text{ ms}$ via AOT) | Ultra-Low ($< 1\text{ ms}$ direct machine code) |
+| **Memory Footprint** | Heavy ($80\text{ MB} - 150\text{ MB}$) | Medium ($20\text{ MB} - 50\text{ MB}$ via AOT) | Microscopic ($2\text{ MB} - 8\text{ MB}$) |
+| **Runtime Dependency** | Python Interpreter + pip packages | .NET Runtime (or zero via standalone AOT) | None (Single static `.exe` binary) |
+| **COM / Win32 Interop** | Slow ctypes or pywin32 wrappers | Good (Built-in runtime marshaling) | Perfect (Native compilation, zero marshaling) |
+| **Development Speed** | Extremely Fast (Dynamic typing) | Fast (Attribute-based tool mapping) | Moderate (Manual schema definition, strict memory management) |
+| **Containment Compatibility** | Moderate (Requires bundling Python in MSIX) | Perfect (MSIX container native support) | Perfect (Seamless static MSIX packaging) |
 
 ---
 
-## 3. Communication and Data Flow Between Sub-Agents
+## 5. Sub-Agent Coordination & Communication Protocols
 
-For an orchestrator to successfully coordinate these agents without hardcoded workflows, it needs standard message-passing and shared-state protocols.
+For specialized agents (Coding, Desktop, Browser, Memory) to cooperate smoothly without hardcoded sequences, Jarvis uses the following protocols:
 
-```
-       [Orchestrator]
-             │
-             │ (Generates TaskGraph DAG)
-             ▼
-       [TaskGraph] ──────────┐ (Topological Sorting)
-             │               │
-             │               ▼
-             │       ┌───────────────┐
-             │       │ Stage 1 (Par) │ ──► Runs [Windows Agent] & [Browser Agent]
-             │       └───────┬───────┘
-             │               │ (Emits results to SharedContext)
-             │               ▼
-             │       ┌───────────────┐
-             │       │ Stage 2 (Seq) │ ──► Runs [Coding Agent]
-             │       └───────┬───────┘
-             │               │
-             ▼               ▼
-       [AgentBus] ◄─── [Shared Context]
-```
+### 1. Centralized Task Orchestration (TaskGraph)
+When the user submits a complex request, the main orchestrator doesn't execute a flat sequence. It constructs a directed acyclic graph (DAG) of [AgentTasks](file:///f:/RunningProjects/JarvisControlSystem/jarvis/agents/task_graph.py#L16).
+*   **Topological Execution Stages**: The orchestrator invokes [TaskGraph.get_execution_stages()](file:///f:/RunningProjects/JarvisControlSystem/jarvis/agents/task_graph.py#L72) which applies Kahn's algorithm to resolve dependencies and group independent tasks into sequential levels:
+    *   *Stage 1 (Parallel execution)*: Task A (Browser Agent: Research ROS2 CLI endpoints) & Task B (File System Agent: Read local configuration) run concurrently using the `AgentBus.run_parallel()` thread pool.
+    *   *Stage 2 (Sequential block)*: Task C (Coding Agent: Synthesize custom code template) executes, consuming Stage 1 outputs.
 
-### The Communication Layers in Jarvis
+### 2. Isolated Agent Memory (`AgentLocalMemory`)
+To keep sub-agent prompts highly focused and token-efficient, each sub-agent is spawned with an isolated `AgentLocalMemory` instance.
+*   **Scratchpad Boundary**: All intermediary reasoning steps, local shell executions, and sub-tool parameters are logged locally to the agent's scratchpad.
+*   This prevents other concurrent agents' logs from polluting the local execution context, keeping token footprints minimal.
 
-#### 1. Ephemeral Message Passing via AgentBus
-When a specialized agent is triggered, the Orchestrator routes it via `agent_bus.run_single(name, task, context)`.
-*   The `context` dictionary acts as a pipeline transit board.
-*   Your system passes a pipeline results register under the key `__pipeline_results__`, allowing downstream agents to inspect the outputs, exit status, and performance of upstream agents.
-
-#### 2. Shared Memory Context (`SharedAgentContext`)
-Autonomous agents must not step on each other's toes when working concurrently.
-*   **`AgentLocalMemory`**: Acts as an isolated, ephemeral scratchpad. It logs local agent execution traces (e.g., `local_memory.log_step(...)`) to prevent the agent's prompt from getting cluttered with details from other tasks.
-*   **`SharedAgentContext`**: A global thread-safe memory manager wrapper. It enables cross-agent information retrieval and registers semantic observations (e.g., `shared.observe("Agent X compiled codebase successfully")`).
-
-#### 3. Topological Choreography (`TaskGraph`)
-When a complex goal is requested (e.g., *"Search for ROS2 on GitHub, write a python example in VSCode, and run it"*), the Orchestrator builds a `TaskGraph` (DAG):
-1.  **Stage 1 (Parallel)**: Launch Edge/Browser, query GitHub for ROS2, search for tutorials.
-2.  **Stage 2 (Sequential)**: Feed retrieved snippets into the Coding Agent, open Notepad/VSCode, and write a summary.
-3.  **Stage 3 (Sequential)**: Terminal/Command Agent executes the script and verifies output.
-
-The [TaskGraph.get_execution_stages()](file:///f:/RunningProjects/JarvisControlSystem/jarvis/agents/task_graph.py#L72) automatically groups these tasks into parallel execution levels using a clean Kahn's topological sort, preventing deadlock states.
+### 3. Unified State Sharing (`SharedAgentContext`)
+While local actions are isolated, overall context is shared. The [SharedAgentContext](file:///f:/RunningProjects/JarvisControlSystem/jarvis/agents/agent_interface.py#L12) enables safe communication:
+*   **Cross-Agent Results Transit**: The `AgentBus` enriches the execution context passed to downstream agents via a shared results register (`__pipeline_results__`).
+*   **Episodic Global Log**: Successful completions write descriptive observations to the central memory database (e.g., `shared.observe("Agent Browser-Research completed successfully. Found ROS2 CLI tools.")`).
 
 ---
 
-## 4. Execution Flow, Failures, and Self-Healing Recovery
+## 6. End-to-End Orchestrated Flow: Edge-GitHub-Notepad Case Study
 
-In real-world environments, failures (failed clicks, network timeouts, invalid shell inputs) are inevitable. True autonomy is defined by how the system recovers.
-
-Your [RecoveryEngine](file:///f:/RunningProjects/JarvisControlSystem/jarvis/brain/recovery_engine.py) combined with the `ClosedLoopEngine` implements a dual-layer self-healing mechanism:
+To see this exact architecture in action, let's trace the detailed flow of a user requesting: *"Search for ROS2 on GitHub, write a python example in Notepad."*
 
 ```
-[Action Executed] ──► [Fails / Times Out] 
-                             │
-                             ▼
-                 [Self-Healing Evaluation]
-                             │
-      ┌──────────────────────┴──────────────────────┐
-      ▼ (Logical Failure)                           ▼ (UI / OS Failure)
-[RecoveryEngine Diagnoses]                  [StateComparator Detects]
-      │                                             │
-      ▼                                             ▼
-Corrective plan generated                  UI context state restored
-(e.g., fallback skill used)                 (e.g., refocus window)
-      │                                             │
-      └──────────────────────┬──────────────────────┘
-                             ▼
-                  [Action Retried/Healed]
+[User Request] ──► NLU (LLM Call 1: Extract goal) ──► ClosedLoopEngine Init
+                                                              │
+                                                     (Observe: State captured)
+                                                              │
+                                                     [THINK] ◄┴──────────────────────────────┐
+                                                              │                              │
+                                                   (LLM Call 2: Decide next step)            │
+                                                              │                              │
+                                                     [ACT: Dispatch Actions]                 │
+                                                              │                              │
+                         ┌────────────────────────────────────┼──────────────────────────┐   │
+                         ▼ (Tool: open_app)                   ▼ (Tool: call_mcp_tool)    │   │
+                  Launch Edge & Notepad                Queries GitHub ROS2 repos         │   │
+                         │                                    │                          │   │
+                         └──────────────────┬─────────────────┘                          │   │
+                                            ▼                                            │   │
+                                    [VERIFY & COMPARE]                                   │   │
+                             (Compute WorldState delta)                                  │   │
+                                            │                                            │   │
+                                            ▼ (Success / Focus Notepad)                  │   │
+                                         [THINK]                                         │   │
+                              (LLM Call 2: Generate summary)                             │   │
+                                            │                                            │   │
+                                            ▼                                            │   │
+                                    [ACT: type_text] ────────────────────────────────────┘   │
+                                (Native keyboard input)                                      │
+                                            │                                                │
+                                            ▼ (Verify complete)                              │
+                                        [REFLECT]                                            │
+                             (Temporal Log & Macro Saved) ───────────────────────────────────┘
 ```
 
-### 1. The Reactive Error-Diagnose-Heal Loop (Logical Failures)
-If a skill or agent execution encounters an exception or logical block, the `ClosedLoopEngine` captures the error message and forwards it to the [RecoveryEngine](file:///f:/RunningProjects/JarvisControlSystem/jarvis/brain/recovery.py):
-1.  **Diagnosis**: The linter, process log, or application exception is parsed.
-2.  **Correction Plan**: A compensatory, lightweight sub-plan is generated (e.g., *"If notepad failed to type, check if notepad is minimized; maximize it, refocus, and re-type"*).
-3.  **Bypass**: If a specific tool fails (e.g., Brave browser automation), it falls back to a different mechanism (e.g., `curl` via a command line skill, or requesting user feedback).
-
-### 2. State-Aware Healing (UI / OS Failures)
-If the desktop environment shifts unexpectedly (e.g., a modal popup blocks a click, or focus shifts away from Notepad), the [StateComparator](file:///f:/RunningProjects/JarvisControlSystem/jarvis/memory/state_comparator.py) uses the World State delta to:
-*   Identify that the target window lost active focus.
-*   Dispatch an automatic `refocus_window` or `close_modal` skill call before attempting the original action again.
-
----
-
-## 5. Case Study: The "Edge-GitHub-Notepad" Flow
-
-Let's evaluate the example flow from the perspective of Jarvis v2:
-
-> **Goal**: *"Open Edge, Go to GitHub, Search for ROS2, Open Notepad, Write a summary"*
-
-A simple hardcoded script would break if Edge took 5 seconds to load, if GitHub was slow, or if Notepad didn't gain active focus. Under the dynamic Jarvis v2 loop, this is handled robustly:
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User
-    participant Orch as Orchestrator (ClosedLoopEngine)
-    participant Sense as WorldStateModeler
-    participant Think as LLM (decide_closed_loop)
-    participant Act as Execution Bus / Skills
-    participant Verify as StateComparator
-
-    User->>Orch: "Search ROS2 on GitHub, write summary in Notepad"
-    
-    Note over Orch: Iteration 1: Sense state
-    Orch->>Sense: Capture World State
-    Sense-->>Orch: Active: Chrome, Notepad: None, Edge: None
-    
-    Orch->>Think: What to do?
-    Note over Think: Realizes Edge is not running
-    Think-->>Orch: status="in_progress", action=[open_app(Edge)]
-    
-    Orch->>Act: Dispatch open_app(Edge)
-    Act-->>Orch: Success (Edge PID 5432 started)
-    Orch->>Sense: Capture World State
-    Sense-->>Orch: Active: Edge, Notepad: None
-    Orch->>Verify: Compare (State Diff)
-    Verify-->>Orch: "Windows opened: Microsoft Edge"
-
-    Note over Orch: Iteration 2: Navigate & Search
-    Orch->>Think: What to do next?
-    Think-->>Orch: status="in_progress", action=[type_text("github.com/search?q=ros2"), press_key("enter")]
-    Orch->>Act: Dispatch actions
-    Act-->>Orch: Success
-    Orch->>Sense: Capture DOM / State
-    Sense-->>Orch: Edge Active, DOM contains ROS2 repositories list
-    
-    Note over Orch: Iteration 3: Extract & Analyze
-    Orch->>Think: Edge shows repo list. What next?
-    Think-->>Orch: status="in_progress", action=[extract_browser_dom_tree() OR scrape]
-    Orch->>Act: Dispatch extract
-    Act-->>Orch: Returned ROS2 C++/Python library descriptions
-    
-    Note over Orch: Iteration 4: Launch notepad & write summary
-    Orch->>Think: Has ROS2 summary data. Needs Notepad.
-    Think-->>Orch: status="in_progress", action=[open_app("notepad")]
-    Orch->>Act: Dispatch open_app("notepad")
-    Act-->>Orch: Success
-    Orch->>Sense: Capture World State
-    Sense-->>Orch: Active: Notepad
-    
-    Note over Orch: Iteration 5: Type summary
-    Orch->>Think: Notepad is focused. Deliver summary.
-    Think-->>Orch: status="in_progress", action=[type_text("ROS2 (Robot Operating System) summary...")]
-    Orch->>Act: Dispatch type_text
-    Act-->>Orch: Success
-    Orch->>Sense: Capture World State
-    Sense-->>Orch: Notepad contains ROS2 summary
-    
-    Note over Orch: Iteration 6: Completion
-    Orch->>Think: Goal achieved?
-    Think-->>Orch: status="done", summary="Edge searched ROS2, Notepad populated with summary."
-    Orch->>User: "I have successfully searched GitHub and written the ROS2 summary in Notepad!"
-```
-
-### Why this is a "True Autonomous Agent" design:
-1.  **Zero Hardcoding**: It does not wait for fixed sleep delays (`time.sleep(5)`). It queries the window state; as soon as the window is active and loaded, it proceeds.
-2.  **Failure Tolerance**: If `open_app("Edge")` fails, the `RecoveryEngine` intercepts, detects if the browser path is missing in settings, and either attempts an alternate browser (like Chrome) or falls back to direct API web scraping using `search_web`.
-3.  **Active Verification**: It doesn't blindly type the summary. It verifies that Notepad is the active foreground application before sending keystrokes.
-
----
-
-## 6. Recommendations for Future Agent Scaling
-
-To take the Jarvis Control System to the absolute next level of autonomy, consider the following enhancements:
-
-### 1. Vectorized Memory for Specialized Agents
-Implement a vector embeddings database (e.g., using ChromaDB or FAISS) for your `MemoryManager`. When specialized agents run, they can query past successful plans for similar tasks using semantic similarity rather than simple string matching, allowing them to generalize past behaviors to novel requests.
-
-### 2. Standardized Agent Contract (Protocols)
-Establish a uniform messaging schema where sub-agents can yield control back to the orchestrator with an explicit context payload:
-```python
-class SubAgentResponse:
-    success: bool
-    data: dict               # Extracted facts, file paths, variables
-    next_recommendation: str  # Optional hint for the orchestrator
-    errors: list[str]        # Detailed log of failures for the RecoveryEngine
-```
-
-### 3. Hierarchical Goal Decomposition
-For extremely large objectives (e.g., *"Build a full React app"*), allow the `PlannerAgent` to decompose the user goal into a tree of sub-goals. Each sub-goal is assigned to a specialized agent via the `AgentBus`. The orchestrator monitors the completion of the nodes in the tree, dynamically re-arranging dependencies if a specific node fails.
+1.  **Cognitive Parsing**:
+    *   The `NLU` parses user text via **LLM Call 1**, identifying intents (`web_search`, `content_generation`, `app_interaction`) and entities.
+2.  **ClosedLoopEngine Initialization**:
+    *   An empty `ExecutionLedger` is instantiated.
+    *   `WorldStateModeler` queries the host OS via Win32. Detects Edge and Notepad are closed.
+3.  **Iteration 1 (Setup Environment)**:
+    *   **LLM Call 2** evaluates the initial state and decides to prepare the workspace.
+    *   **ACT**: Dispatches two parallel `SkillCalls`: `open_app("Edge")` and `open_app("notepad")`.
+    *   **VERIFY**: `StateComparator` runs, measuring new window handles. Focus shifts to Notepad.
+4.  **Iteration 2 (Knowledge Acquisition)**:
+    *   **LLM Call 2** sees environment is ready. Selects `call_mcp_tool` targeting a registered Web Browser/Search MCP server.
+    *   **ACT**: The MCP server uses **Windows UIA** to extract the DOM/RootWebArea of Edge, executes a search on GitHub for "ros2 python tutorial", and fetches the contents of a popular repository.
+    *   **VERIFY**: Captured DOM contains raw code blocks.
+5.  **Iteration 3 (Task Execution & Delivery)**:
+    *   **LLM Call 2** consumes the raw code blocks from the `ExecutionLedger`. It synthesizes the final python example.
+    *   **ACT**: Dispatches `type_text` to type the code into Notepad.
+    *   **VERIFY**: The system first verifies that Notepad is the active foreground window via `WorldStateModeler.get_current_state().active_window`. It then sends the keyboard inputs.
+6.  **Iteration 4 (Reflection & Completion)**:
+    *   `WorldStateModeler` confirms the text is successfully written to the Notepad editor UI.
+    *   **LLM Call 2** sees all tasks completed and yields `status: "done"`.
+    *   **REFLECT**: `TemporalMemory` logs performance metrics, and the `ReactiveLearner` registers a state-aware Macro, enabling the system to execute the same sequence in the future via a fast path, bypassing cognitive LLM steps entirely.
