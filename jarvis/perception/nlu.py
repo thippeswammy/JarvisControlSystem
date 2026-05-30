@@ -1,179 +1,104 @@
 """
 NLU — Natural Language Understanding
 =====================================
-Parses raw utterances into structured intents + entities.
-Replaces the v1 IntentEngine (Jarvis/core/intent_engine.py).
-
-Key changes from v1:
-  - No OPEN_SETTINGS / CLOSE_SETTINGS special cases → generic open_app
-  - Compound command detection ("open notepad AND type hello")
-  - Sub-location extraction ("settings wifi" → app=settings, sub=wifi)
-  - Returns PerceptionPacket (not a plain string)
+Parses raw utterances into structured intents + entities using LLM semantic parsing.
+Replaces the old regex-based engine to handle hypotheticals and complex conversational flow safely.
 """
 
 import logging
-import re
+import json
 from typing import Optional
 
 from jarvis.perception.perception_packet import Utterance, PerceptionPacket
 
 logger = logging.getLogger(__name__)
 
-# ── Intent patterns (order matters — first match wins) ──────────
-_INTENT_PATTERNS = [
-    # Session
-    (r"\b(hi|hello|hey|wake up|activate)\s+jarvis\b",         "session_activate",   {}),
-    (r"\b(bye|goodbye|stop|deactivate|sleep|close)\s+jarvis\b","session_deactivate", {}),
-    
-    # Power (Safety commands we do not want LLM to hallucinate)
-    (r"\b(shutdown|shut down|power off)\b",                    "power_action",  {"action": "shutdown"}),
-    (r"\b(restart|reboot)\b",                                  "power_action",  {"action": "restart"}),
-    (r"\b(sleep|hibernate)\b",                                 "power_action",  {"action": "sleep"}),
-
-    # Applications (Anchored to prevent matching inside quotes/sentences)
-    (r"^\s*(?:please\s+)?(?:can\s+you\s+)?(?:open|launch|start)\s+(.+)\b",                      "open_app",      {"target": 1}),
-    (r"^\s*(?:please\s+)?(?:can\s+you\s+)?(?:close|quit|exit)\s+(.+)\b",                        "close_app",     {"target": 1}),
-
-    # Typing — parse "Type X into Y" → text=X, target=Y
-    (r"^\s*(?:please\s+)?(?:can\s+you\s+)?(?:type|write)\s+(.+?)\s+(?:in|into|on|to)\s+([\w\s]+)$", "type_text", {"text": 1, "target": 2}),
-    (r"^\s*(?:please\s+)?(?:can\s+you\s+)?(?:type|write)\s+(.+)$",                               "type_text",     {"text": 1}),
-
-    # System
-    (r"^\s*(?:please\s+)?(?:can\s+you\s+)?(?:analyze|check|read)\s+(?:the\s+)?logs?\b",         "log_analysis",  {}),
-
-    # Conversational fallback — prevent short filler phrases from becoming actions
-    # Must be near the end so real commands match first
-    (r"^\s*(?:ok|okay|yes|no|nope|sure|thanks|thank you|hello|hi|hey|cool|great|got it|got it)(?:[,!.\s].*)?$", "chat_reply", {}),
-]
-
-# Words and symbols that signal compound commands
-_COMPOUND_SEPARATORS = re.compile(
-    r"\s*(?:and\s+(?:then\s+)?|then\s+|after\s+that\s+|also\s+|,)\s*",
-    re.IGNORECASE,
-)
-
-# Settings sub-location extraction
-_SETTINGS_SUB = re.compile(
-    r"\bsettings?\s+(.+)|(.+)\s+settings?\b",
-    re.IGNORECASE,
-)
-
-
 class NLU:
     """
-    Parses raw text → PerceptionPacket.
-
-    Usage:
-        nlu = NLU()
-        packet = nlu.parse(Utterance("open display settings"))
-        # packet.intent == "open_app"
-        # packet.entities == {"target": "settings"}
-        # packet.sub_location == "display"
+    Parses raw text → PerceptionPacket using LLMRouter.
     """
+
+    def __init__(self, router=None):
+        self._router = router
 
     def parse(self, utterance: Utterance, app_context: str = "") -> PerceptionPacket:
         text = utterance.text.strip()
         text_lower = text.lower()
 
-        # Check for safe mode (quoted blocks with cognitive verbs outside quotes)
-        has_quotes = '"' in text_lower or "'" in text_lower
-        safe_mode = False
-        if has_quotes:
-            text_outside = re.sub(r'("[^"]*"|\'[^\']*\')', '', text_lower).strip()
-            cognitive_keywords = ["summarize", "explain", "translate", "tell me", "what is", "analyze", "read", "write a", "parse", "how to", "search", "lookup"]
-            if any(k in text_outside for k in cognitive_keywords):
-                safe_mode = True
+        default_packet = PerceptionPacket(
+            utterance=utterance,
+            intent="unknown",
+            entities={},
+            app_context=app_context,
+            intent_category="EXECUTION",
+            intent_confidence=1.0,
+            entity_confidence=1.0
+        )
 
-        # Detect compound commands first, respecting quotes
-        quotes = []
-        def quote_replacer(m):
-            quotes.append(m.group(0))
-            return f"__QUOTE_{len(quotes)-1}__"
-        
-        # Replace quoted blocks temporarily
-        text_safe = re.sub(r'("[^"]*"|\'[^\']*\')', quote_replacer, text_lower)
-        parts_safe = _COMPOUND_SEPARATORS.split(text_safe)
-        
-        parts = []
-        for p in parts_safe:
-            for i, q in enumerate(quotes):
-                p = p.replace(f"__QUOTE_{i}__", q)
-            if p.strip():
-                parts.append(p.strip())
+        if not self._router:
+            logger.warning("[NLU] No router provided, falling back to basic open_app heuristic.")
+            if text_lower.startswith("open "):
+                default_packet.intent = "open_app"
+                default_packet.entities = {"target": text[5:].strip()}
+            return default_packet
 
-        if len(parts) > 1:
-            sub_commands = []
-            for part in parts:
-                intent, entities = self._match_intent(part)
-                sub_commands.append({"intent": intent, "entities": entities, "text": part})
+        system_prompt = (
+            "You are an NLU intent parser. You must parse the user's utterance into a single valid JSON object and nothing else.\n"
+            "Output JSON format:\n"
+            "{\n"
+            '  "intent": "open_app" | "close_app" | "type_text" | "power_action" | "chat_reply" | "log_analysis",\n'
+            '  "entities": {"target": "name"} or {"text": "some text"},\n'
+            '  "intent_category": "EXECUTION" | "EDUCATIONAL" | "HYPOTHETICAL" | "CAPABILITY" | "TEXT_ANALYSIS",\n'
+            '  "compound": false,\n'
+            '  "sub_commands": []\n'
+            "}\n\n"
+            "Rules:\n"
+            "- 'intent_category' must accurately reflect if the user wants to execute a command (EXECUTION) vs asking how to do something (EDUCATIONAL), asking a hypothetical 'what if' (HYPOTHETICAL), or asking about your features (CAPABILITY).\n"
+            "- If the utterance is not execution (e.g. hypothetical), set intent to 'chat_reply'.\n"
+            "- If it contains multiple commands (like 'open notepad and type hello'), set compound to true and fill sub_commands array with the individual commands following the same format.\n"
+            "- Prioritize quoted strings when extracting entities."
+        )
+
+        try:
+            # We will use the router's decision logic but wrapped for JSON extraction
+            # We can use the primary backend's _call_llm_closed_loop directly for raw generation, or route it safely.
+            backends = [self._router._primary, self._router._fallback, self._router._emergency]
+            response_json = None
+            for backend in backends:
+                if not backend: continue
+                try:
+                    raw = backend._call_llm_closed_loop(prompt=f"App Context: {app_context}\nUtterance: {text}", context=system_prompt)
+                    # parse json
+                    response_json = self._router._clean_and_parse_json(raw)
+                    if isinstance(response_json, dict) and "intent_category" in response_json:
+                        break
+                except Exception as e:
+                    logger.debug(f"[NLU] Backend {backend.name} failed: {e}")
+            
+            if not response_json:
+                return default_packet
+
+            intent = response_json.get("intent", "unknown")
+            entities = response_json.get("entities", {})
+            intent_category = response_json.get("intent_category", "EXECUTION")
+            compound = response_json.get("compound", False)
+            sub_commands = response_json.get("sub_commands", [])
 
             packet = PerceptionPacket(
                 utterance=utterance,
-                intent=sub_commands[0]["intent"] if sub_commands else "unknown",
-                entities=sub_commands[0]["entities"] if sub_commands else {},
+                intent=intent,
+                entities=entities,
                 app_context=app_context,
-                compound=True,
+                compound=compound,
                 sub_commands=sub_commands,
-                safe_mode=safe_mode,
+                intent_category=intent_category,
+                intent_confidence=0.9,
+                entity_confidence=0.9
             )
-            logger.info(f"[NLU] Compound: {[c['intent'] for c in sub_commands]}")
+            
+            logger.info(f"[NLU] '{text}' → category={intent_category}, intent={intent}, entities={entities}")
             return packet
 
-        # Single command
-        intent, entities = self._match_intent(text_lower)
-
-        # Sub-location: "open settings wifi" → app=settings, sub=wifi
-        sub_location = ""
-        if intent == "open_app":
-            target = entities.get("target", "")
-            if "setting" in target:
-                sub_location = self._extract_settings_sub(target)
-                entities["target"] = "settings"
-                if sub_location:
-                    entities["sub_location"] = sub_location
-        elif intent == "navigate_location":
-            target = entities.get("target", "")
-            if "setting" in target:
-                sub_location = self._extract_settings_sub(target)
-
-        packet = PerceptionPacket(
-            utterance=utterance,
-            intent=intent,
-            entities=entities,
-            app_context=app_context,
-            sub_location=sub_location,
-            safe_mode=safe_mode,
-        )
-        logger.info(f"[NLU] '{text}' → intent={intent}, entities={entities}, safe_mode={safe_mode}")
-        return packet
-
-    # ── Private ──────────────────────────────────────
-
-    def _match_intent(self, text: str) -> tuple[str, dict]:
-        for pattern, intent, entity_map in _INTENT_PATTERNS:
-            m = re.search(pattern, text, re.IGNORECASE)
-            if m:
-                entities = self._extract_entities(m, entity_map)
-                return intent, entities
-        return "llm_route", {"raw": text}
-
-    @staticmethod
-    def _extract_entities(match: re.Match, entity_map: dict) -> dict:
-        entities = {}
-        for key, group_or_val in entity_map.items():
-            if isinstance(group_or_val, int):
-                try:
-                    entities[key] = match.group(group_or_val).strip()
-                except (IndexError, AttributeError):
-                    pass
-            elif isinstance(group_or_val, bool):
-                entities[key] = group_or_val
-            else:
-                entities[key] = group_or_val
-        return entities
-
-    @staticmethod
-    def _extract_settings_sub(target: str) -> str:
-        """Extract sub-location from 'settings wifi' or 'wifi settings'."""
-        target_clean = re.sub(r"\bsettings?\b", "", target, flags=re.IGNORECASE).strip()
-        return target_clean if target_clean else ""
+        except Exception as e:
+            logger.error(f"[NLU] Error parsing utterance with LLM: {e}")
+            return default_packet

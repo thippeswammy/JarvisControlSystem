@@ -8,7 +8,7 @@ from jarvis.utils.app_finder import AppFinder
 
 logger = logging.getLogger(__name__)
 
-@skill(triggers=["open app", "launch app", "start app", "run app"], name="open_app", category="app")
+@skill(triggers=["open app", "launch app", "start app", "run app"], name="open_app", category="app", fast_path_eligible=True)
 def open_app(params: dict) -> SkillResult:
     target = params.get("target", "").strip()
     if not target:
@@ -59,21 +59,16 @@ def open_app(params: dict) -> SkillResult:
             return SkillResult(success=True, action_taken=f"Discovered and launched: {target}", data={"exe": exe})
         except Exception as e:
             logger.error(f"[app_skill] Launch failed for {exe}: {e}")
-
-    # Fallback: Windows Search
-    import pyautogui, time
-    try:
-        pyautogui.hotkey("win", "s")
-        time.sleep(0.6)
-        pyautogui.typewrite(target, interval=0.05)
-        time.sleep(0.5)
-        pyautogui.press("enter")
-        return SkillResult(success=True, action_taken=f"Searched and launched fallback: {target}")
-    except Exception as e:
-        return SkillResult(success=False, message=f"Failed to open {target!r}: {e}")
+            return SkillResult(success=False, message=f"Failed to open {target!r}: {e}")
+    else:
+        # AppFinder completely failed to find the executable path.
+        # We NO LONGER fall back to blind UI automation (pyautogui -> Windows Search)
+        # because it caused severe false-positives (browser search tabs masquerading as apps).
+        logger.warning(f"[app_skill] AppFinder could not locate {target!r}.")
+        return SkillResult(success=False, message=f"NOT_FOUND: Application {target!r} could not be found locally.")
 
 
-@skill(triggers=["close app", "quit app", "exit app"], name="close_app", category="app")
+@skill(triggers=["close app", "quit app", "exit app"], name="close_app", category="app", fast_path_eligible=True)
 def close_app(params: dict) -> SkillResult:
     target = params.get("target", "active").strip()
     import pyautogui

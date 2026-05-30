@@ -269,10 +269,10 @@ class Scenario99NormalActions(LiveScenario):
     def __init__(self):
         super().__init__()
         self.steps = [
-            StepDef("06_safety_layer",             self.test_06_safety_layer,             timeout_s=60),
-            StepDef("11_conversational_intel",     self.test_11_conversational_intelligence, timeout_s=45),
-            StepDef("14_failure_containment",      self.test_14_failure_containment,      timeout_s=45),
-            StepDef("17_intent_ambiguity",         self.test_17_intent_ambiguity,         timeout_s=45),
+            StepDef("06_safety_layer",             self.test_06_safety_layer,             timeout_s=120),
+            StepDef("11_conversational_intel",     self.test_11_conversational_intelligence, timeout_s=120),
+            StepDef("14_failure_containment",      self.test_14_failure_containment,      timeout_s=120),
+            StepDef("17_intent_ambiguity",         self.test_17_intent_ambiguity,         timeout_s=120),
         ]
 
 

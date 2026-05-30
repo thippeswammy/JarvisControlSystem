@@ -15,7 +15,7 @@ class IntentSafetyLayer:
     """Protects against accidental execution from informational queries."""
     
     DISCUSSION_PATTERNS = [
-        re.compile(r"^\s*(how\s+(?:do|can|to|should|would)|what\s+is|why\s+does|explain|teach|tell\s+me\s+about|how\s+to\s+use|can\s+you\s+explain)\b", re.I),
+        re.compile(r"^\s*(how\s+(?:do|can|to|should|would)|what\s+is|why\s+does|explain|teach|tell\s+me\s+about|how\s+to\s+use|can\s+you(\s+explain)?|if\s+i\s+asked\s+you|summarize|translate|analyze)\b", re.I),
         re.compile(r"\b(how\s+do\s+i|how\s+can\s+i|what\s+does|how\s+does)\b", re.I)
     ]
 
@@ -35,8 +35,6 @@ class IntentSafetyLayer:
         if is_discussion:
             logger.info(f"[IntentSafety] Intercepted discussion/educational query: {packet.text!r}")
             packet.safe_mode = True
-            packet.intent = "chat_reply"
-            packet.entities = {"message": f"I detected you are asking a question or discussing: '{packet.text}'. Since this is an informational query, I will not execute any desktop actions."}
             packet.override_prompt = f"The user is asking an informational/educational question: '{packet.text}'. Answer their question clearly and conversationally. Do NOT generate any desktop execution steps or commands."
             
         return packet

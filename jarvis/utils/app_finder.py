@@ -86,12 +86,13 @@ class AppFinder:
             if not os.path.exists(d):
                 continue
             for var in variations:
-                # Walk depth=2 to keep it fast
-                for path in Path(d).glob(f"**/{var}"):
-                    if path.is_file():
-                        p_str = str(path.resolve())
-                        logger.info(f"[AppFinder] Discovered {app_name} via dir scan: {p_str}")
-                        return p_str
+                # Walk depth=3 to keep it fast and prevent massive timeouts
+                for pattern in [f"{var}", f"*/{var}", f"*/*/{var}", f"*/*/*/{var}"]:
+                    for path in Path(d).glob(pattern):
+                        if path.is_file():
+                            p_str = str(path.resolve())
+                            logger.info(f"[AppFinder] Discovered {app_name} via dir scan: {p_str}")
+                            return p_str
 
         logger.warning(f"[AppFinder] Could not discover path for application: {app_name}")
         return None

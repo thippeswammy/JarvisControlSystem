@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 @skill(triggers=["activate session", "hi jarvis", "hello jarvis", "hey jarvis", "wake up"],
-       name="session_activate", category="session")
+       name="session_activate", category="session", fast_path_eligible=True)
 def session_activate(params: dict) -> SkillResult:
     logger.info("[session_skill] Session activated")
     return SkillResult(
@@ -19,7 +19,7 @@ def session_activate(params: dict) -> SkillResult:
 
 @skill(triggers=["deactivate session", "bye jarvis", "goodbye jarvis", "stop listening",
                  "close jarvis", "sleep jarvis"],
-       name="session_deactivate", category="session")
+       name="session_deactivate", category="session", fast_path_eligible=True)
 def session_deactivate(params: dict) -> SkillResult:
     logger.info("[session_skill] Session deactivated")
     return SkillResult(

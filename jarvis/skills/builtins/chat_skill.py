@@ -15,13 +15,27 @@ logger = logging.getLogger(__name__)
     name="chat_reply",
     category="session",
     is_cognitive=True,   # Never auto-learned as a macro
+    fast_path_eligible=True,
 )
 def chat_reply(params: dict) -> SkillResult:
     """
-    Conversational response skill. Pure pass-through from the LLM.
-    Requires 'message' parameter.
+    Conversational response skill. Pure pass-through from the LLM, 
+    or handles basic greetings if fast-pathed without a message.
     """
-    message = params.get("message", "I don't have a response for that right now.")
+    message = params.get("message")
+    
+    if not message:
+        # Fast path greeting logic
+        text = params.get("text", "").lower()
+        if "hello" in text or "hi" in text or "hey" in text:
+            message = "Hello! How can I help you today?"
+        elif "thanks" in text or "thank you" in text:
+            message = "You're very welcome!"
+        elif "ok" in text or "okay" in text or "sure" in text:
+            message = "Understood."
+        else:
+            message = "Okay."
+
     logger.info(f"[chat_skill] Delivering reply: {message!r}")
 
     return SkillResult(

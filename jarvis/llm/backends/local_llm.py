@@ -46,7 +46,7 @@ class LocalLLM(LLMInterface):
         api_url: str = "http://localhost:11434/v1",
         model: str = _DEFAULT_MODEL,
         fallback_model: str = _DEFAULT_MODEL,
-        max_tokens: int = 300,
+        max_tokens: int = 30000,
         temperature: float = 0.1,
         timeout: float = 15.0,
         auto_pull: bool = True,
@@ -263,20 +263,29 @@ class LocalLLM(LLMInterface):
                 content = resp.json()["choices"][0]["message"]["content"].strip()
                 self.last_raw_response = content
 
-                # Check if parseable by base class
-                if self._parse_closed_loop_decision(content):
-                    return content
+                # Check if parseable as ANY valid JSON dictionary
+                try:
+                    import json, re
+                    cleaned = re.sub(r"```(?:json)?\s*", "", content, flags=re.IGNORECASE).strip()
+                    cleaned = cleaned.replace("```", "").strip()
+                    obj_match = re.search(r"(\{.*\})", cleaned, re.DOTALL)
+                    candidate = obj_match.group(1) if obj_match else cleaned
+                    data = json.loads(candidate)
+                    if isinstance(data, dict):
+                        return content
+                except Exception:
+                    pass
 
                 if attempt < 2:
-                    logger.warning(f"[LocalLLM] Closed-loop JSON parse failure on attempt {attempt+1}. Retrying...")
+                    logger.warning(f"[LocalLLM] JSON parse failure on attempt {attempt+1}. Retrying...")
                     messages.append({"role": "assistant", "content": content})
                     messages.append({"role": "user", "content": (
-                        "Your response was not valid JSON for the closed-loop schema. "
-                        'Return ONLY: {"status": "in_progress"|"done"|"blocked", "reasoning": "...", "actions": [...]}'
+                        "Your response was not a valid JSON object. "
+                        'Return ONLY a valid JSON object matching the requested schema.'
                     )})
                 else:
-                    logger.error("[LocalLLM] Closed-loop JSON self-correction exhausted.")
-                    return content  # Return raw; base class will fallback to decide() wrapper
+                    logger.error("[LocalLLM] JSON self-correction exhausted.")
+                    return content
             except Exception as e:
                 logger.error(f"[LocalLLM] Closed-loop request failed attempt {attempt+1}: {e}")
                 if attempt == 2:
