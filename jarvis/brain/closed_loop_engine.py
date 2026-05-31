@@ -409,7 +409,7 @@ class ClosedLoopEngine:
                     break
 
 
-            # 4. VERIFY — update ledger with results
+            # VERIFY — update ledger with results
             if 'state_mgr' in locals() and state_mgr and decision.actions:
                 new_logs = [f"Executed {act.skill} with success={res.success}" for act, res in zip(decision.actions, step_results)]
                 state_mgr.update_state("task", {"progress_logs": new_logs})

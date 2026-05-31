@@ -174,5 +174,5 @@ class GoalUnderstandingLayer:
             primary_goal=text,
             intents=intents,
             target_app=target_app,
-            confidence=0.7,  # Lower confidence for heuristic extraction
+            confidence=0.6,  # Lower confidence for heuristic extraction
         )

@@ -18,10 +18,10 @@ performance:
   # Containment session policy
   session_containment: true
 
-odr:
-  # Registration settings for On-Demand Registration (ODR)
-  registration_command: "odr.exe list"
-  auto_register: true
+# odr: let's keep on hold
+#   # Registration settings for On-Demand Registration (ODR)
+#   registration_command: "odr.exe list"
+#   auto_register: true
 
 capabilities:
   # Whitelist of fully supported UIA control types for discovery & interaction

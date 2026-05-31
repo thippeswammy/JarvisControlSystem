@@ -76,7 +76,7 @@ class Orchestrator:
         self._learner = ReactiveLearner(memory)
         self._pathfinder: Optional[GraphPathfinder] = None
 
-        # Phase 1 Cognitive Pipeline layers
+        
         from jarvis.perception.goal_understanding import GoalUnderstandingLayer
         from jarvis.perception.grounding_layer import GroundingLayer
         from jarvis.perception.knowledge_gap_engine import KnowledgeGapEngine
@@ -85,7 +85,7 @@ class Orchestrator:
         self._grounding = GroundingLayer(episodic=self._episodic)
         self._knowledge_gap = KnowledgeGapEngine()
 
-        # Phase 2 Planner, Safety Gating & User Interaction
+        
         from jarvis.brain.capability_planner import CapabilityPlanner
         from jarvis.brain.execution_authority import ExecutionAuthority
         from jarvis.brain.user_interaction_manager import UserInteractionManager
@@ -178,7 +178,7 @@ class Orchestrator:
             if hasattr(interaction_adapter, "register_session"):
                 interaction_adapter.register_session(session)
 
-        # 1. Goal-centric perception layers (Phase 1)
+        # Goal-centric perception layers (Phase 1)
         goal_model = self._goal_understanding.understand(text, app_context=snapshot.active_app)
         goal_model = self._grounding.ground(goal_model, snapshot=snapshot)
         
@@ -249,7 +249,7 @@ class Orchestrator:
                 logger.info(f"[Orchestrator] Direct-map fast path for intent: {packet.intent}")
                 plan = self._planner.plan(packet)
 
-            # Safety gate: ExecutionAuthority (Phase 2)
+            # Safety gate: ExecutionAuthority
             if not self._execution_authority.validate(plan, self._interaction_manager, session_id):
                 logger.warning(f"[Orchestrator] Plan rejected by ExecutionAuthority: {plan}")
                 return [SkillResult(success=False, action_taken="Plan aborted due to safety/user rejection.")]
