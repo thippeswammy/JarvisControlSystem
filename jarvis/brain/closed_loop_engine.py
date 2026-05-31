@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from typing import Optional, List
 
 from jarvis.brain.closed_loop_prompt import build_closed_loop_context
-from jarvis.brain.world_state import WorldState, WorldStateModeler
+from jarvis.brain.world_state import WorldState, WorldStateModeler, FiveTierWorldState
 from jarvis.llm.llm_interface import ClosedLoopDecision, SkillCallSpec
 from jarvis.perception.perception_packet import PerceptionPacket, ContextSnapshot
 from jarvis.skills.skill_bus import SkillBus, SkillCall, SkillResult
@@ -240,9 +240,22 @@ class ClosedLoopEngine:
             if iteration == 1:
                 world_diff_text = "First iteration — no previous state to compare."
                 prev_world = world_state
+                from jarvis.brain.state_manager import StateManager
+                state_mgr = StateManager(initial_state=prev_world)
             else:
-                diff = WorldState.diff(prev_world, world_state)
-                world_diff_text = WorldState.diff_to_text(diff)
+                if 'state_mgr' in locals() and state_mgr:
+                    state_mgr.update_state("env", {
+                        "running_processes": world_state.env_state.running_processes,
+                        "system_resources": world_state.env_state.system_resources,
+                    })
+                    state_mgr.update_state("ui", {
+                        "active_window": world_state.ui_state.active_window,
+                        "open_windows": world_state.ui_state.open_windows,
+                        "browser_state": world_state.ui_state.browser_state,
+                    })
+                    world_state = state_mgr.get_current_state()
+                diff = FiveTierWorldState.diff(prev_world, world_state)
+                world_diff_text = FiveTierWorldState.diff_to_text(diff)
             prev_world = world_state
 
             # 2. THINK — ask LLM what to do next
@@ -385,8 +398,8 @@ class ClosedLoopEngine:
                     result.completed = True
                     # Record this step so we have results recorded
                     post_action_world = self._sense_world_state()
-                    post_diff = WorldState.diff(prev_world, post_action_world)
-                    post_diff_text = WorldState.diff_to_text(post_diff)
+                    post_diff = FiveTierWorldState.diff(prev_world, post_action_world)
+                    post_diff_text = FiveTierWorldState.diff_to_text(post_diff)
                     ledger.record_step(
                         iteration=iteration,
                         actions=decision.actions,
@@ -397,10 +410,34 @@ class ClosedLoopEngine:
 
 
             # 4. VERIFY — update ledger with results
+            if 'state_mgr' in locals() and state_mgr and decision.actions:
+                new_logs = [f"Executed {act.skill} with success={res.success}" for act, res in zip(decision.actions, step_results)]
+                state_mgr.update_state("task", {"progress_logs": new_logs})
+                
+                # Extract variables if present in results
+                new_vars = {}
+                for res in step_results:
+                    if hasattr(res, "variables") and res.variables:
+                        new_vars.update(res.variables)
+                if new_vars:
+                    state_mgr.update_state("knowledge", {"variables": new_vars})
+
             # Re-sense after actions to get the diff
             post_action_world = self._sense_world_state()
-            post_diff = WorldState.diff(prev_world, post_action_world)
-            post_diff_text = WorldState.diff_to_text(post_diff)
+            if 'state_mgr' in locals() and state_mgr:
+                state_mgr.update_state("env", {
+                    "running_processes": post_action_world.env_state.running_processes,
+                    "system_resources": post_action_world.env_state.system_resources,
+                })
+                state_mgr.update_state("ui", {
+                    "active_window": post_action_world.ui_state.active_window,
+                    "open_windows": post_action_world.ui_state.open_windows,
+                    "browser_state": post_action_world.ui_state.browser_state,
+                })
+                post_action_world = state_mgr.get_current_state()
+
+            post_diff = FiveTierWorldState.diff(prev_world, post_action_world)
+            post_diff_text = FiveTierWorldState.diff_to_text(post_diff)
             prev_world = post_action_world
 
             ledger.record_step(
