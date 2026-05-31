@@ -25,35 +25,4 @@ __pycache__/
 
 # Process ID and runtime files
 *.pid
-
-# Native C++ Visual Studio & Build Artifacts
-native/Microsoft-UI-UIAutomation/.vs/
-native/Microsoft-UI-UIAutomation/src/UIAutomation/[Dd]ebug/
-native/Microsoft-UI-UIAutomation/src/UIAutomation/[Rr]elease/
-native/Microsoft-UI-UIAutomation/src/UIAutomation/x64/
-native/Microsoft-UI-UIAutomation/src/UIAutomation/x86/
-native/Microsoft-UI-UIAutomation/src/UIAutomation/**/[Bb]in/
-native/Microsoft-UI-UIAutomation/src/UIAutomation/**/[Oo]bj/
-native/Microsoft-UI-UIAutomation/src/UIAutomation/**/Generated\ Files/
-native/Microsoft-UI-UIAutomation/src/UIAutomation/**/*.user
-native/Microsoft-UI-UIAutomation/src/UIAutomation/**/*.suo
-native/Microsoft-UI-UIAutomation/src/UIAutomation/**/*.sln.docstates
-*.ilk
-*.obj
-*.iobj
-*.pch
-*.pdb
-*.ipdb
-*.pgc
-*.pgd
-*.rsp
-*.sbr
-*.tlb
-*.tli
-*.tlh
-*.tmp
-*.VC.db
-*.opensdf
-*.sdf
-*.aps
 *.exe
