@@ -798,3 +798,255 @@ However, the system still has major architectural weaknesses in:
 The most severe issue is the false-positive application recovery via browser search fallback, which currently allows web search tabs to masquerade as successfully opened applications.
 
 This should be treated as a CRITICAL autonomous-agent containment bug.
+___
+
+# Missing "Capability Selection"
+
+Currently:
+
+Determine Needed Tools
+
+This is still slightly tool-centric.
+
+Example:
+
+User:
+"Read latest ROS2 documentation."
+
+Jarvis should think:
+
+Need:
+- Web access
+- Reading capability
+- Summarization capability
+
+Not:
+
+Need:
+- Browser Tool
+
+Better flow:
+
+Determine Required Capabilities
+↓
+Determine Capability Providers
+↓
+Determine Tools
+
+Example:
+
+Need Web Search
+
+Possible Providers:
+- Browser Agent
+- Brave Agent
+- MCP Search Tool
+
+Choose Best Provider
+↓
+Select Tool
+
+# No Explicit World Model Update Step
+
+Current:
+
+Execute
+↓
+Verify
+
+Missing:
+
+Update World Model
+
+Example:
+
+Open Notepad
+
+Verification:
+
+Success
+
+But now:
+
+World State changed
+
+Need:
+
+Execute
+↓
+Verify
+↓
+Update World Model
+↓
+Re-plan
+
+Without this, long-running autonomy becomes brittle.
+
+
+# Missing Explicit Grounding Layer
+
+Your Scenario 99 log shows exactly why.
+
+User:
+
+Open it again
+
+Jarvis hallucinated:
+
+Scenario 99 Evaluation - Google Chrome
+
+instead of using actual context.
+
+You already partially fixed this in remarks.
+
+I would add a dedicated stage:
+
+Understand Goal
+↓
+Ground References
+↓
+Resolve Pronouns
+↓
+Determine Missing Information
+
+Example:
+
+it
+that
+same one
+again
+there
+
+must be resolved before planning.
+
+# Agent Layer Still Looks Tool-Driven
+
+Current:
+
+Agent
+↓
+Tool
+
+Better:
+
+Agent
+↓
+Capability
+↓
+Tool
+
+Because future agents may use:
+
+MCP
+Local Skills
+APIs
+Other Agents
+External Services
+
+without changing planning logic.
+
+What I Would Use as the Final Cognitive Loop
+User Request
+↓
+Understand User Goal
+↓
+Ground References & Context
+↓
+Determine Missing Information
+↓
+Determine Required Knowledge
+↓
+Determine Available Knowledge
+↓
+Determine Knowledge Gaps
+↓
+Acquire Missing Knowledge
+↓
+Determine Required Capabilities
+↓
+Determine Candidate Providers
+↓
+Generate Candidate Plans
+↓
+Evaluate Cost / Risk / Confidence
+↓
+Select Strategy
+↓
+Execution Authority
+↓
+Execute
+↓
+Verify
+↓
+Update World Model
+↓
+Reflect & Learn
+↓
+Goal Complete?
+ ├─ Yes → Finish
+ └─ No  → Re-plan
+
+
+# Missing Explicit User Interaction Manager
+Current:
+Missing Info
+ ↓
+Ask User
+But many situations require interaction later.
+Example:
+Delete all file
+Need:
+Confirm?
+Example:
+Choose between 3 repositories?
+Need:
+Ask User
+Add:
+UserInteractionManager
+Responsible for:
+Clarifications
+Confirmations
+Approval Requests
+Decision Requests
+
+# Missing Multi-Agent Review
+
+Current:
+Agent executes
+ ↓
+Returns result
+Problem:
+Specialized agent can hallucinate.
+Need optional:
+Coding Agent
+ ↓
+Code Review Agent
+ ↓
+Accept
+
+# World Model Is Too Desktop-Centric
+
+Current World Model:
+Windows
+Processes
+Focused Window
+UI State
+Missing:
+Knowledge State
+Example:
+After searching GitHub:
+{
+  "repositories_found": 17,
+  "selected_repo": "...",
+  "summary": "..."
+}
+
+This should be in World Model too.
+Need:
+World Model
+ ├─ Environment State
+ ├─ UI State
+ ├─ Knowledge State
+ ├─ Task State
+ └─ Agent State
+
