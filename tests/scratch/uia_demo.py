@@ -50,6 +50,22 @@ def run_demo():
             rect = bridge.get_element_rect(elem_id)
             pprint.pprint(rect)
             
+            print("\nFinding '7' button...")
+            btn7 = bridge.find_element(by="id", value="num7Button")
+            pprint.pprint(btn7)
+            
+            if btn7 and "element_id" in btn7:
+                print("\nClicking '7' button...")
+                bridge.invoke_element(btn7["element_id"])
+                time.sleep(1)
+            
+            print("\nFinding '8' button (just to be sure)...")
+            btn8 = bridge.find_element(by="id", value="num8Button")
+            if btn8 and "element_id" in btn8:
+                print("Clicking '8' button...")
+                bridge.invoke_element(btn8["element_id"])
+                time.sleep(1)
+            
     finally:
         print("\nClosing Calculator and disconnecting...")
         calc_process.terminate()

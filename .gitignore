@@ -56,3 +56,4 @@ native/Microsoft-UI-UIAutomation/src/UIAutomation/**/*.sln.docstates
 *.opensdf
 *.sdf
 *.aps
+*.exe
