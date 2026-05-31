@@ -153,48 +153,137 @@ To transition from experimental settings to enterprise-grade sandboxed security,
 
 For maximum speed, absolute minimal memory footprints, and raw hardware access, implementing the Windows MCP and Shell Automation server in **native C or C++** is a premier architectural choice. This completely bypasses the .NET Common Language Runtime (CLR) or Python interpreters, resulting in a zero-dependency compiled binary.
 
+### Native Project Structure
+To establish a clean, production-grade project structure, the core native C++ UIAutomation components and reference systems are located directly within the workspace under the `native/` directory:
+*   **[UIAutomation.sln](file:///f:/RunningProjects/JarvisControlSystem/native/UIAutomation.sln)**: The central Visual Studio solution containing the native UI Automation project pipeline.
+*   **[UiaOperationAbstraction](file:///f:/RunningProjects/JarvisControlSystem/native/UiaOperationAbstraction)**: A static C++ library that wraps raw Windows UI Automation, providing a dual-mode interface that seamlessly switches between classic COM and high-performance Remote Operations.
+*   **[Microsoft.UI.UIAutomation](file:///f:/RunningProjects/JarvisControlSystem/native/Microsoft.UI.UIAutomation)**: The native DLL project implementing the WinRT projection mapping and Core Remote Operations serialization pipeline.
+
 ### Low-Level UIA & Shell Automation via C++
 C++ excels in direct Windows OS programming by eliminating wrapping layers:
 *   **Native COM Interop**: Instead of relying on intermediate Interop assemblies, a C++ MCP server compiles directly against native system headers (`Windows.h`, `UIAutomation.h`, and `Objbase.h`). This delivers microseconds-level latency when traversing the Windows accessibility tree.
 *   **Modern C++/WinRT & WIL**: Modern C++ projects leverage **C++/WinRT** (Microsoft's standard language projection for Windows Runtime APIs) and the **Windows Implementation Library (WIL)**. This provides automated, exception-safe RAII wrappers (like `wil::com_ptr`) to eliminate traditional COM reference counting leaks (`AddRef`/`Release`).
 *   **Shell Integration**: C++ has direct native access to high-impact shell libraries (e.g., `Shellapi.h` and `Shlobj.h`). Starting background tasks, resolving system shortcuts, and monitoring file directories via `ReadDirectoryChangesW` are executed natively with zero VM overhead.
 
-### Code Pattern: Native C++ UIA Control Identification
-The following C++ snippet demonstrates how a C++ Windows MCP server locates a specific UI control (such as a text box or button) semantically using native COM interfaces:
+### UIA Remote Operations (High-Performance $O(1)$ IPC Execution)
+In traditional automation, traversing the accessibility tree forces an explosion of cross-process COM calls. For example, finding a specific child text element, retrieving its bounding box, checking its text value, and walking its parent chain triggers dozens of individual IPC calls. At a standard system latency of $5\text{ ms} - 20\text{ ms}$ per RPC call, this can take $100\text{ ms} - 500\text{ ms}$, rendering real-time UI synchronization impossible.
+
+To eliminate this latency bottleneck, Jarvis implements the **UIAutomation Remote Operations** paradigm:
+1.  **Direct Execution Graph**: The client-side C++ builder maps out the automation steps as a single directed graph of operations (bytecode instructions).
+2.  **Single IPC Round-Trip**: The compiled bytecode is sent in **exactly one** COM call to be evaluated *directly inside the target application's process context* on the OS side.
+3.  **Local Execution Speed**: All element lookups, property checks, and loops occur locally at microseconds speed, returning only the requested final results. This reduces total IPC execution latency from hundreds of milliseconds to **$< 1\text{ ms}$ (a $500\times$ speedup)**.
+
+```
+[Classic COM UIA]
+Jarvis MCP Server  ────── (IPC Call 1: Get Child) ───────► Target Process
+Jarvis MCP Server  ◄───── (IPC Resp 1: Element) ───────── Target Process
+Jarvis MCP Server  ────── (IPC Call 2: Read Name) ───────► Target Process
+Jarvis MCP Server  ◄───── (IPC Resp 2: "Display") ─────── Target Process
+  *Result: O(N) IPC calls - Slow (100ms - 500ms total)*
+
+[UIA Remote Operations]
+Jarvis MCP Server  ── (IPC Call: Bytecode Exec Graph) ──► Target Process (Local Exec Loop)
+Jarvis MCP Server  ◄─ (IPC Resp: Combined Results) ───── Target Process
+  *Result: O(1) IPC call - Microseconds (<1ms total)*
+```
+
+### The C++ Dual-Mode Wrapper Abstraction
+Through the static wrapper library **`UiaOperationAbstraction`**, Jarvis can switch between "classic" COM UIA and "Remote Operations" dynamically via a boolean flag. 
+
+To hide Remote Operations bytecode serialization complexity, the abstraction provides:
+*   **Scope Management**: `UiaOperationScope::StartNew()` acts as a thread-local/fiber-local context. When Remote Operations is enabled, any calls made on UIA wrapper objects are accumulated as bytecode inside the scope's delegator.
+*   **Unified Type Wrappers**: `UiaElement`, `UiaBool`, `UiaInt`, `UiaString`, `UiaArray`, `UiaRect` wrap standard UIA types. They act as local COM elements under classic mode, and as remote bytecode operands under Remote Operations mode.
+*   **Remote Loops and Conditions**: Standard C++ conditions evaluate only once on the client. To bypass this, the wrapper provides control-flow mappings:
+    *   `scope.If(UiaBool, OnTrue, OnFalse)`: Translated into a remote bytecode `If` branch.
+    *   `scope.While(ConditionLambda, BodyLambda)`: Serialized as a remote bytecode `While` block, running the loop locally within the target app until the condition evaluates to false, without returning execution control to the client.
+*   **Result Binding**: Wrapper variables are declared locally. Passing them to `scope.BindResult(var)` schedules them to be populated once the bytecode executes. Invoking `scope.Resolve()` dispatches the batch and marshals all output values back into standard local C++ types.
+
+### Code Pattern: Native C++ UIA Remote Operations Traversal
+The following self-contained C++ pattern demonstrates how to use the `UiaOperationAbstraction` library to batch-traverse the Windows UI element tree, utilize a remote loop, populate a cache request, and extract element properties in a single IPC call:
 
 ```cpp
 #include <windows.h>
 #include <uiautomation.h>
 #include <wil/com.h>
+#include <wil/resource.h>
 #include <iostream>
+#include <vector>
+#include "UiaOperationAbstraction.h"
 
-// Helper to find a UI element by AutomationID semantically
-wil::com_ptr<IUIAutomationElement> FindElementByAutomationId(
-    IUIAutomation* pAutomation, 
-    IUIAutomationElement* pRoot, 
-    const wchar_t* automationId) 
+using namespace UiaOperationAbstraction;
+
+// Executes a single-roundtrip search to retrieve a child element's cached properties
+bool GetChildElementCachedProperties(
+    IUIAutomation* pRawAutomation,
+    IUIAutomationElement* pStartElement,
+    const wchar_t* targetAutomationId,
+    std::wstring& outElementName,
+    CONTROLTYPEID& outControlType)
 {
-    wil::com_ptr<IUIAutomationCondition> pCondition;
-    VARIANT varId;
-    VariantInit(&varId);
-    varId.vt = VT_BSTR;
-    varId.bstrVal = SysAllocString(automationId);
+    // 1. Initialize the dual-mode UIA operation abstraction layer.
+    // Set to 'true' to execute as a single microsecond-level Remote Operation.
+    constexpr bool useRemoteOperations = true;
+    UiaOperationAbstraction::Initialize(useRemoteOperations, pRawAutomation);
+    auto cleanup = wil::scope_exit([]() { UiaOperationAbstraction::Cleanup(); });
 
-    // Create condition: find control matching the specific AutomationId
-    HRESULT hr = pAutomation->CreatePropertyCondition(
-        UIA_AutomationIdPropertyId, 
-        varId, 
-        &pCondition
+    // 2. Open a thread-local/fiber-local Remote Operation Scope
+    auto scope = UiaOperationScope::StartNew();
+
+    // 3. Import the starting element as a remote operand
+    UiaElement element = pStartElement;
+    scope.BindInput(element);
+
+    // 4. Configure a Remote Cache Request to retrieve Name and ControlType
+    UiaCacheRequest cacheRequest;
+    cacheRequest.AddProperty(UIA_NamePropertyId);
+    cacheRequest.AddProperty(UIA_ControlTypePropertyId);
+
+    // 5. Build the Remote Control Flow Graph
+    UiaElement foundElement = nullptr;
+    UiaElement currentChild = element.GetFirstChildElement();
+
+    // Execute the loop entirely on the remote target process side
+    scope.While(
+        [&]() {
+            // Loop condition: continue while currentChild is not Null and target is not found
+            return !currentChild.IsNull() && foundElement.IsNull();
+        },
+        [&]() {
+            // Loop Body: Check if the current element matches the target AutomationId
+            UiaString currentIdVal = currentChild.GetPropertyValue(UiaPropertyId(UIA_AutomationIdPropertyId)).AsString();
+            
+            UiaBool isMatch = (currentIdVal == UiaString(targetAutomationId));
+            
+            scope.If(isMatch, 
+                [&]() {
+                    // Match found: Populate the cache request and assign found element
+                    foundElement = currentChild.GetUpdatedCacheElement(cacheRequest);
+                },
+                [&]() {
+                    // Match not found: Move to the next sibling element
+                    currentChild = currentChild.GetNextSiblingElement();
+                }
+            );
+        }
     );
-    
-    wil::com_ptr<IUIAutomationElement> pFoundElement;
-    if (SUCCEEDED(hr) && pCondition) {
-        // Query child elements recursively matching condition
-        pRoot->FindFirst(TreeScope_Descendants, pCondition.get(), &pFoundElement);
+
+    // 6. Bind outputs. They will be populated locally once scope is resolved.
+    UiaString remoteName = foundElement.GetName(true /* useCachedApi */);
+    UiaInt remoteControlType = foundElement.GetControlType();
+
+    scope.BindResult(remoteName);
+    scope.BindResult(remoteControlType);
+
+    // 7. Dispatch the entire graph in EXACTLY 1 IPC call to the target application context
+    HRESULT hr = scope.ResolveHr();
+    if (FAILED(hr) || foundElement.IsNull()) {
+        return false;
     }
-    
-    VariantClear(&varId);
-    return pFoundElement;
+
+    // 8. Safely extract results into native C++ local types
+    outElementName = static_cast<wil::shared_bstr>(remoteName).get();
+    outControlType = static_cast<int>(remoteControlType);
+    return true;
 }
 ```
 
@@ -209,6 +298,7 @@ When selecting a programming language to extend the Jarvis Control System's Wind
 | **COM / Win32 Interop** | Slow ctypes or pywin32 wrappers | Good (Built-in runtime marshaling) | Perfect (Native compilation, zero marshaling) |
 | **Development Speed** | Extremely Fast (Dynamic typing) | Fast (Attribute-based tool mapping) | Moderate (Manual schema definition, strict memory management) |
 | **Containment Compatibility** | Moderate (Requires bundling Python in MSIX) | Perfect (MSIX container native support) | Perfect (Seamless static MSIX packaging) |
+| **Tree Traversal Speed** | Unusable for complex trees | Moderate (High marshaling cost) | Instantaneous (Remote Operations batching) |
 
 ---
 
