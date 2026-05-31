@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+    <VCProjectVersion>16.0</VCProjectVersion>
+    <ProjectGuid>{7D645239-F96E-4FBE-BAA4-B92838B9D361}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>MicrosoftUIUIAutomation</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v142</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <CustomBuildAfterTargets>Midl</CustomBuildAfterTargets>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <CustomBuildAfterTargets>Midl</CustomBuildAfterTargets>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <CustomBuildAfterTargets>Midl</CustomBuildAfterTargets>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <CustomBuildAfterTargets>Midl</CustomBuildAfterTargets>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;MICROSOFTUIUIAUTOMATION_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalOptions>/bigobj /await /D WIN32_LEAN_AND_MEAN /D NOMINMAX %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir)Generated Files;$(ProjectDir)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
+    </Link>
+    <Midl>
+      <AdditionalMetadataDirectories>$(FrameworkSdkDir)References\$(TargetPlatformVersion)\Windows.Foundation.FoundationContract\4.0.0.0</AdditionalMetadataDirectories>
+    </Midl>
+    <Midl>
+      <EnableWindowsRuntime>true</EnableWindowsRuntime>
+      <MetadataFileName>$(IntDir)$(ProjectName).winmd</MetadataFileName>
+      <AdditionalOptions>/nomidl /struct_by_ref %(AdditionalOptions)</AdditionalOptions>
+    </Midl>
+    <CustomBuildStep>
+      <Command>cppwinrt.exe -in $(IntDir)$(ProjectName).winmd -comp "$(ProjectDir)Generated Files\Sources" -out "$(ProjectDir)Generated Files" -ref $(TargetPlatformVersion) -prefix -name $(ProjectName) -optimize</Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>Invoking cppwinrt.exe</Message>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Outputs>$(ProjectDir)Generated Files\module.g.cpp</Outputs>
+      <Inputs>$(IntDir)$(ProjectName).winmd</Inputs>
+    </CustomBuildStep>
+    <PostBuildEvent>
+      <Command>(if not exist "$(OutDir)winmd" mkdir "$(OutDir)winmd") &amp;&amp; copy "$(IntDir)$(ProjectName).winmd" "$(OutDir)winmd\$(ProjectName).winmd" &amp;&amp; (if not exist "$(ProjectDir)Generated Files\winmd" mkdir "$(ProjectDir)Generated Files\winmd") &amp;&amp; copy "$(IntDir)$(ProjectName).winmd" "$(ProjectDir)Generated Files\winmd\$(ProjectName).winmd" &amp;&amp; copy "$(FrameworkSdkDir)UnionMetadata\$(TargetPlatformVersion)\Windows.winmd" "$(ProjectDir)Generated Files\winmd\Windows.winmd"</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Copy winmd to output directory</Message>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;MICROSOFTUIUIAUTOMATION_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalOptions>/bigobj /await /D WIN32_LEAN_AND_MEAN /D NOMINMAX %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir)Generated Files;$(ProjectDir)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
+    </Link>
+    <Midl>
+      <AdditionalMetadataDirectories>$(FrameworkSdkDir)References\$(TargetPlatformVersion)\Windows.Foundation.FoundationContract\4.0.0.0</AdditionalMetadataDirectories>
+    </Midl>
+    <Midl>
+      <EnableWindowsRuntime>true</EnableWindowsRuntime>
+      <MetadataFileName>$(IntDir)$(ProjectName).winmd</MetadataFileName>
+      <AdditionalOptions>/nomidl /struct_by_ref %(AdditionalOptions)</AdditionalOptions>
+    </Midl>
+    <CustomBuildStep>
+      <Command>cppwinrt.exe -in $(IntDir)$(ProjectName).winmd -comp "$(ProjectDir)Generated Files\Sources" -out "$(ProjectDir)Generated Files" -ref $(TargetPlatformVersion) -prefix -name $(ProjectName) -optimize</Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>Invoking cppwinrt.exe</Message>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Outputs>$(ProjectDir)Generated Files\module.g.cpp</Outputs>
+      <Inputs>$(IntDir)$(ProjectName).winmd</Inputs>
+    </CustomBuildStep>
+    <PostBuildEvent>
+      <Command>(if not exist "$(OutDir)winmd" mkdir "$(OutDir)winmd") &amp;&amp; copy "$(IntDir)$(ProjectName).winmd" "$(OutDir)winmd\$(ProjectName).winmd" &amp;&amp; (if not exist "$(ProjectDir)Generated Files\winmd" mkdir "$(ProjectDir)Generated Files\winmd") &amp;&amp; copy "$(IntDir)$(ProjectName).winmd" "$(ProjectDir)Generated Files\winmd\$(ProjectName).winmd" &amp;&amp; copy "$(FrameworkSdkDir)UnionMetadata\$(TargetPlatformVersion)\Windows.winmd" "$(ProjectDir)Generated Files\winmd\Windows.winmd"</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Copy winmd to output directory</Message>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;MICROSOFTUIUIAUTOMATION_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalOptions>/bigobj /await /D WIN32_LEAN_AND_MEAN /D NOMINMAX %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir)Generated Files;$(ProjectDir)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
+    </Link>
+    <Midl>
+      <AdditionalMetadataDirectories>$(FrameworkSdkDir)References\$(TargetPlatformVersion)\Windows.Foundation.FoundationContract\4.0.0.0</AdditionalMetadataDirectories>
+    </Midl>
+    <Midl>
+      <EnableWindowsRuntime>true</EnableWindowsRuntime>
+      <MetadataFileName>$(IntDir)$(ProjectName).winmd</MetadataFileName>
+      <AdditionalOptions>/nomidl /struct_by_ref %(AdditionalOptions)</AdditionalOptions>
+    </Midl>
+    <CustomBuildStep>
+      <Command>cppwinrt.exe -in $(IntDir)$(ProjectName).winmd -comp "$(ProjectDir)Generated Files\Sources" -out "$(ProjectDir)Generated Files" -ref $(TargetPlatformVersion) -prefix -name $(ProjectName) -optimize</Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>Invoking cppwinrt.exe</Message>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Outputs>$(ProjectDir)Generated Files\module.g.cpp</Outputs>
+      <Inputs>$(IntDir)$(ProjectName).winmd</Inputs>
+    </CustomBuildStep>
+    <PostBuildEvent>
+      <Command>(if not exist "$(OutDir)winmd" mkdir "$(OutDir)winmd") &amp;&amp; copy "$(IntDir)$(ProjectName).winmd" "$(OutDir)winmd\$(ProjectName).winmd" &amp;&amp; (if not exist "$(ProjectDir)Generated Files\winmd" mkdir "$(ProjectDir)Generated Files\winmd") &amp;&amp; copy "$(IntDir)$(ProjectName).winmd" "$(ProjectDir)Generated Files\winmd\$(ProjectName).winmd" &amp;&amp; copy "$(FrameworkSdkDir)UnionMetadata\$(TargetPlatformVersion)\Windows.winmd" "$(ProjectDir)Generated Files\winmd\Windows.winmd"</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Copy winmd to output directory</Message>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level4</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;MICROSOFTUIUIAUTOMATION_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <AdditionalOptions>/bigobj /await /D WIN32_LEAN_AND_MEAN /D NOMINMAX %(AdditionalOptions)</AdditionalOptions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir)Generated Files;$(ProjectDir)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableUAC>false</EnableUAC>
+      <ModuleDefinitionFile>module.def</ModuleDefinitionFile>
+    </Link>
+    <Midl>
+      <AdditionalMetadataDirectories>$(FrameworkSdkDir)References\$(TargetPlatformVersion)\Windows.Foundation.FoundationContract\4.0.0.0</AdditionalMetadataDirectories>
+    </Midl>
+    <Midl>
+      <EnableWindowsRuntime>true</EnableWindowsRuntime>
+      <MetadataFileName>$(IntDir)$(ProjectName).winmd</MetadataFileName>
+      <AdditionalOptions>/nomidl /struct_by_ref %(AdditionalOptions)</AdditionalOptions>
+    </Midl>
+    <CustomBuildStep>
+      <Command>cppwinrt.exe -in $(IntDir)$(ProjectName).winmd -comp "$(ProjectDir)Generated Files\Sources" -out "$(ProjectDir)Generated Files" -ref $(TargetPlatformVersion) -prefix -name $(ProjectName) -optimize</Command>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>Invoking cppwinrt.exe</Message>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Outputs>$(ProjectDir)Generated Files\module.g.cpp</Outputs>
+      <Inputs>$(IntDir)$(ProjectName).winmd</Inputs>
+    </CustomBuildStep>
+    <PostBuildEvent>
+      <Command>(if not exist "$(OutDir)winmd" mkdir "$(OutDir)winmd") &amp;&amp; copy "$(IntDir)$(ProjectName).winmd" "$(OutDir)winmd\$(ProjectName).winmd" &amp;&amp; (if not exist "$(ProjectDir)Generated Files\winmd" mkdir "$(ProjectDir)Generated Files\winmd") &amp;&amp; copy "$(IntDir)$(ProjectName).winmd" "$(ProjectDir)Generated Files\winmd\$(ProjectName).winmd" &amp;&amp; copy "$(FrameworkSdkDir)UnionMetadata\$(TargetPlatformVersion)\Windows.winmd" "$(ProjectDir)Generated Files\winmd\Windows.winmd"</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>Copy winmd to output directory</Message>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="AutomationRemoteAnyObjectMethods.g.h" />
+    <ClInclude Include="AutomationRemoteElementMethods.g.h" />
+    <ClInclude Include="AutomationRemoteOperation.h" />
+    <ClInclude Include="AutomationRemoteOperationMethods.g.h" />
+    <ClInclude Include="AutomationRemoteOperationResultSet.h" />
+    <ClInclude Include="MessageBuilder.h" />
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="RemoteOperationGraph.h" />
+    <ClInclude Include="RemoteOperationInstructionEnumValues.g.h" />
+    <ClInclude Include="RemoteOperationInstructionEnumValuesArray.g.h" />
+    <ClInclude Include="RemoteOperationInstructions.g.h" />
+    <ClInclude Include="RemoteOperationInstructions.h" />
+    <ClInclude Include="RemoteOperationInstructionSerialization.h" />
+    <ClInclude Include="RemoteOperationInstructionSerializerMethods.g.h" />
+    <ClInclude Include="RemoteOperationInstructionsVariantParams.g.h" />
+    <ClInclude Include="Standins.g.h" />
+    <ClInclude Include="Standins.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="AutomationRemoteOperation.cpp" />
+    <ClCompile Include="AutomationRemoteOperationResultSet.cpp" />
+    <ClCompile Include="Client.g.cpp" />
+    <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="Generated Files\module.g.cpp" />
+    <ClCompile Include="MessageBuilder.cpp" />
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="RemoteOperationGraph.cpp" />
+    <ClCompile Include="RemoteOperationInstructionSerialization.cpp" />
+    <ClCompile Include="RemoteOperationInstructionSerialization.g.cpp" />
+    <ClCompile Include="Standins.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Midl Include="Microsoft.UI.UIAutomation.idl" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="module.def" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="..\packages\Microsoft.Windows.ImplementationLibrary.1.0.191107.2\build\native\Microsoft.Windows.ImplementationLibrary.targets" Condition="Exists('..\packages\Microsoft.Windows.ImplementationLibrary.1.0.191107.2\build\native\Microsoft.Windows.ImplementationLibrary.targets')" />
+  </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\Microsoft.Windows.ImplementationLibrary.1.0.191107.2\build\native\Microsoft.Windows.ImplementationLibrary.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Windows.ImplementationLibrary.1.0.191107.2\build\native\Microsoft.Windows.ImplementationLibrary.targets'))" />
+  </Target>
+</Project>
