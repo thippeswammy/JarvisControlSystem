@@ -1,4 +1,4 @@
-# Complete Architectural Blueprint: Autonomous Orchestration & Windows UI Automation in Jarvis v2
+# Complete Architectural Blueprint: Autonomous Orchestration & Windows UI Automation in Jarvis v3
 
 This document provides a highly technical, end-to-end architectural evaluation of the **Jarvis Control System**. It defines exactly when and where LLM layers, specialized agents, memory hierarchies, and system skills are invoked. Furthermore, it outlines how Jarvis interfaces natively with the Windows OS via **UI Automation (UIA)** and the **On-device Agent Registry (ODR)**, referencing the official technical specifications in [Building Windows MCP Integration.md](file:///F:/RunningProjects/JarvisControlSystem/referency/Building%20Windows%20MCP%20Integration.md).
 
