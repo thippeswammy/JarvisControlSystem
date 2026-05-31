@@ -261,8 +261,100 @@ class KnowledgeGapEngine:
         return bool(goal.primary_goal)
 
     @staticmethod
-    def _get_known_apps() -> set:
-        """Loads known apps from config, dynamically queries active OS processes and windows, and saves it."""
+    def _is_valid_user_app(name: str) -> bool:
+        """Filters out background services, drivers, host processes, and system utilities."""
+        import re
+        n = name.lower().strip()
+        if len(n) <= 2:
+            return n in {"cmd", "git", "wsl", "go"}
+
+        # Expanded blacklist for high-quality sanitization
+        blacklist = [
+            "host", "service", "helper", "handler", "agent", "daemon", "driver", "system",
+            "telemetry", "runtime", "broker", "background", "server", "utility", "diag", "diagnostic",
+            "manager", "updater", "overlay", "plugin", "extension", "cache", "monitor",
+            "client", "proxy", "listener", "controller", "sync", "hook", "analytics",
+            "crash", "reporter", "engine", "auth", "login", "credential", "dispatcher", "bridge",
+            "worker", "amd", "nvidia", "asus", "intel", "realtek", "ati", "task",
+            "redistributable", "sdk", "compiler", "package", "library", "framework",
+            "setup", "install", "uninstall", "help", "manual", "readme", "license",
+            "register", "activate", "config", "utility", "support", "feedback",
+            "troubleshoot", "wizard", "migrator", "check", "viewer", "reinstall",
+            "add-in", "addin", "shortcut", "documentation", "tutorial", "guide",
+            "release notes", "whatsnew", "what's new", "development kit", "hotfix", "patch"
+        ]
+
+        # Explicit exceptions that are user-facing but contain blacklisted words
+        exceptions = {"settings", "cmd", "explorer", "powershell", "git bash"}
+        if n in exceptions:
+            return True
+
+        # Check ends with srv/svc
+        if n.endswith(("srv", "svc")):
+            return False
+
+        # Block pure numbers or special chars
+        if re.match(r'^[\d\W_]+$', n):
+            return False
+
+        # Block typical background/development tools that users don't say
+        system_blacklist = {
+            "csrss", "dwm", "ctfmon", "lsaiso", "msmpeng", "spoolsv", "winlogon", "wmiprvse", "wlanext",
+            "smss", "svchost", "lsass", "wininit", "conhost", "taskhostw", "smartscreen", "dllhost",
+            "searchindexer", "unsecapp", "wudfhost", "devenvexe", "officeclicktorun", "perfwatson2",
+            "vcpkgsrv", "vcxprojreader", "appactions", "castsrv", "cmwebadmin", "cncmd", "codemeter",
+            "crossdeviceresume", "dax3api", "hasplms", "hasplmv", "ipoverusbsvc", "keyboxd", "lockapp",
+            "memcompression", "msedgewebview2", "ngciso", "nissrv", "rtkuwp", "widgets", "wstoastnotification",
+            "registry", "uihost", "crossdeviceservice", "crossdevicetask", "applicationframehost",
+            "aggregatorhost", "amdfendrsr", "amdrsserv", "amdrssrcext", "asusappservice", "asusoptimization",
+            "asusoptimizationstartuptask", "asusosd", "asusproarthost", "asusproartservice", "asusproartupdateservice",
+            "asussoftwaremanager", "asussoftwaremanageragent", "asusswitch", "asussystemanalysis", "asussystemdiagnosis",
+            "asuswifismartconnect", "backgroundtaskhost", "bravecrashhandler", "bravecrashhandler64", "browserhost",
+            "cpumetricsserver", "dashost", "dataexchangehost", "focalfpsrvcdeamon", "fontdrvhost", "glidexnearservice",
+            "glidexremoteservice", "glidexservice", "glidexserviceext", "language_server_windows_x64",
+            "microsoft.servicehub.controller", "mpdefendercoreservice", "mscopilot_proxy", "nvcontainer",
+            "nvdisplay.container", "nvsphelper64", "onedrive.sync.service", "onenotem.exe", "phoneexperiencehost",
+            "rtkauduservice64", "runtimebroker", "saclient", "safeexambrowser.service", "saservice", "sdxhelper",
+            "searchhost", "securityhealthservice", "servicehost", "servicehub.datawarehousehost",
+            "servicehub.host.clr.x64", "servicehub.host.clr.x86", "servicehub.identityhost",
+            "servicehub.roslyncodeanalysisservice", "servicehub.settingshost", "servicehub.threadedwaitdialog",
+            "servicehub.vsdetouredhost", "shellexperiencehost", "shellhost", "sihost", "startmenuexperiencehost",
+            "systemsettings", "textinputhost", "tvnserver", "useroobebroker", "wslservice", "wsnativepushservice",
+            "winword", "powerpnt"
+        }
+        if n in system_blacklist:
+            return False
+
+        return not any(sub in n for sub in blacklist)
+
+    @classmethod
+    def _clean_app_name(cls, display_name: str) -> str:
+        """Removes version numbers, parentheses, and trailing punctuation from application names."""
+        import re
+        name = display_name
+        
+        # Remove parentheses and their common contents
+        name = re.sub(
+            r'\((x64|x86|64-bit|32-bit|64\s*bit|32\s*bit|User|System|Community|Professional|Enterprise|Home|Preview|Update|SDK|Runtime|Compiler)\)',
+            '',
+            name,
+            flags=re.IGNORECASE
+        )
+        
+        # Remove standard version-like numbers
+        name = re.sub(r'\b\d+(\.\d+)+\b', '', name)
+        # Remove single digit or prefixed version ending
+        name = re.sub(r'\b[vV]\d+(\.\d+)*\b', '', name)
+        
+        # Clean up multiple spaces and strip punctuation
+        name = re.sub(r'\s+', ' ', name).strip()
+        name = name.rstrip('-,. ')
+        
+        return name.lower().strip()
+
+    @classmethod
+    def _get_known_apps(cls) -> set:
+        """Loads known apps, scans OS Start Menu shortcuts and Registry for human-friendly names, filters processes, and saves it."""
         import json
         import os
         import psutil
@@ -270,15 +362,18 @@ class KnowledgeGapEngine:
         config_dir = "jarvis/config"
         config_path = os.path.join(config_dir, "known_apps.json")
 
-        # 1. Standard fallback list of known apps
+        # Standard fallback list of known user applications
         default_apps = {
-            "notepad", "chrome", "edge", "firefox", "word", "excel", "vscode",
-            "terminal", "powershell", "cmd", "explorer", "settings", "slack",
-            "spotify", "discord", "teams", "outlook", "calculator", "paint",
-            "brave", "opera", "winword", "powerpnt"
+            "notepad", "chrome", "google chrome", "edge", "microsoft edge", 
+            "firefox", "word", "microsoft word", "excel", "microsoft excel", 
+            "powerpoint", "microsoft powerpoint", "vscode", "visual studio code", 
+            "visual studio", "terminal", "powershell", "cmd", "explorer", 
+            "file explorer", "settings", "slack", "spotify", "discord", "teams", 
+            "outlook", "calculator", "paint", "brave", "brave browser", "opera", 
+            "winword", "powerpnt", "notepad++", "git bash", "ollama", "wsl", "zoom"
         }
 
-        # 2. Load previously persisted list from file
+        # Load previously persisted list from file
         loaded_apps = set()
         if os.path.exists(config_path):
             try:
@@ -287,24 +382,24 @@ class KnowledgeGapEngine:
             except Exception as e:
                 logger.warning(f"[KnowledgeGapEngine] Failed to load known_apps.json: {e}")
 
+        # Filter loaded apps to purge any dirty ones that might have slipped into the file previously
+        loaded_apps = {app for app in loaded_apps if cls._is_valid_user_app(app)}
+
         known = default_apps.union(loaded_apps)
 
-        # 3. Dynamic Windows OS query of running processes
+        # Dynamic Windows OS query of active processes (with filtering)
         new_running = set()
         try:
             for proc in psutil.process_iter(["name"]):
                 name = proc.info["name"]
                 if name:
                     name_clean = name.replace(".exe", "").lower().strip()
-                    # Skip noise and core system services
-                    if (name_clean and 
-                        len(name_clean) > 2 and 
-                        name_clean not in ["svchost", "dllhost", "conhost", "taskhostw", "lsass", "services", "wininit", "system", "idle"]):
+                    if cls._is_valid_user_app(name_clean):
                         new_running.add(name_clean)
         except Exception as e:
             logger.debug(f"[KnowledgeGapEngine] Dynamic process scan failed: {e}")
 
-        # 4. Dynamic Windows API window title enumeration (EnumWindows)
+        # Dynamic Windows API window title processes (with filtering)
         try:
             import win32gui
             import win32process
@@ -316,7 +411,7 @@ class KnowledgeGapEngine:
                             _, pid = win32process.GetWindowThreadProcessId(hwnd)
                             proc = psutil.Process(pid)
                             proc_name = proc.name().replace(".exe", "").lower().strip()
-                            if proc_name and len(proc_name) > 2:
+                            if cls._is_valid_user_app(proc_name):
                                 extra.add(proc_name)
                         except Exception:
                             pass
@@ -325,11 +420,99 @@ class KnowledgeGapEngine:
         except Exception as e:
             logger.debug(f"[KnowledgeGapEngine] Dynamic EnumWindows scan failed: {e}")
 
-        # Combine sets
-        final_set = known.union(new_running)
+        # Dynamic Start Menu & Desktop Shortcut Scanning (Real Human Names)
+        shortcut_names = set()
+        paths_to_scan = []
+        
+        # Public Programs
+        prog_data = os.environ.get("ProgramData", "C:\\ProgramData")
+        paths_to_scan.append(os.path.join(prog_data, "Microsoft\\Windows\\Start Menu\\Programs"))
+        
+        # User Programs
+        app_data = os.environ.get("AppData")
+        if app_data:
+            paths_to_scan.append(os.path.join(app_data, "Microsoft\\Windows\\Start Menu\\Programs"))
+            
+        # Desktops
+        public_desktop = "C:\\Users\\Public\\Desktop"
+        paths_to_scan.append(public_desktop)
+        
+        user_profile = os.environ.get("USERPROFILE")
+        if user_profile:
+            paths_to_scan.append(os.path.join(user_profile, "Desktop"))
 
-        # 5. Persist the newly expanded list back to file
-        if len(final_set) > len(loaded_apps):
+        for path in paths_to_scan:
+            if os.path.exists(path):
+                try:
+                    for root, dirs, files in os.walk(path):
+                        for file in files:
+                            if file.endswith((".lnk", ".url")):
+                                base_name = os.path.splitext(file)[0].lower().strip()
+                                base_name = cls._clean_app_name(base_name)
+                                if base_name and cls._is_valid_user_app(base_name):
+                                    shortcut_names.add(base_name)
+                except Exception as e:
+                    logger.debug(f"[KnowledgeGapEngine] Shortcut folder walk failed for {path}: {e}")
+
+        # Dynamic Windows Registry Queries (for full installed applications inventory)
+        registry_names = set()
+        try:
+            import winreg
+            registry_paths = [
+                (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"),
+                (winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall"),
+                (winreg.HKEY_CURRENT_USER, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall")
+            ]
+            for hive, path in registry_paths:
+                try:
+                    with winreg.OpenKey(hive, path, 0, winreg.KEY_READ | winreg.KEY_WOW64_64KEY) as key:
+                        num_subkeys, _, _ = winreg.QueryInfoKey(key)
+                        for i in range(num_subkeys):
+                            try:
+                                subkey_name = winreg.EnumKey(key, i)
+                                with winreg.OpenKey(key, subkey_name) as subkey:
+                                    try:
+                                        display_name, _ = winreg.QueryValueEx(subkey, "DisplayName")
+                                        if display_name:
+                                            cleaned = cls._clean_app_name(display_name)
+                                            if cleaned and cls._is_valid_user_app(cleaned):
+                                                registry_names.add(cleaned)
+                                    except OSError:
+                                        pass
+                            except OSError:
+                                pass
+                except OSError:
+                    pass
+        except Exception as e:
+            logger.debug(f"[KnowledgeGapEngine] Dynamic Registry scan failed: {e}")
+
+        # Add shorthands dynamically for discovered apps
+        shorthands = set()
+        for app in new_running.union(shortcut_names).union(registry_names):
+            if "google chrome" in app:
+                shorthands.add("chrome")
+            if "visual studio code" in app:
+                shorthands.add("vscode")
+                shorthands.add("visual studio")
+            if "microsoft edge" in app:
+                shorthands.add("edge")
+            if "microsoft word" in app:
+                shorthands.add("word")
+            if "microsoft excel" in app:
+                shorthands.add("excel")
+            if "microsoft powerpoint" in app:
+                shorthands.add("powerpoint")
+            if "file explorer" in app:
+                shorthands.add("explorer")
+
+        # Combine sets
+        final_set = known.union(new_running).union(shortcut_names).union(registry_names).union(shorthands)
+
+        # Filter the final combined set to be absolutely safe
+        final_set = {app for app in final_set if cls._is_valid_user_app(app)}
+
+        # Persist the clean list back to file
+        if final_set != loaded_apps:
             try:
                 os.makedirs(config_dir, exist_ok=True)
                 with open(config_path, "w", encoding="utf-8") as f:
