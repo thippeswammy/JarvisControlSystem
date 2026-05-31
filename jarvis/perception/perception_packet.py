@@ -43,6 +43,25 @@ class ContextSnapshot:
 
 
 @dataclass
+class GoalModel:
+    """
+    Structured representation of a parsed user goal.
+
+    Produced by GoalUnderstandingLayer (LLM Call 1) and consumed by
+    GroundingLayer → KnowledgeGapEngine → CapabilityPlanner.
+    """
+    primary_goal: str = ""                              # Target end-state description
+    intents: list = field(default_factory=list)          # Abstract intent labels (e.g. web_search, content_generation)
+    constraints: list = field(default_factory=list)      # User constraints (e.g. "avoid command-line")
+    target_app: Optional[str] = None                     # Explicit or inferred target application
+    required_knowledge: list = field(default_factory=list)  # Knowledge prerequisites identified
+    confidence: float = 1.0                              # Goal extraction confidence
+    resolved_references: dict = field(default_factory=dict)  # Pronoun/coreference resolutions from grounding
+    knowledge_gaps: list = field(default_factory=list)    # Missing parameters detected by KnowledgeGapEngine
+    is_complete: bool = True                              # False if knowledge gaps require clarification
+
+
+@dataclass
 class PerceptionPacket:
     """
     Fully parsed utterance with intent, entities, and context.
@@ -62,6 +81,7 @@ class PerceptionPacket:
     intent_category: str = "EXECUTION" # e.g. EXECUTION, EDUCATIONAL, HYPOTHETICAL, CAPABILITY, TEXT_ANALYSIS
     intent_confidence: float = 1.0
     entity_confidence: float = 1.0
+    goal_model: Optional[GoalModel] = None  # Structured goal from GoalUnderstandingLayer
 
     @property
     def text(self) -> str:
