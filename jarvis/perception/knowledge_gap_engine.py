@@ -261,13 +261,87 @@ class KnowledgeGapEngine:
         return bool(goal.primary_goal)
 
     @staticmethod
-    def _can_infer_app_from_text(text: str) -> bool:
-        """Check if the target app can be inferred from the goal text."""
-        text_lower = text.lower()
-        known_apps = [
+    def _get_known_apps() -> set:
+        """Loads known apps from config, dynamically queries active OS processes and windows, and saves it."""
+        import json
+        import os
+        import psutil
+
+        config_dir = "jarvis/config"
+        config_path = os.path.join(config_dir, "known_apps.json")
+
+        # 1. Standard fallback list of known apps
+        default_apps = {
             "notepad", "chrome", "edge", "firefox", "word", "excel", "vscode",
             "terminal", "powershell", "cmd", "explorer", "settings", "slack",
             "spotify", "discord", "teams", "outlook", "calculator", "paint",
-            "brave", "opera",
-        ]
+            "brave", "opera", "winword", "powerpnt"
+        }
+
+        # 2. Load previously persisted list from file
+        loaded_apps = set()
+        if os.path.exists(config_path):
+            try:
+                with open(config_path, "r", encoding="utf-8") as f:
+                    loaded_apps = set(json.load(f))
+            except Exception as e:
+                logger.warning(f"[KnowledgeGapEngine] Failed to load known_apps.json: {e}")
+
+        known = default_apps.union(loaded_apps)
+
+        # 3. Dynamic Windows OS query of running processes
+        new_running = set()
+        try:
+            for proc in psutil.process_iter(["name"]):
+                name = proc.info["name"]
+                if name:
+                    name_clean = name.replace(".exe", "").lower().strip()
+                    # Skip noise and core system services
+                    if (name_clean and 
+                        len(name_clean) > 2 and 
+                        name_clean not in ["svchost", "dllhost", "conhost", "taskhostw", "lsass", "services", "wininit", "system", "idle"]):
+                        new_running.add(name_clean)
+        except Exception as e:
+            logger.debug(f"[KnowledgeGapEngine] Dynamic process scan failed: {e}")
+
+        # 4. Dynamic Windows API window title enumeration (EnumWindows)
+        try:
+            import win32gui
+            import win32process
+            def enum_windows_callback(hwnd, extra):
+                if win32gui.IsWindowVisible(hwnd):
+                    title = win32gui.GetWindowText(hwnd) or ""
+                    if title:
+                        try:
+                            _, pid = win32process.GetWindowThreadProcessId(hwnd)
+                            proc = psutil.Process(pid)
+                            proc_name = proc.name().replace(".exe", "").lower().strip()
+                            if proc_name and len(proc_name) > 2:
+                                extra.add(proc_name)
+                        except Exception:
+                            pass
+                return True
+            win32gui.EnumWindows(enum_windows_callback, new_running)
+        except Exception as e:
+            logger.debug(f"[KnowledgeGapEngine] Dynamic EnumWindows scan failed: {e}")
+
+        # Combine sets
+        final_set = known.union(new_running)
+
+        # 5. Persist the newly expanded list back to file
+        if len(final_set) > len(loaded_apps):
+            try:
+                os.makedirs(config_dir, exist_ok=True)
+                with open(config_path, "w", encoding="utf-8") as f:
+                    json.dump(sorted(list(final_set)), f, indent=2)
+            except Exception as e:
+                logger.warning(f"[KnowledgeGapEngine] Failed to save known_apps.json: {e}")
+
+        return final_set
+
+    @classmethod
+    def _can_infer_app_from_text(cls, text: str) -> bool:
+        """Check if the target app can be inferred from the goal text."""
+        text_lower = text.lower()
+        known_apps = cls._get_known_apps()
         return any(app in text_lower for app in known_apps)

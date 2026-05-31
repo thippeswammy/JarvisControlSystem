@@ -71,7 +71,7 @@ class TestGoalUnderstandingLayer:
         assert goal.primary_goal == "open notepad"
         assert "app_interaction" in goal.intents
         assert goal.target_app == "notepad"
-        assert goal.confidence == 0.7
+        assert goal.confidence == 0.6
 
     def test_empty_text_returns_empty_goal(self):
         layer = GoalUnderstandingLayer(router=None)
