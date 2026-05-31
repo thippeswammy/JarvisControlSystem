@@ -1,0 +1,51 @@
+# Windows UI Automation Bridge Configuration
+# Targets high-performance native C++ server built with VS2019 (MSVC v142)
+
+server:
+  # Path to the native C++ UIA server executable
+  binary_path: "native/Microsoft-UI-UIAutomation/src/UIAutomation/x64/Release/UIAutomationServer.exe"
+  
+  # Communication timeout in seconds
+  timeout: 10.0
+  
+  # Retries on JSON-RPC stdio connection failures
+  max_retries: 3
+
+performance:
+  # High-performance UIA Remote Operations toggle
+  use_remote_operations: true
+  
+  # Containment session policy
+  session_containment: true
+
+odr:
+  # Registration settings for On-Demand Registration (ODR)
+  registration_command: "odr.exe list"
+  auto_register: true
+
+capabilities:
+  # Whitelist of fully supported UIA control types for discovery & interaction
+  control_types:
+    - button
+    - edit
+    - check_box
+    - radio_button
+    - combo_box
+    - list
+    - list_item
+    - tree
+    - tree_item
+    - tab
+    - tab_item
+    - data_grid
+    - data_item
+    - document
+    - pane
+    - slider
+    - scroll_bar
+    - menu
+    - menu_item
+    - toolbar
+    - status_bar
+    - spinner
+    - window
