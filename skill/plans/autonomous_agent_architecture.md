@@ -154,10 +154,11 @@ To transition from experimental settings to enterprise-grade sandboxed security,
 For maximum speed, absolute minimal memory footprints, and raw hardware access, implementing the Windows MCP and Shell Automation server in **native C or C++** is a premier architectural choice. This completely bypasses the .NET Common Language Runtime (CLR) or Python interpreters, resulting in a zero-dependency compiled binary.
 
 ### Native Project Structure
-To establish a clean, production-grade project structure, the core native C++ UIAutomation components and reference systems are located directly within the workspace under the `native/` directory:
-*   **[UIAutomation.sln](file:///f:/RunningProjects/JarvisControlSystem/native/UIAutomation.sln)**: The central Visual Studio solution containing the native UI Automation project pipeline.
-*   **[UiaOperationAbstraction](file:///f:/RunningProjects/JarvisControlSystem/native/UiaOperationAbstraction)**: A static C++ library that wraps raw Windows UI Automation, providing a dual-mode interface that seamlessly switches between classic COM and high-performance Remote Operations.
-*   **[Microsoft.UI.UIAutomation](file:///f:/RunningProjects/JarvisControlSystem/native/Microsoft.UI.UIAutomation)**: The native DLL project implementing the WinRT projection mapping and Core Remote Operations serialization pipeline.
+To establish a clean, production-grade project structure, the entire C++ UI Automation pipeline and its underlying projects are maintained natively under the `native/` directory:
+*   **[Microsoft-UI-UIAutomation](file:///f:/RunningProjects/JarvisControlSystem/native/Microsoft-UI-UIAutomation)**: The complete, native UI Automation repository, preserving full Git history, Azure pipelines, and build scripts for long-term compatibility and upstream upgrades.
+*   **[UIAutomation.sln](file:///f:/RunningProjects/JarvisControlSystem/native/Microsoft-UI-UIAutomation/src/UIAutomation/UIAutomation.sln)**: The central Visual Studio solution containing the native UI Automation project pipeline under `src/UIAutomation/`.
+*   **[UiaOperationAbstraction](file:///f:/RunningProjects/JarvisControlSystem/native/Microsoft-UI-UIAutomation/src/UIAutomation/UiaOperationAbstraction)**: A static C++ library that wraps raw Windows UI Automation, providing a dual-mode interface that seamlessly switches between classic COM and high-performance Remote Operations.
+*   **[Microsoft.UI.UIAutomation](file:///f:/RunningProjects/JarvisControlSystem/native/Microsoft-UI-UIAutomation/src/UIAutomation/Microsoft.UI.UIAutomation)**: The native DLL project implementing the WinRT projection mapping and Core Remote Operations serialization pipeline.
 
 ### Low-Level UIA & Shell Automation via C++
 C++ excels in direct Windows OS programming by eliminating wrapping layers:
