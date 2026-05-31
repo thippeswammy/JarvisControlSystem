@@ -6,7 +6,7 @@ This document provides a highly technical, end-to-end architectural evaluation o
 
 ## 1. The Autonomous Closed-Loop Cycle (Goal-Centric & Safety-First)
 
-To achieve true autonomy, Jarvis is designed around an advanced **Goal-Centric, Safety-First Cognitive Loop** that treats tools strictly as dynamic resources to achieve a user goal, rather than as primary mechanisms. The loop decouples the cognitive parsing, knowledge gathering, abstract capability planning, safety validation, execution, and meta-cognition phases into a resilient closed-loop system.
+To achieve true autonomy, Jarvis is designed around an advanced **Goal-Centric, Safety-First Cognitive Loop** that treats tools strictly as dynamic resources to achieve a user goal, rather than as primary mechanisms. The loop decouples the cognitive parsing, reference grounding, knowledge gathering, abstract capability planning, multi-agent validation, safety auditing, execution, and meta-cognition phases into a resilient, five-tier world-state-backed closed loop.
 
 ```mermaid
 graph TD
@@ -19,9 +19,10 @@ graph TD
     Start([User Request]) --> GoalUnderstand[Understand User Goal: LLM Call 1]
     GoalUnderstand --> Grounding[Ground References & Context: Resolve Pronouns]
     
-    %% Perception & Knowledge
+    %% Perception & Knowledge with User Interaction Manager
     Grounding --> GapCheck{Determine Missing Info}
-    GapCheck -->|"Missing Info"| AskClarification([Ask Clarification Questions])
+    GapCheck -->|"Missing / Ambiguous"| UIMPrompt[UserInteractionManager: Clarifications]
+    UIMPrompt -->|"Resolved Input"| Grounding
     GapCheck -->|"Info Sufficient"| KnowledgeAssess[Determine Required & Available Knowledge]
     
     %% Knowledge Gaps & Acquisition
@@ -37,12 +38,27 @@ graph TD
 
     %% Execution & Safety Gate
     SelectStrategy --> ExecAuthFast{Execution Authority Gate}
-    ExecAuthFast -->|"Denied / Unsafe"| HandleSafetyBlock[Handle Safety Block / Recovery]
-    ExecAuthFast -->|"Approved"| Execute[Execute Actions]
+    ExecAuthFast -->|"Denied / High Risk"| UIMConfirm[UserInteractionManager: Confirmations / Approvals]
+    UIMConfirm -->|"Approved"| Execute[Execute Actions]
+    UIMConfirm -->|"Aborted"| HandleSafetyBlock[Handle Safety Block / Recovery]
+    ExecAuthFast -->|"Approved"| Execute
 
-    %% Act & World State Update
-    Execute --> Verify[Verify Invariants]
-    Verify --> UpdateWorldModel[Update World Model State]
+    %% Act & Peer Review Loop
+    subgraph Act & Peer Review
+        direction TB
+        Execute --> SkillBus[SkillBus Dispatcher]
+        Execute --> AgentBus[AgentBus Dispatcher]
+        Execute --> MCPBus[MCP Tool Router]
+        
+        AgentBus -->|"Agent executes"| AgentExec[Agent Local Execution]
+        AgentExec --> PeerReview{Multi-Agent Peer Review Auditor}
+        PeerReview -->|"Hallucination / Error Detected"| Regenerate[Agent Local Execution]
+        PeerReview -->|"Accept / Audit Pass"| VerifyStage[Verify Invariants]
+        SkillBus & MCPBus --> VerifyStage
+    end
+
+    %% Act & World Model Update
+    VerifyStage --> UpdateWorldModel[Update 5-Tier World Model State]
     UpdateWorldModel --> Reflect[Reflect & Temporal Learning]
     
     Reflect --> GoalCheck{Goal Complete?}
@@ -52,16 +68,12 @@ graph TD
     ThinkThink --> GeneratePlans
 
     class GoalUnderstand,Grounding,ThinkThink llmNode;
-    class GapCheck,RealtimeGap,KnowledgeAssess,ExecAuthFast,GoalCheck,Sense,Verify,UpdateWorldModel systemNode;
-    class DynamicAcquisition,CapabilityPlan,Providers,GeneratePlans,EvaluateCost,SelectStrategy,Execute actNode;
-    class Reflect memoryNode;
+    class GapCheck,RealtimeGap,KnowledgeAssess,ExecAuthFast,GoalCheck,Sense,PeerReview,VerifyStage,UpdateWorldModel systemNode;
+    class DynamicAcquisition,CapabilityPlan,Providers,GeneratePlans,EvaluateCost,SelectStrategy,Execute,Regenerate actNode;
+    class Reflect,UIMPrompt,UIMConfirm memoryNode;
 ```
 
 ---
-
-## 2. In-Depth Allocation: Where and When LLMs & Tools are Invoked
-
-To understand the coordination of intelligence and action, the table below maps the precise locations, roles, and structures of all LLM and execution components in the Jarvis Control System.
 
 ## 2. In-Depth Allocation: Where and When LLMs & Tools are Invoked
 
@@ -71,18 +83,20 @@ To understand the coordination of intelligence and action, the table below maps 
 | :--- | :--- | :--- | :--- | :--- |
 | **Understand Goal** | `GoalUnderstandingLayer.understand()` | **Yes (LLM Call 1)** | Raw text query, focused app id. | Structured Goal Model defining target end-state, intents, and user constraints. |
 | **Ground References**| `GroundingLayer.ground()` | No / Optional | Goal Model, focused app active state, recent action/conversational history. | Cleaned Goal Model with resolved pronouns (e.g., "it", "again", "that one") and established spatial/temporal context anchors. |
-| **Determine Missing Info**| `KnowledgeGapEngine.check()` | No / Optional | Grounded Goal Model, user context parameters. | Detects missing required parameters (dates, directories) or low confidence. Triggers user clarification if gaps exist. |
+| **Determine Missing Info**| `KnowledgeGapEngine.check()` | No / Optional | Grounded Goal Model, user context parameters. | Detects missing required parameters (dates, directories) or low confidence. Triggers `UserInteractionManager` clarification if gaps exist. |
 | **Knowledge Assessment**| `ContextFusionLayer.fuse()` | No | Grounded Goal Model, active window details, semantic context. | Resolves required vs. available knowledge. Triggers dynamic memory or browser queries if knowledge gaps are found. |
 | **Capability Planning**| `CapabilityPlanner.resolve_capabilities()` | No | Target Goal Model, context envelope. | Resolves abstract capabilities needed (e.g., `web_access`, `reading`, `summarization`) instead of tool binds. |
 | **Provider Selection**| `CapabilityPlanner.select_providers()` | No | Capability requirements, active provider registry, provider dynamic health scores. | Binds capabilities to the best candidate providers (e.g., Browser Agent vs. local Brave scraper vs. MCP Search Tool). |
 | **Plan Generation** | `ClosedLoopEngine.generate_plans()` | **Yes (LLM Call 2)** | System prompt, Goal Model, Execution Ledger, current `WorldState` diff, dynamic candidate plans. | Candidate execution strategies (action sequences) decoupled from final tool implementations. |
 | **Cost & Risk Eval** | `ExecutionAuthority.evaluate_risk()` | No | Candidate plans, safety policies, dynamic cost-risk algorithms. | Computes costs, safety risk coefficients, and planning confidence values. |
-| **Execution Authority**| `ExecutionAuthority.validate()` | No | Selected strategy (from THINK or Fast Path), safety policies, risk thresholds. | Gateway monitor. Approves, denies, or escalates proposed actions to user based on safety policies. |
+| **Execution Authority**| `ExecutionAuthority.validate()` | No | Selected strategy (from THINK or Fast Path), safety policies, risk thresholds. | Gateway monitor. Approves, denies, or routes high-risk/aborted actions to `UserInteractionManager` for confirmations. |
+| **Interactive Management**| `UserInteractionManager.prompt()` | No | Clarifications, confirmations, safety approval gates, dynamic structured choices. | Session-aware user responses returned to the routing loops (Grounding, Execution, Strategy). |
 | **Skill Execution** | `SkillBus.dispatch()` | No | Target `SkillCall` bound dynamically by the capability registry with validated parameters. | `SkillResult` containing success status, raw stdout, and execution duration. |
-| **Agent Delegation** | `AgentBus.run_single()` | **Yes (LLM Call 3 - Sub-Agent)** | Local task prompt, `AgentLocalMemory` scratchpad, `SharedAgentContext` graph logs. | `AgentResult` containing the sub-agent’s specialized reasoning trace and outputs. Decoupled via `Agent -> Capability -> Tool`. |
+| **Agent Delegation** | `AgentBus.run_single()` | **Yes (LLM Call 3 - Generator)** | Local task prompt, `AgentLocalMemory` scratchpad, `SharedAgentContext` graph logs. | Generates proposed artifacts (e.g. scripts) using decoupled `Agent -> Capability -> Tool` bindings. |
+| **Multi-Agent Audit**  | `CodeReviewAgent.audit()` | **Yes (LLM Call 3 - Critic)** | Proposed agent artifacts, coding syntax conventions, safety policies. | Peer review confidence score. Loops back to generator if errors exist, otherwise accepts output. |
 | **MCP Integration** | `MCPBus.call_tool()` | No | JSON-RPC requests bound to local stdio pipes or remote HTTP SSE streams. | Structured tool-specific data returned from native OS/Browser APIs. |
 | **Verify Invariants** | `StateComparator.diff()` | No | Pre-execution `WorldState` vs. Post-execution `WorldState`. | Semantic difference report evaluating success invariants (e.g., process active, window focused). |
-| **Update World Model**| `WorldStateModeler.update_state()` | No | Verified post-execution state change delta. | Explicitly updates the system's internal **World Model** to reflect the new desktop and environmental state. |
+| **Update World Model**| `WorldStateModeler.update_state()` | No | Verified post-execution state change delta, knowledge extracts, and task state progress. | Explicitly updates the holistic **Five-Tier World Model** (Environment, UI, Knowledge, Task, Agent states). |
 | **Temporal Reflection**| `TemporalMemory.log_event()` | No | Skill execution status, execution durations, active process metadata. | Logs recorded to persistent SQLite database for procedural tracing and macro template compilation. |
 | **Self-Healing** | `RecoveryEngine.diagnose_and_heal()` | **Yes (LLM Call 4 - Option)** | Error string, failed skill signature, focused app ID. | Corrective execution plan (lightweight skill sequence to bypass/fix blocking state) routed to Execution Authority. |
 
@@ -198,7 +212,7 @@ When selecting a programming language to extend the Jarvis Control System's Wind
 
 ---
 
-## 5. Sub-Agent Coordination & Communication Protocols
+## 5. Sub-Agent Coordination, Peer Review, & Communication Protocols
 
 For specialized agents (Coding, Desktop, Browser, Memory) to cooperate smoothly without hardcoded sequences, Jarvis uses the following protocols:
 
@@ -218,9 +232,34 @@ While local actions are isolated, overall context is shared. The [SharedAgentCon
 *   **Cross-Agent Results Transit**: The `AgentBus` enriches the execution context passed to downstream agents via a shared results register (`__pipeline_results__`).
 *   **Episodic Global Log**: Successful completions write descriptive observations to the central memory database (e.g., `shared.observe("Agent Browser-Research completed successfully. Found ROS2 CLI tools.")`).
 
+### 4. Generator-Critic Framework & Multi-Agent Peer Review
+To eliminate command hallucinations and synthesis errors, high-impact sub-agents are dynamically coupled in a **Generator-Critic feedback loop**:
+*   *Generator Agent:* Synthesizes proposed artifacts (e.g., Coding Agent generating python scripts).
+*   *Critic/Auditor Agent:* (e.g., Code Review Agent) Audits proposed artifacts via independent static analysis, policy validation, and syntax constraint parsing.
+*   *Acceptance Gate:* The orchestrator only accepts outputs and passes them downstream once the Auditor Agent assigns a high-confidence passing rating.
+
 ---
 
-## 6. End-to-End Orchestrated Flow: Edge-GitHub-Notepad Case Study
+## 6. The Multi-Layer Structured World Model & Interaction Manager
+
+### Holistic Five-Tier World Model
+To support long-running, resilient autonomy, the system maintains a structured **World Model** comprising five decoupled state layers:
+1.  **Environment State:** Running OS background processes, directory trees, network sockets, active handles, and system configurations.
+2.  **UI State:** Foreground window handles, programmatic UIA tree dumps, focused coordinates, and web page DOM subtrees.
+3.  **Knowledge State:** Semantically indexed factual assets, browser research extracts, variables, memory retrievals, and cached search summaries.
+4.  **Task State:** Active Task DAG schemas, execution stage checkpoints, running progress logs, and task dependencies.
+5.  **Agent State:** Active sub-agent configurations, isolated local memory stacks, dynamic safety metrics, and provider health histories.
+
+### The Session-Aware User Interaction Manager
+The `UserInteractionManager` acts as the dedicated gatekeeper for all interactive communications between Jarvis and the user:
+*   **Clarifications:** Prompting the user to resolve pre-flight or mid-flight knowledge gaps (e.g., missing hotel target dates).
+*   **Confirmations:** Requesting explicit verification before executing high-impact, destructive operations (e.g., "Confirm deleting folder `X`?").
+*   **Approval Requests:** Coordinating checklist interfaces for execution authority overrides.
+*   **Decision Requests:** Providing rich, structured choices when multiple candidates exist (e.g., "Select which GitHub repository to clone").
+
+---
+
+## 7. End-to-End Orchestrated Flow: Edge-GitHub-Notepad Case Study
 
 To see this exact architecture in action, let's trace the detailed flow of a user requesting: *"Search for ROS2 on GitHub, write a python example in Notepad."*
 
