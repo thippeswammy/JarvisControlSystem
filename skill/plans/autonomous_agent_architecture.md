@@ -4,9 +4,9 @@ This document provides a highly technical, end-to-end architectural evaluation o
 
 ---
 
-## 1. The Autonomous Closed-Loop Cycle (Observe → Plan → Act → Verify → Reflect)
+## 1. The Autonomous Closed-Loop Cycle (Goal-Centric & Safety-First)
 
-To achieve true autonomy and eliminate manual intervention or hardcoded timeouts, Jarvis operates in a strict, unmediated **closed-loop feedback cycle**. The loop is driven **entirely by the LLM's unified cognitive capability** via the [ClosedLoopEngine](file:///f:/RunningProjects/JarvisControlSystem/jarvis/brain/closed_loop_engine.py). 
+To achieve true autonomy, Jarvis is designed around a **Goal-Centric, Safety-First Cognitive Loop** that treats tools strictly as resources to achieve a user goal, rather than as primary mechanisms. The loop is driven entirely by the LLM's unified cognitive capability via the [ClosedLoopEngine](file:///f:/RunningProjects/JarvisControlSystem/jarvis/brain/closed_loop_engine.py), executing the core steps of Goal Understanding, Information/Knowledge Determination, Strategy Formulation, Safe Execution, and Verification.
 
 ```mermaid
 graph TD
@@ -16,30 +16,41 @@ graph TD
     classDef actNode fill:#1E293B,stroke:#10B981,stroke-width:2px,color:#E2E8F0;
     classDef memoryNode fill:#1E293B,stroke:#EC4899,stroke-width:2px,color:#E2E8F0;
 
-    Start([User Goal Received]) --> NLU{NLU Component}
+    Start([User Request]) --> GoalUnderstand[Understand User Goal: LLM Call 1]
     
-    %% NLU LLM Call
-    NLU -->|"LLM Call 1: Intent & Entity Parsing"| ContextFuse[Context Fusion Layer]
-    
+    %% Goal Understanding & Knowledge Gaps
+    GoalUnderstand --> GapCheck{Knowledge Gap Engine}
+    GapCheck -->|"Missing Info"| AskClarification([Ask Clarification Questions])
+    GapCheck -->|"Info Sufficient"| ContextFuse[Determine Needed Knowledge: Context Fusion]
+
     %% Context Fusion & Memory Check
-    ContextFuse --> PathCheck{Procedural Memory Path Check}
+    ContextFuse --> PathCheck{Procedural Memory Check}
     PathCheck -->|"Memory HIT: A* Macro"| FastPath[Fast Path Sequencer]
     PathCheck -->|"Memory MISS or Cognitive Route"| ClosedLoop[ClosedLoopEngine Initialization]
+
+    %% Fast Path and Safety Guard
+    FastPath --> ExecAuthFast[Execution Authority: Safety Gate]
+    ExecAuthFast -->|"Approved"| FastExec[Sequential Skill Executor]
+    ExecAuthFast -->|"Safety/Risk Block"| EscalationFast([Ask User / Abort])
+    FastExec --> StopFast([Task Finished])
 
     %% Closed Loop Engine
     subgraph Closed-Loop Autonomous Loop
         direction TB
         Ledger[Execution Ledger Starts EMPTY] --> Sense[SENSE: WorldStateModeler + Win32/UIA]
-        Sense --> Think{THINK: decide_closed_loop}
+        Sense --> Think{THINK: Create Execution Strategy}
         
-        %% THINK LLM Call
-        Think -->|"LLM Call 2: Cognitive Step Planning"| ActionDispatch{Status Evaluator}
+        %% THINK LLM Call (LLM Call 2)
+        Think -->|"LLM Call 2: Decide Strategy"| ActionDispatch{Status Evaluator}
         
         ActionDispatch -->|"status is done"| Complete[Complete & Final Summary]
         ActionDispatch -->|"status is blocked"| Recovery{RecoveryEngine Diagnostics}
-        ActionDispatch -->|"status is in_progress"| Act[ACT: Dispatch Actions]
+        ActionDispatch -->|"status is in_progress"| ExecAuth[Execution Authority: Safety Gate]
         
         %% Action paths
+        ExecAuth -->|"Approved"| Act[ACT: Dispatch Actions]
+        ExecAuth -->|"Safety Block"| Recovery
+        
         Act --> SkillBus[SkillBus Dispatcher]
         Act --> AgentBus[AgentBus Dispatcher]
         Act --> MCPBus[MCP Tool Router]
@@ -53,14 +64,12 @@ graph TD
         Reflect -->|Loop Continues| Sense
     end
 
-    FastPath --> FastExec[Sequential Skill Executor]
-    FastExec --> StopFast([Task Finished])
     Complete --> StopLoop([Goal Accomplished])
-    Recovery -->|"Automated Heal Plan"| Act
+    Recovery -->|"Automated Heal Plan"| ExecAuth
     Recovery -->|"Heal Failed"| Escalation([Ask User])
 
-    class NLU,Think,AgentBus llmNode;
-    class ContextFuse,PathCheck,Sense,ActionDispatch,Verify,Recovery systemNode;
+    class GoalUnderstand,Think,AgentBus llmNode;
+    class ContextFuse,PathCheck,GapCheck,Sense,ActionDispatch,Verify,Recovery,ExecAuth,ExecAuthFast systemNode;
     class FastPath,FastExec,Act,SkillBus,MCPBus actNode;
     class Ledger,Reflect memoryNode;
 ```
@@ -73,17 +82,19 @@ To understand the coordination of intelligence and action, the table below maps 
 
 | Architectural Phase | Component Invoked | LLM Involvement | Input Context & Sources | Output Result & Next Step |
 | :--- | :--- | :--- | :--- | :--- |
-| **Perception & NLU** | `NLU.parse()` | **Yes (LLM Call 1)** | Raw text query, focused app id. | Structured intent, categorized intent tier (e.g., `EXECUTION`, `EDUCATIONAL`), and extracted entities. |
-| **Context Fusion** | `ContextFusionLayer.fuse()` | No | NLU packet, Active window details, prior step state snapshot. | Unified context envelope containing coreference resolutions. |
-| **Fast Path Check** | `ProceduralMemory.recall()` | No | Target goal, focused application ID, start state signature. | Returns `MemoryPath` (A* macro path of pre-learned skills) on hit. Bypasses cognitive loops. |
+| **Understand Goal** | `GoalUnderstandingLayer.understand()` | **Yes (LLM Call 1)** | Raw text query, focused app id. | Structured Goal Model defining target end-state, intents, and user constraints. |
+| **Missing Info Check**| `KnowledgeGapEngine.check()` | No / Optional | Goal Model, user context parameters. | Detects missing required parameters. Halts execution to ask clarification if confidence is low. |
+| **Context Fusion** | `ContextFusionLayer.fuse()` | No | Goal Model, Active window details, prior step state snapshot. | Unified context envelope containing coreference resolutions and relevant background knowledge. |
+| **Fast Path Check** | `ProceduralMemory.recall()` | No | Target goal, focused application ID, start state signature. | Returns `MemoryPath` (A* macro path of pre-learned skills) on hit. Routes directly to Execution Authority. |
 | **Dynamic SENSE** | `WorldStateModeler.get_current_state()` | No | Running background process tables, focused window coordinates. | Unified `WorldState` snapshot (focused HWND, process memory, active tab URL). |
-| **Cognitive THINK** | `ClosedLoopEngine._think()` | **Yes (LLM Call 2)** | System prompt, Goal, empty/running `ExecutionLedger`, current `WorldState` diff, dynamic tool schemas (Skills, Agents, MCP). | A JSON `ClosedLoopDecision` containing `status` (`in_progress`/`done`/`blocked`), `reasoning`, and an array of actions. |
+| **Execution Authority**| `ExecutionAuthority.validate()` | No | Proposed actions (from Strategy or Fast Path), safety policies, risk levels. | Approves, denies, or escalates proposed actions to user based on safety policies. |
+| **Cognitive THINK** | `ClosedLoopEngine._think()` | **Yes (LLM Call 2)** | System prompt, Goal Model, Execution Ledger, current `WorldState` diff, dynamic tool schemas. | A JSON `ClosedLoopDecision` containing `status` (`in_progress`/`done`/`blocked`), `reasoning`, and proposed actions (strategy). |
 | **Skill Execution** | `SkillBus.dispatch()` | No | Target `SkillCall` with validated parameters (e.g., `open_app`, `type_text`). | `SkillResult` containing success status, raw stdout, and execution duration. |
 | **Agent Delegation** | `AgentBus.run_single()` | **Yes (LLM Call 3 - Sub-Agent)** | Local task prompt, `AgentLocalMemory` scratchpad, `SharedAgentContext` graph logs. | `AgentResult` containing the sub-agent’s specialized reasoning trace and outputs. |
 | **MCP Integration** | `MCPBus.call_tool()` | No | JSON-RPC requests bound to local stdio pipes or remote HTTP SSE streams. | Structured tool-specific data returned from native OS/Browser APIs. |
 | **Verify & Compare** | `StateComparator.diff()` | No | Pre-execution `WorldState` vs. Post-execution `WorldState`. | Semantic difference report (e.g., *"Notepad launched, focus changed"*). |
 | **Temporal Reflection**| `TemporalMemory.log_event()` | No | Skill execution status, execution durations, active process metadata. | Logs recorded to persistent SQLite database for procedural tracing. |
-| **Self-Healing** | `RecoveryEngine.diagnose_and_heal()` | **Yes (LLM Call 4 - Option)** | Error string, failed skill signature, focused app ID. | Corrective execution plan (lightweight skill sequence to bypass/fix blocking state). |
+| **Self-Healing** | `RecoveryEngine.diagnose_and_heal()` | **Yes (LLM Call 4 - Option)** | Error string, failed skill signature, focused app ID. | Corrective execution plan (lightweight skill sequence to bypass/fix blocking state) routed to Execution Authority. |
 
 ---
 
@@ -224,56 +235,80 @@ While local actions are isolated, overall context is shared. The [SharedAgentCon
 To see this exact architecture in action, let's trace the detailed flow of a user requesting: *"Search for ROS2 on GitHub, write a python example in Notepad."*
 
 ```
-[User Request] ──► NLU (LLM Call 1: Extract goal) ──► ClosedLoopEngine Init
-                                                              │
-                                                     (Observe: State captured)
-                                                              │
-                                                     [THINK] ◄┴──────────────────────────────┐
-                                                              │                              │
-                                                   (LLM Call 2: Decide next step)            │
-                                                              │                              │
-                                                     [ACT: Dispatch Actions]                 │
-                                                              │                              │
-                         ┌────────────────────────────────────┼──────────────────────────┐   │
-                         ▼ (Tool: open_app)                   ▼ (Tool: call_mcp_tool)    │   │
-                  Launch Edge & Notepad                Queries GitHub ROS2 repos         │   │
-                         │                                    │                          │   │
-                         └──────────────────┬─────────────────┘                          │   │
-                                            ▼                                            │   │
-                                    [VERIFY & COMPARE]                                   │   │
-                             (Compute WorldState delta)                                  │   │
-                                            │                                            │   │
-                                            ▼ (Success / Focus Notepad)                  │   │
-                                         [THINK]                                         │   │
-                              (LLM Call 2: Generate summary)                             │   │
-                                            │                                            │   │
-                                            ▼                                            │   │
-                                    [ACT: type_text] ────────────────────────────────────┘   │
-                                (Native keyboard input)                                      │
-                                            │                                                │
-                                            ▼ (Verify complete)                              │
-                                        [REFLECT]                                            │
-                             (Temporal Log & Macro Saved) ───────────────────────────────────┘
+[User Request] ──► GoalUnderstanding (LLM Call 1: Extract Goal Model) ──► KnowledgeGapEngine (Check sufficient info)
+                                                                                  │
+                                                                           (Info sufficient)
+                                                                                  │
+                                                                       [Determine Needed Knowledge]
+                                                                                  │
+                                                                      [Context & Memory Fusion]
+                                                                                  │
+                                                                         [ClosedLoopEngine Init]
+                                                                                  │
+                                                                          (Sense WorldState)
+                                                                                  │
+                                                                   [THINK: Create Execution Strategy] ◄┴────────────────┐
+                                                                                  │                                     │
+                                                                     (LLM Call 2: Decide Strategy)                      │
+                                                                                  │                                     │
+                                                                     [Execution Authority: Gate]                        │
+                                                                                  │                                     │
+                                                                            (Safe/Approved)                             │
+                                                                                  │                                     │
+                                                                       [ACT: Dispatch Actions]                          │
+                                                                                  │                                     │
+                                                           ┌──────────────────────┴───────────────────────┐             │
+                                                           ▼ (Tool: open_app)                             ▼ (MCP Tool)  │
+                                                    Launch Edge & Notepad                     Queries GitHub            │
+                                                           │                                              │             │
+                                                           └──────────────────────┬───────────────────────┘             │
+                                                                                  ▼                                     │
+                                                                          [VERIFY & COMPARE]                            │
+                                                                                  │                                     │
+                                                                     (State change verified)                            │
+                                                                                  │                                     │
+                                                                                  ▼                                     │
+                                                                      [THINK: Next Strategy Step]                       │
+                                                                     (LLM Call 2: Generate summary)                     │
+                                                                                  │                                     │
+                                                                                  ▼                                     │
+                                                                     [Execution Authority: Gate]                        │
+                                                                                  │                                     │
+                                                                       [ACT: type_text in Notepad] ─────────────────────┘
+                                                                                  │
+                                                                           (Verify complete)
+                                                                                  │
+                                                                                  ▼
+                                                                        [REFLECT & Safe Learn]
 ```
 
-1.  **Cognitive Parsing**:
-    *   The `NLU` parses user text via **LLM Call 1**, identifying intents (`web_search`, `content_generation`, `app_interaction`) and entities.
-2.  **ClosedLoopEngine Initialization**:
+1.  **Goal Formulation & Understanding**:
+    *   The `GoalUnderstandingLayer` parses the user text via **LLM Call 1**, translating it into a structured Goal Model:
+        *   *Primary Goal:* Retrieve ROS2 code example from GitHub and write a clean python script into Notepad.
+        *   *Intents:* `web_search`, `content_generation`, `app_interaction`.
+        *   *Constraints:* Avoid command-line executions; use native Notepad editing.
+2.  **Information & Knowledge Assessment**:
+    *   `KnowledgeGapEngine` scans the Goal Model. Confirms all parameters (GitHub topic, target text editor Notepad) are sufficient. No clarification questions are required.
+    *   `ContextFusionLayer` resolves contextual references and merges current desktop state details into the active goal packet.
+3.  **ClosedLoopEngine Initialization**:
     *   An empty `ExecutionLedger` is instantiated.
-    *   `WorldStateModeler` queries the host OS via Win32. Detects Edge and Notepad are closed.
-3.  **Iteration 1 (Setup Environment)**:
-    *   **LLM Call 2** evaluates the initial state and decides to prepare the workspace.
+    *   `WorldStateModeler` queries the host OS via Win32. Detects that Microsoft Edge and Notepad are currently closed.
+4.  **Iteration 1 (Strategy & Environment Setup)**:
+    *   **THINK**: **LLM Call 2** evaluates the initial state. Rather than focusing on tool selection, it creates an execution strategy: *First, establish an environment with Edge and Notepad active.*
+    *   **Execution Authority**: Validates the proposed launch actions against system safety rules. Since `open_app` for Edge and Notepad are categorized as **SAFE**, they are approved.
     *   **ACT**: Dispatches two parallel `SkillCalls`: `open_app("Edge")` and `open_app("notepad")`.
     *   **VERIFY**: `StateComparator` runs, measuring new window handles. Focus shifts to Notepad.
-4.  **Iteration 2 (Knowledge Acquisition)**:
-    *   **LLM Call 2** sees environment is ready. Selects `call_mcp_tool` targeting a registered Web Browser/Search MCP server.
-    *   **ACT**: The MCP server uses **Windows UIA** to extract the DOM/RootWebArea of Edge, executes a search on GitHub for "ros2 python tutorial", and fetches the contents of a popular repository.
-    *   **VERIFY**: Captured DOM contains raw code blocks.
-5.  **Iteration 3 (Task Execution & Delivery)**:
-    *   **LLM Call 2** consumes the raw code blocks from the `ExecutionLedger`. It synthesizes the final python example.
+5.  **Iteration 2 (Knowledge Acquisition)**:
+    *   **THINK**: **LLM Call 2** sees the workspace environment is ready. Strategy step: *Obtain the required ROS2 knowledge from GitHub.*
+    *   **Execution Authority**: Evaluates call targeting the Web Browser MCP tool. Approved.
+    *   **ACT**: The Browser Agent uses **Windows UIA** to interact with Edge, executes a search on GitHub for "ros2 python tutorial", and fetches the contents of a popular repository.
+    *   **VERIFY**: Captured DOM contains raw python code blocks.
+6.  **Iteration 3 (Task Execution & Safe Delivery)**:
+    *   **THINK**: **LLM Call 2** consumes the raw code blocks from the `ExecutionLedger`. It synthesizes the final python example. Strategy step: *Type the example into the active Notepad editor.*
+    *   **Execution Authority**: Scans the text insertion payload to ensure no shell commands or escape characters are hidden inside the text. Action approved.
     *   **ACT**: Dispatches `type_text` to type the code into Notepad.
     *   **VERIFY**: The system first verifies that Notepad is the active foreground window via `WorldStateModeler.get_current_state().active_window`. It then sends the keyboard inputs.
-6.  **Iteration 4 (Reflection & Completion)**:
+7.  **Iteration 4 (Reflection & Safe Learning)**:
     *   `WorldStateModeler` confirms the text is successfully written to the Notepad editor UI.
     *   **LLM Call 2** sees all tasks completed and yields `status: "done"`.
-    *   **REFLECT**: `TemporalMemory` logs performance metrics, and the `ReactiveLearner` registers a state-aware Macro, enabling the system to execute the same sequence in the future via a fast path, bypassing cognitive LLM steps entirely.
+    *   **REFLECT**: `TemporalMemory` logs performance metrics. Because the end-state matched the Goal Model exactly and no safety or execution failures occurred, the `ReactiveLearner` safely registers a parameterized macro in procedural memory for fast path reuse, gated strictly by the Execution Authority.
