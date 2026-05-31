@@ -43,7 +43,7 @@ This document provides step-by-step instructions for compiling the high-performa
 ### On-Demand Registration (ODR)
 
 The C++ server integrates with Windows ODR for service location:
-- Run `odr.exe list` from a terminal to verify if the server executable registers correctly.
+- Run `odr.exe list` from a terminal to verify if the server executable registers correctly. => it on hold for now.
 - The `uia_config.yaml` file is pre-configured to point to the output path above.
 
 ### Remote Operations & COM Fallback
