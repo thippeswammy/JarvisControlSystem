@@ -127,17 +127,19 @@ The following table defines the allowed prefixes, when to apply them, and recomm
 
 ---
 
-### 3. 🧠 Writing "Deeper", Ultra-Detailed Commits (Required for Major/System Changes)
+### 3. 🧠 Writing "Deeper", Ultra-Detailed Commits (Required for Any Complex Task)
 
-When dealing with deep system-level integrations (e.g., C++ compilations, DLL ABI dependencies, dynamic WinRT registrations, OS-level interop), commits must be **extremely deep, thorough, and highly detailed**. Standard one-line commits are unacceptable for these scopes.
+When dealing with complex implementations, architectural changes, multi-file edits, or system integrations, commits must be **extremely deep, thorough, and highly detailed**. Standard one-line commits are strictly unacceptable for these scopes. 
+
+Every detailed commit message must clearly explain the **Context**, the **Problem**, the **Decision (Why)**, and the **Implementation (What)** using the following principles:
 
 #### Deep Commit Principles:
-1. **Explain the Under-the-Hood Mechanics:** Detail low-level execution mechanisms, system-level API behaviors, DLL search paths, and linker/compilation properties.
-2. **Contrast with Previous Failures:** Document exactly what was failing, why it was failing (e.g., specific exit codes like `0xC0000409`, stack buffer overruns, dynamic class loader issues), and how the new configuration resolves it.
-3. **List Concrete Technical Targets:** Use exact class names, files, library exports, manifest attributes, and environment settings.
-4. **Use Structured, Highly Descriptive Bullet Points:** Break down component-level modifications in the body.
+1. **Explain the Root-Cause and Context ("What was the problem"):** Document the initial limitation, error, regression, or design gap. Specify exact error codes, crash behaviors, architectural constraints, or runtime symptoms.
+2. **Detail the Architectural Rationale ("Why did we do it this way"):** Explain why the chosen approach is robust, what trade-offs were considered, and how it resolves the root problem. Don't just list *what* code changed; focus on the *why*.
+3. **List Concrete Technical Targets:** Reference exact class names, files, APIs, databases, variables, or system settings affected by the changes.
+4. **Use Structured, Highly Descriptive Bullet Points:** Break down component-level modifications in the commit body, giving each logical module its own detailed context.
 
-#### Example of an Ultra-Detailed Commit:
+#### Example 1: C++ Manifest & Rebuild Task (System Level)
 ```text
 chore(native): integrate project configurations and registration-free WinRT manifests
 
@@ -145,6 +147,26 @@ chore(native): integrate project configurations and registration-free WinRT mani
 - Map all `Release|x64` and `Debug|x64` targets for the `UIAutomationServer` project `{B1234567-8C0C-4CFD-AED9-2E979751FDC0}` in the solution configuration.
 - Integrate a custom Registration-Free WinRT side-by-side (SxS) manifest (`UIAutomationServer.exe.manifest`) into the `UIAutomationServer` project directory and workspace root.
 - Update `UIAutomationServer.vcxproj` to configure the MSBuild manifest compiler, using the `<Manifest>` tag's `<AdditionalManifestFiles>` property to merge and embed the custom WinRT manifest directly into `UIAutomationServer.exe` via `/manifestinput`. This ensures that activator entries for `Microsoft.UI.UIAutomation.AutomationRemoteOperation` from `Microsoft.UI.UIAutomation.dll` are dynamically registered in native C++ contexts.
+```
+
+#### Example 2: pywinauto Calculator Demo & Process lifecycle (Automation Level)
+```text
+feat(adapters): add pywinauto calculator demo and native test harness
+
+- Design and implement a highly polished, robust, standalone UI Automation demonstration script (`scratch/uia_calculator_demo.py`) utilizing the stable and preinstalled `pywinauto` UIA backend.
+- Implement process self-cleaning safety logic in the Python script using `taskkill` to actively terminate any stale or hanging Calculator/CalculatorApp processes before beginning automation to avoid window-matching and active-focus collisions.
+- Coordinate programmatic accessibility interactions including direct child control targeting (`child_window(auto_id=...)`), active focus enforcement (`set_focus()`), spatial physical clicking (`click_input()`), extraction of result display strings, and recursive traversing of `HistoryListView` children elements.
+- Ensure graceful teardown fallback chains that safely dismiss panels and flyouts via top-level container click actions if standard controls are obscured or missing.
+- Create a C++ RPC server console test harness (`scratch/test_run.py`) supporting redirected stdio (`stdin=PIPE`, `stdout=PIPE`, `stderr=PIPE`), custom directory context execution (`cwd`), and detailed exit code and log capture to verify direct C++ RPC initialization pipelines.
+```
+
+#### Example 3: Cognitive Decision-Making & Planner (Engine Level)
+```text
+feat(brain): integrate dynamic re-planning loop and recover from tool timeouts
+
+- Add a dynamic verification step inside the core ReAct planning orchestrator to check if the current task execution duration has exceeded the localized 10-second threshold.
+- Refactor the decision loop to catch raw network sockets timeout exceptions during Ollama local inference and trigger a soft fall-back to the pre-allocated backup provider (e.g. OpenAI / Anthropic).
+- Inject historical task-resumption state context into the LLM prompt buffer dynamically during recovery phases, preserving the execution queue and preventing repetitive tool invocation loops.
 ```
 
 ---
