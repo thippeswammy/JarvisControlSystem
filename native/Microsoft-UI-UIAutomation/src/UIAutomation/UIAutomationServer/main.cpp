@@ -11,9 +11,11 @@ using json = nlohmann::json;
 
 int main()
 {
+    std::cout << "Server starting..." << std::endl;
+    std::cout.flush();
     try {
-        // Initialize COM
-        auto initCOM = wil::CoInitializeEx();
+        // Initialize COM as Multi-Threaded Apartment (MTA)
+        auto initCOM = wil::CoInitializeEx(COINIT_MULTITHREADED);
 
         // We need IUIAutomation. Let's create it.
         wil::com_ptr<IUIAutomation> automation;
@@ -23,8 +25,9 @@ int main()
             return 1;
         }
 
-        bool useRemoteOperations = true;
+        bool useRemoteOperations = false;
         UiaOperationAbstraction::Initialize(useRemoteOperations, automation.get());
+        RpcHandlers::Initialize(automation.get());
 
         // Main JSON-RPC loop over stdio
         std::string line;
@@ -45,24 +48,38 @@ int main()
                     response["id"] = request["id"];
                 }
 
-                // Dispatch to handlers
-                if (method == "get_focused_element") {
+                // Dispatch to new generic GetElement/SetElement UIA handlers
+                if (method == "initialize") {
+                    bool remote = params.contains("use_remote_operations") ? params["use_remote_operations"].get<bool>() : false;
+                    UiaOperationAbstraction::Initialize(remote, automation.get());
+                    response["result"] = { {"success", true}, {"remote", remote} };
+                }
+                else if (method == "get_element") {
+                    response["result"] = RpcHandlers::GetElement(params);
+                }
+                else if (method == "set_element") {
+                    response["result"] = RpcHandlers::SetElement(params);
+                }
+                else if (method == "get_focused_element") {
                     response["result"] = RpcHandlers::GetFocusedElement();
                 }
                 else if (method == "find_element") {
                     response["result"] = RpcHandlers::FindElement(params);
                 }
-                else if (method == "get_element_properties") {
-                    response["result"] = RpcHandlers::GetElementProperties(params);
+                else if (method == "find_all_elements") {
+                    response["result"] = RpcHandlers::FindAllElements(params);
                 }
-                else if (method == "get_element_patterns") {
-                    response["result"] = RpcHandlers::GetElementPatterns(params);
+                else if (method == "get_element_tree") {
+                    response["result"] = RpcHandlers::GetElementTree(params);
                 }
-                else if (method == "get_element_rect") {
-                    response["result"] = RpcHandlers::GetElementRect(params);
+                else if (method == "get_element_children") {
+                    response["result"] = RpcHandlers::GetChildrenElements(params);
                 }
-                else if (method == "invoke_element") {
-                    response["result"] = RpcHandlers::InvokeElement(params);
+                else if (method == "get_element_parent") {
+                    response["result"] = RpcHandlers::GetParentElement(params);
+                }
+                else if (method == "get_element_siblings") {
+                    response["result"] = RpcHandlers::GetSiblingElements(params);
                 }
                 else {
                     response["error"] = { {"code", -32601}, {"message", "Method not found"} };
@@ -110,14 +127,14 @@ int main()
 
         UiaOperationAbstraction::Cleanup();
     } catch (const std::exception& e) {
-        FILE* f = fopen("error.log", "w");
-        if (f) {
+        FILE* f = nullptr;
+        if (fopen_s(&f, "error.log", "w") == 0 && f) {
             fprintf(f, "Exception in main: %s\n", e.what());
             fclose(f);
         }
     } catch (...) {
-        FILE* f = fopen("error.log", "w");
-        if (f) {
+        FILE* f = nullptr;
+        if (fopen_s(&f, "error.log", "w") == 0 && f) {
             fprintf(f, "Unknown exception in main\n");
             fclose(f);
         }
