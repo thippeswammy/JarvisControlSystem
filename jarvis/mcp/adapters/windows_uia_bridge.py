@@ -35,7 +35,7 @@ class WindowsUIABridge:
             except Exception as e:
                 logger.error(f"[WindowsUIABridge] Failed to load config: {e}")
         return {
-            "server": {"binary_path": "UIAutomationServer.exe", "timeout": 10.0, "max_retries": 3},
+            "server": {"binary_path": "native/Microsoft-UI-UIAutomation/src/UIAutomation/x64/Release/UIAutomationServer.exe", "timeout": 10.0, "max_retries": 3},
             "performance": {"use_remote_operations": True, "session_containment": True}
         }
 
@@ -51,9 +51,14 @@ class WindowsUIABridge:
 
         binary_path = self.config.get("server", {}).get("binary_path", "UIAutomationServer.exe")
         if not os.path.exists(binary_path):
-            logger.warning(f"[WindowsUIABridge] Native server binary not found at {binary_path}. Operating in Classic Fallback / Mock mode.")
-            self._connected = True
-            return True
+            # Fallback path if we are running in workspace root
+            fallback = "native/Microsoft-UI-UIAutomation/src/UIAutomation/x64/Release/UIAutomationServer.exe"
+            if os.path.exists(fallback):
+                binary_path = fallback
+            else:
+                logger.warning(f"[WindowsUIABridge] Native server binary not found at {binary_path}. Operating in Mock mode.")
+                self._connected = True
+                return True
 
         try:
             self.process = subprocess.Popen(
@@ -65,7 +70,7 @@ class WindowsUIABridge:
                 bufsize=1
             )
             self._connected = True
-            logger.info("[WindowsUIABridge] Connected to native C++ UIA server.")
+            logger.info(f"[WindowsUIABridge] Connected to native C++ UIA server at {binary_path}.")
             return True
         except Exception as e:
             logger.error(f"[WindowsUIABridge] Failed to start native C++ process: {e}")
@@ -127,195 +132,261 @@ class WindowsUIABridge:
 
     def _mock_rpc_response(self, method: str, params: Dict[str, Any]) -> Dict[str, Any]:
         """Provides mock fallback responses for all UIA methods."""
-        # Simple self-contained mock logic
         logger.debug(f"[WindowsUIABridge] Mock RPC: {method}({params})")
         
-        if method == "get_focused_element":
-            return {"element_id": "focused_edit_1", "name": "Text Area", "control_type": "edit"}
+        # Format mock profile
+        mock_profile = {
+            "element_id": params.get("element_id", "mock_elem_1"),
+            "Properties": {
+                "Name": "Mock App Window",
+                "AutomationId": "mockApp1",
+                "ControlType": 50032,
+                "ControlTypeString": "ControlType.Window",
+                "IsEnabled": True,
+                "IsOffscreen": False,
+                "BoundingRectangle": [100, 100, 400, 300]
+            },
+            "Patterns": ["ValuePattern", "InvokePattern"]
+        }
+
+        if method == "get_element" or method == "get_focused_element":
+            return mock_profile
         elif method == "find_element":
-            return {"element_id": f"elem_{params.get('value', '1')}", "name": params.get("value"), "control_type": "button"}
+            mock_profile["element_id"] = f"elem_{params.get('value', '1')}"
+            mock_profile["Properties"]["Name"] = params.get("value", "Find Result")
+            return mock_profile
         elif method == "find_all_elements":
-            return {"elements": [{"element_id": "elem_1", "name": "Item 1", "control_type": "list_item"}]}
+            return {"elements": [mock_profile]}
         elif method == "get_element_tree":
-            return {"tree": {"element_id": "root", "name": "Desktop", "children": []}}
-        elif method == "get_element_properties":
-            return {
-                "element_id": params.get("element_id", "unknown"),
-                "name": "Mock Element",
-                "control_type": "edit",
-                "is_enabled": True,
-                "is_offscreen": False
-            }
-        elif method == "get_element_patterns":
-            return {"patterns": ["ValuePattern", "InvokePattern"]}
-        elif method == "get_element_rect":
-            return {"x": 100, "y": 100, "width": 200, "height": 50}
-        elif method == "get_window_info":
-            return {"title": "Mock App", "hwnd": params.get("hwnd", 1234), "process": "mock.exe"}
-        elif method == "get_grid_data":
-            return {"value": "Mock Cell Content", "row": params.get("row"), "col": params.get("col")}
-        elif method == "get_text_range":
-            return {"text": "Selected range text content."}
+            return {"tree": {
+                "element_id": "root", 
+                "Properties": {"Name": "Desktop", "ControlTypeString": "ControlType.Pane"},
+                "children": []
+            }}
+        elif method == "get_element_children":
+            return {"children": [mock_profile]}
+        elif method == "get_element_parent":
+            return mock_profile
+        elif method == "get_element_siblings":
+            return {"siblings": []}
         
         # Default success envelope for actions
         return {"success": True}
 
+    def _enrich_element(self, res: Dict[str, Any]) -> Dict[str, Any]:
+        """Enriches the unified GetElement profile with flat legacy keys for backwards-compatibility."""
+        if not res:
+            return {}
+        if "Properties" not in res:
+            return res
+            
+        props = res.get("Properties", {})
+        # Support dual naming (snake_case and camelCase UIA native)
+        res["element_id"] = res.get("element_id")
+        res["name"] = props.get("Name", "")
+        res["control_type"] = props.get("ControlTypeString", "ControlType.Unknown")
+        res["uia_id"] = props.get("AutomationId", "")
+        res["is_enabled"] = props.get("IsEnabled", True)
+        res["is_offscreen"] = props.get("IsOffscreen", False)
+        
+        # Dual attribute mappings inside res
+        res["Name"] = props.get("Name", "")
+        res["AutomationId"] = props.get("AutomationId", "")
+        res["ControlType"] = props.get("ControlType", 0)
+        res["ControlTypeString"] = props.get("ControlTypeString", "ControlType.Unknown")
+        res["IsEnabled"] = props.get("IsEnabled", True)
+        res["IsOffscreen"] = props.get("IsOffscreen", False)
+        res["ClassName"] = props.get("ClassName", "")
+        res["HelpText"] = props.get("HelpText", "")
+        res["ProcessId"] = props.get("ProcessId", 0)
+        res["RuntimeId"] = props.get("RuntimeId", [])
+        
+        # Bounding rectangle translation
+        rect = props.get("BoundingRectangle", [0, 0, 0, 0])
+        if len(rect) == 4:
+            res["rect"] = {"x": rect[0], "y": rect[1], "width": rect[2], "height": rect[3]}
+            res["x"] = rect[0]
+            res["y"] = rect[1]
+            res["width"] = rect[2]
+            res["height"] = rect[3]
+            res["BoundingRectangle"] = rect
+            
+        return res
+
     # ── Element Discovery & Tree Operations ─────────────────
+
+    def get_element(self, element_id: str) -> Dict[str, Any]:
+        """Read exhaustive unified UIA element profile."""
+        res = self._call_rpc("get_element", {"element_id": element_id})
+        return self._enrich_element(res)
+
+    def set_element(self, element_id: str, action: str, **kwargs) -> bool:
+        """Perform unified UIA state change or interaction action."""
+        params = {"element_id": element_id, "action": action}
+        params.update(kwargs)
+        res = self._call_rpc("set_element", params)
+        return res.get("success", False)
 
     def find_element(self, by: str, value: str, scope: str = "descendants") -> Dict[str, Any]:
         """Find an element by Name, AutomationID, ClassName, or ControlType."""
-        return self._call_rpc("find_element", {"by": by, "value": value, "scope": scope})
+        res = self._call_rpc("find_element", {"by": by, "value": value, "scope": scope})
+        return self._enrich_element(res)
 
     def find_all_elements(self, by: str, value: str, scope: str = "descendants") -> List[Dict[str, Any]]:
         """Find all matching elements."""
         res = self._call_rpc("find_all_elements", {"by": by, "value": value, "scope": scope})
-        return res.get("elements", [])
+        elements = res.get("elements", [])
+        return [self._enrich_element(e) for e in elements]
 
-    def get_element_tree(self, root: str = "desktop", depth: int = 3, filter_by: Optional[str] = None) -> Dict[str, Any]:
+    def get_element_tree(self, root: str = "desktop", depth: int = 3, view_type: str = "control") -> Dict[str, Any]:
         """Dump the full accessibility tree up to depth."""
-        return self._call_rpc("get_element_tree", {"root": root, "depth": depth, "filter": filter_by})
+        params = {"depth": depth, "view_type": view_type}
+        if root and root != "desktop":
+            params["element_id"] = root
+        res = self._call_rpc("get_element_tree", params)
+        
+        # Recursively enrich elements in tree
+        def enrich_tree_node(node):
+            if not node:
+                return node
+            self._enrich_element(node)
+            if "children" in node:
+                node["children"] = [enrich_tree_node(c) for c in node["children"] if c]
+            return node
+            
+        if "tree" in res:
+            res["tree"] = enrich_tree_node(res["tree"])
+        return res
 
     def get_focused_element(self) -> Dict[str, Any]:
         """Get the currently focused UI element."""
-        return self._call_rpc("get_focused_element")
+        res = self._call_rpc("get_focused_element")
+        return self._enrich_element(res)
 
-    def get_element_parent(self, element_id: str) -> Dict[str, Any]:
+    def get_element_parent(self, element_id: str, view_type: str = "control") -> Dict[str, Any]:
         """Get parent node of the element."""
-        return self._call_rpc("get_element_parent", {"element_id": element_id})
+        res = self._call_rpc("get_element_parent", {"element_id": element_id, "view_type": view_type})
+        return self._enrich_element(res)
 
-    def get_element_children(self, element_id: str) -> List[Dict[str, Any]]:
+    def get_element_children(self, element_id: str, view_type: str = "control") -> List[Dict[str, Any]]:
         """Get children nodes of the element."""
-        res = self._call_rpc("get_element_children", {"element_id": element_id})
-        return res.get("children", [])
+        res = self._call_rpc("get_element_children", {"element_id": element_id, "view_type": view_type})
+        children = res.get("children", [])
+        return [self._enrich_element(c) for c in children]
 
-    def get_element_siblings(self, element_id: str) -> List[Dict[str, Any]]:
+    def get_element_siblings(self, element_id: str, view_type: str = "control") -> List[Dict[str, Any]]:
         """Get sibling nodes of the element."""
-        res = self._call_rpc("get_element_siblings", {"element_id": element_id})
-        return res.get("siblings", [])
+        res = self._call_rpc("get_element_siblings", {"element_id": element_id, "view_type": view_type})
+        siblings = res.get("siblings", [])
+        return [self._enrich_element(s) for s in siblings]
 
     def wait_for_element(self, by: str, value: str, timeout: float = 5.0) -> Dict[str, Any]:
         """Poll until an element matching the criteria appears."""
-        return self._call_rpc("wait_for_element", {"by": by, "value": value, "timeout": timeout})
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            elem = self.find_element(by, value)
+            if elem and "error" not in elem:
+                return elem
+            time.sleep(0.5)
+        return {"error": "Element not found / timed out"}
 
-    # ── Element Interaction (Full Control Type Coverage) ───
+    # ── Element Interaction (Mapped back to Unified SetElement) ───
 
     def click_element(self, element_id: str, click_type: str = "single") -> bool:
-        """Perform single, double, or right click on element."""
-        res = self._call_rpc("click_element", {"element_id": element_id, "click_type": click_type})
-        return res.get("success", False)
+        """Perform click action on element."""
+        return self.set_element(element_id, "invoke")
 
     def type_text(self, element_id: str, text: str) -> bool:
         """Type text into Edit or Document controls."""
-        res = self._call_rpc("type_text", {"element_id": element_id, "text": text})
-        return res.get("success", False)
+        return self.set_element(element_id, "set_value", value=text)
 
     def set_value(self, element_id: str, value: str) -> bool:
-        """Set Value pattern (edit boxes, combo boxes)."""
-        res = self._call_rpc("set_value", {"element_id": element_id, "value": value})
-        return res.get("success", False)
+        """Set Value pattern."""
+        return self.set_element(element_id, "set_value", value=value)
 
     def toggle_element(self, element_id: str) -> bool:
         """Toggle CheckBox or ToggleButton."""
-        res = self._call_rpc("toggle_element", {"element_id": element_id})
-        return res.get("success", False)
+        return self.set_element(element_id, "toggle")
 
     def select_element(self, element_id: str) -> bool:
         """Select TabItem, ListItem, TreeItem."""
-        res = self._call_rpc("select_element", {"element_id": element_id})
-        return res.get("success", False)
+        return self.set_element(element_id, "select")
 
     def expand_element(self, element_id: str) -> bool:
         """Expand TreeItem, MenuItem, ComboBox."""
-        res = self._call_rpc("expand_element", {"element_id": element_id})
-        return res.get("success", False)
+        return self.set_element(element_id, "expand")
 
     def collapse_element(self, element_id: str) -> bool:
         """Collapse expanded elements."""
-        res = self._call_rpc("collapse_element", {"element_id": element_id})
-        return res.get("success", False)
+        return self.set_element(element_id, "collapse")
 
     def scroll_element(self, element_id: str, direction: str, amount: str) -> bool:
         """Scroll ScrollBar, Pane, or List controls."""
-        res = self._call_rpc("scroll_element", {"element_id": element_id, "direction": direction, "amount": amount})
-        return res.get("success", False)
+        # Translate scroll keywords into set_element parameters
+        h_pct = 0.0
+        v_pct = 0.0
+        if "vertical" in direction.lower() or "down" in direction.lower() or "up" in direction.lower():
+            v_pct = 100.0 if "down" in direction.lower() else 0.0
+        else:
+            h_pct = 100.0 if "right" in direction.lower() else 0.0
+        return self.set_element(element_id, "scroll", horizontal_percent=h_pct, vertical_percent=v_pct)
 
     def set_slider_value(self, element_id: str, value: float) -> bool:
         """Set Slider/RangeValue control values."""
-        res = self._call_rpc("set_slider_value", {"element_id": element_id, "value": value})
-        return res.get("success", False)
+        return self.set_element(element_id, "scroll", vertical_percent=value) # slider value mapping fallback
 
     def invoke_element(self, element_id: str) -> bool:
         """Invoke Button, Hyperlink, or MenuItem."""
-        res = self._call_rpc("invoke_element", {"element_id": element_id})
-        return res.get("success", False)
+        return self.set_element(element_id, "invoke")
 
     def set_scroll_position(self, element_id: str, h_percent: float, v_percent: float) -> bool:
         """Precise horizontal and vertical scroll positioning."""
-        res = self._call_rpc("set_scroll_position", {"element_id": element_id, "h_percent": h_percent, "v_percent": v_percent})
-        return res.get("success", False)
+        return self.set_element(element_id, "scroll", horizontal_percent=h_percent, vertical_percent=v_percent)
 
-    # ── Window Management ───────────────────────────────────
-
-    def get_window_info(self, hwnd: int) -> Dict[str, Any]:
-        """Get window title, bounds, process mapping and state."""
-        return self._call_rpc("get_window_info", {"hwnd": hwnd})
-
-    def set_window_state(self, hwnd: int, state: str) -> bool:
-        """Minimize, maximize, restore, or close window."""
-        res = self._call_rpc("set_window_state", {"hwnd": hwnd, "state": state})
-        return res.get("success", False)
-
-    def move_window(self, hwnd: int, x: int, y: int) -> bool:
-        """Reposition window on screen."""
-        res = self._call_rpc("move_window", {"hwnd": hwnd, "x": x, "y": y})
-        return res.get("success", False)
-
-    def resize_window(self, hwnd: int, width: int, height: int) -> bool:
-        """Resize window bounds."""
-        res = self._call_rpc("resize_window", {"hwnd": hwnd, "width": width, "height": height})
-        return res.get("success", False)
-
-    def set_foreground_window(self, hwnd: int) -> bool:
-        """Bring window to front and activate."""
-        res = self._call_rpc("set_foreground_window", {"hwnd": hwnd})
-        return res.get("success", False)
-
-    # ── Element Properties ──────────────────────────────────
+    # ── Legacy & Compatibility Getters ────────────────────
 
     def get_element_properties(self, element_id: str) -> Dict[str, Any]:
         """Read standard UIA properties."""
-        return self._call_rpc("get_element_properties", {"element_id": element_id})
+        elem = self.get_element(element_id)
+        return elem.get("Properties", {})
 
     def get_element_patterns(self, element_id: str) -> List[str]:
         """Get list of patterns supported by element."""
-        res = self._call_rpc("get_element_patterns", {"element_id": element_id})
-        return res.get("patterns", [])
+        elem = self.get_element(element_id)
+        return elem.get("Patterns", [])
 
     def get_element_rect(self, element_id: str) -> Dict[str, float]:
         """Read bounding rectangle for spatial reasoning."""
-        return self._call_rpc("get_element_rect", {"element_id": element_id})
-
-    # ── Advanced Patterns ───────────────────────────────────
+        elem = self.get_element(element_id)
+        return elem.get("rect", {"x": 0, "y": 0, "width": 0, "height": 0})
+        
+    def get_window_info(self, hwnd: int) -> Dict[str, Any]:
+        """Get window details."""
+        elem = self.find_element("NativeWindowHandle", str(hwnd))
+        if elem and "Properties" in elem:
+            return {
+                "title": elem.get("name"),
+                "hwnd": hwnd,
+                "process": elem.get("Properties", {}).get("ProcessId", 0)
+            }
+        return {"title": "Unknown Window", "hwnd": hwnd, "process": 0}
 
     def get_grid_data(self, element_id: str, row: int, col: int) -> Dict[str, Any]:
-        """Read DataGrid or Table cell content."""
-        return self._call_rpc("get_grid_data", {"element_id": element_id, "row": row, "col": col})
+        """Read DataGrid or Table cell content mock."""
+        return {"value": "Grid pattern data not implemented natively"}
 
     def get_text_range(self, element_id: str, start: int, end: int) -> str:
-        """Read text from Document or Text controls."""
-        res = self._call_rpc("get_text_range", {"element_id": element_id, "start": start, "end": end})
-        return res.get("text", "")
+        """Read text from Document or Text controls mock."""
+        return "Text range read not implemented natively"
 
     def get_selection(self, element_id: str) -> List[Dict[str, Any]]:
-        """Get currently selected items in a Selection pattern container."""
-        res = self._call_rpc("get_selection", {"element_id": element_id})
-        return res.get("selection", [])
+        """Get selection list mock."""
+        return []
 
     def drag_element(self, from_id: str, to_id: str) -> bool:
-        """Drag and drop via Transform pattern."""
-        res = self._call_rpc("drag_element", {"from_id": from_id, "to_id": to_id})
-        return res.get("success", False)
+        """Drag and drop mock."""
+        return False
 
     def get_annotation(self, element_id: str) -> Dict[str, Any]:
         """Read Annotation pattern metadata."""
-        return self._call_rpc("get_annotation", {"element_id": element_id})
+        return {}

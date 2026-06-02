@@ -82,7 +82,6 @@ WHILE (uncommitted_files_exist):
         c. Otherwise, identify ONE logical grouping from the remaining files (e.g., Configs, Core Logic, or Tests).
     3. DECIDE: Synthesize a Conventional Commit message for this specific group.
     4. ACT: `git add <group_paths>` and `git commit -m "<message>"` (using multiple `-m` flags for body and footer if needed).
-
 ```
 
 ---
@@ -91,19 +90,6 @@ WHILE (uncommitted_files_exist):
 
 Every commit message produced by this skill must follow the **Conventional Commits** specification. This ensures that repository history is highly structured, readable, and machine-parsable for changelog generation.
 
-
-| Prefix | Type | What it is | Why we use it | When to apply it |
-| --- | --- | --- | --- | --- |
-| **`feat`** | Feature | Addition of a new user-facing feature or code capability. | Clarifies that new functionality is introduced to the application or system. | When adding a new module, endpoint, API, or agent skill. |
-| **`fix`** | Bug Fix | Resolution of a functional bug, error, crash, or logic gap. | Flags bug fixes for patch releases and confirms a regression has been solved. | When correcting logic errors, fixing failing tests, or resolving runtime warnings. |
-| **`docs`** | Documentation | Edits to documentation, README files, or code docstrings. | Helps developers and users understand system architecture without altering code execution. | When writing user guides, updating APIs inline documentation, or writing SKILL.md files. |
-| **`test`** | Tests | Addition, modification, or correction of unit, integration, or E2E tests. | Assures that test coverage is maintained and updated alongside feature changes. | When adding test scripts, mocking clients, or expanding test parameter suites. |
-| **`refactor`** | Refactoring | Code modification that improves readability/structure without changing behavior. | Improves code maintenance, quality, and performance without introducing bugs. | When restructuring functions, applying design patterns, or renaming internal variables. |
-| **`style`** | Formatting | Changes that do not affect code logic (whitespace, formatting, semicolons). | Enforces uniform linting rules and style conventions across the development team. | When running code formatters (e.g., Black, Prettier) or fixing indentation. |
-| **`perf`** | Performance | Code modification specifically aimed at optimizing speed or resource usage. | Improves runtime efficiency, latency, or memory consumption. | When adding caches, optimizing database queries, or refactoring algorithms. |
-| **`chore`** | Maintenance | Operations on build scripts, dependencies, build files, or tools. | Separates utility tasks from real functional codebase changes. | When modifying package.json, requirements.txt, .gitignore, or build pipelines. |
-| **`ci`** | CI/CD | Changes to continuous integration configurations and scripts. | Keeps deployment pipelines and testing workflows functional and updated. | When modifying GitHub Actions, GitLab pipelines, or build environment configurations. |
-=======
 ### 1. Standard Commit Structure
 ```text
 <type>(<scope>): <subject>
@@ -129,19 +115,63 @@ The following table defines the allowed prefixes, when to apply them, and recomm
 
 | Prefix | Type | When to apply it | Recommended Scopes | Concrete Example |
 | :--- | :--- | :--- | :--- | :--- |
-| **`feat`** | Feature | Introducing a new functional capability or user-facing feature. | `brain`, `gateway`, `skills`, `cli`, `agent` | `feat(brain): implement asynchronous ReAct closed-loop engine` |
-| **`fix`** | Bug Fix | Correcting functional errors, syntax bugs, logic mismatches, or crashes. | `memory`, `skills`, `nlu`, `safety`, `gateway` | `fix(skills): support volume and brightness parameter fallbacks` |
+| **`feat`** | Feature | Introducing a new functional capability or user-facing feature. | `brain`, `gateway`, `skills`, `cli`, `agent`, `adapters` | `feat(brain): implement asynchronous ReAct closed-loop engine` |
+| **`fix`** | Bug Fix | Correcting functional errors, syntax bugs, logic mismatches, or crashes. | `memory`, `skills`, `nlu`, `safety`, `gateway` | `fix(skills): support fallback brightness and volume parameter keys` |
 | **`refactor`** | Refactor | Modifying code structure or readability without changing logic/behavior. | `brain`, `utils`, `core`, `adapters` | `refactor(brain): clean up closed-loop state representation` |
 | **`test`** | Tests | Adding new tests, upgrading mock architectures, or fixing existing assertions. | `integration`, `unit`, `regression`, `live` | `test(integration): run gateway tests against real Ollama LLM` |
 | **`docs`** | Docs | Modifying markdown files, developer documentation, READMEs, or API docstrings. | `plans`, `skills`, `readme`, `api` | `docs(readme): add troubleshooting section for Ollama timeouts` |
 | **`perf`** | Performance | Logic changes specifically targetting latency, memory usage, or query speed. | `memory`, `caching`, `db`, `nlu` | `perf(memory): warm trigger embeddings in background thread` |
-| **`chore`** | Maintenance | Operations on dependencies, package files, configs, or ignored files. | `config`, `deps`, `git` | `chore(git): ignore local binary files and database backups` |
+| **`chore`** | Maintenance | Operations on dependencies, package files, configs, or ignored files. | `config`, `deps`, `git`, `native` | `chore(git): ignore local binary files and database backups` |
 | **`style`** | Style | Format changes that don't affect code meaning (whitespace, lint errors). | `lint`, `format`, `semicolons` | `style(lint): resolve black formatting warnings in app_skill` |
 | **`ci`** | CI/CD | Modifying automated build, test execution, or deployment pipelines. | `actions`, `pytest-runner` | `ci(actions): run integration suite on windows-latest runner` |
 
 ---
 
-### 3. Golden Rules of High-Quality Commits
+### 3. 🧠 Writing "Deeper", Ultra-Detailed Commits (Required for Any Complex Task)
+
+When dealing with complex implementations, architectural changes, multi-file edits, or system integrations, commits must be **extremely deep, thorough, and highly detailed**. Standard one-line commits are strictly unacceptable for these scopes. 
+
+Every detailed commit message must clearly explain the **Context**, the **Problem**, the **Decision (Why)**, and the **Implementation (What)** using the following principles:
+
+#### Deep Commit Principles:
+1. **Explain the Root-Cause and Context ("What was the problem"):** Document the initial limitation, error, regression, or design gap. Specify exact error codes, crash behaviors, architectural constraints, or runtime symptoms.
+2. **Detail the Architectural Rationale ("Why did we do it this way"):** Explain why the chosen approach is robust, what trade-offs were considered, and how it resolves the root problem. Don't just list *what* code changed; focus on the *why*.
+3. **List Concrete Technical Targets:** Reference exact class names, files, APIs, databases, variables, or system settings affected by the changes.
+4. **Use Structured, Highly Descriptive Bullet Points:** Break down component-level modifications in the commit body, giving each logical module its own detailed context.
+
+#### Example 1: C++ Manifest & Rebuild Task (System Level)
+```text
+chore(native): integrate project configurations and registration-free WinRT manifests
+
+- Resolve a critical build issue in `UIAutomation.sln` where the `UIAutomationServer` C++ project was missing configuration mapping targets inside the `ProjectConfigurationPlatforms` section. This caused MSBuild to skip compilation of the server, leaving a stale ABI-mismatched executable from May 31st that triggered fail-fast crashes (`0xC0000409`) at runtime.
+- Map all `Release|x64` and `Debug|x64` targets for the `UIAutomationServer` project `{B1234567-8C0C-4CFD-AED9-2E979751FDC0}` in the solution configuration.
+- Integrate a custom Registration-Free WinRT side-by-side (SxS) manifest (`UIAutomationServer.exe.manifest`) into the `UIAutomationServer` project directory and workspace root.
+- Update `UIAutomationServer.vcxproj` to configure the MSBuild manifest compiler, using the `<Manifest>` tag's `<AdditionalManifestFiles>` property to merge and embed the custom WinRT manifest directly into `UIAutomationServer.exe` via `/manifestinput`. This ensures that activator entries for `Microsoft.UI.UIAutomation.AutomationRemoteOperation` from `Microsoft.UI.UIAutomation.dll` are dynamically registered in native C++ contexts.
+```
+
+#### Example 2: pywinauto Calculator Demo & Process lifecycle (Automation Level)
+```text
+feat(adapters): add pywinauto calculator demo and native test harness
+
+- Design and implement a highly polished, robust, standalone UI Automation demonstration script (`scratch/uia_calculator_demo.py`) utilizing the stable and preinstalled `pywinauto` UIA backend.
+- Implement process self-cleaning safety logic in the Python script using `taskkill` to actively terminate any stale or hanging Calculator/CalculatorApp processes before beginning automation to avoid window-matching and active-focus collisions.
+- Coordinate programmatic accessibility interactions including direct child control targeting (`child_window(auto_id=...)`), active focus enforcement (`set_focus()`), spatial physical clicking (`click_input()`), extraction of result display strings, and recursive traversing of `HistoryListView` children elements.
+- Ensure graceful teardown fallback chains that safely dismiss panels and flyouts via top-level container click actions if standard controls are obscured or missing.
+- Create a C++ RPC server console test harness (`scratch/test_run.py`) supporting redirected stdio (`stdin=PIPE`, `stdout=PIPE`, `stderr=PIPE`), custom directory context execution (`cwd`), and detailed exit code and log capture to verify direct C++ RPC initialization pipelines.
+```
+
+#### Example 3: Cognitive Decision-Making & Planner (Engine Level)
+```text
+feat(brain): integrate dynamic re-planning loop and recover from tool timeouts
+
+- Add a dynamic verification step inside the core ReAct planning orchestrator to check if the current task execution duration has exceeded the localized 10-second threshold.
+- Refactor the decision loop to catch raw network sockets timeout exceptions during Ollama local inference and trigger a soft fall-back to the pre-allocated backup provider (e.g. OpenAI / Anthropic).
+- Inject historical task-resumption state context into the LLM prompt buffer dynamically during recovery phases, preserving the execution queue and preventing repetitive tool invocation loops.
+```
+
+---
+
+### 4. Golden Rules of High-Quality Commits
 
 1. **Focus on "Why", Not "What":** The git diff shows *what* changed. Your commit message body should explain *why* it was changed, what problem it solves, and what side effects it prevents.
 2. **Never Use Lazy Messages:** Avoid messages like `fix bug`, `cleanup`, `updates`, or `working on files`. Be specific.
