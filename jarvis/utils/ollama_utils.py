@@ -48,7 +48,11 @@ def ensure_ollama_running(url: str = "http://localhost:11434"):
                 stderr=subprocess.DEVNULL,
                 creationflags=subprocess.CREATE_NO_WINDOW if hasattr(subprocess, 'CREATE_NO_WINDOW') else 0
             )
-            return
+            # Give it a short moment to start/check
+            time.sleep(0.5)
+            if is_ollama_running(url):
+                return
+            logger.debug("[OllamaUtils] Native helper ran but Ollama not yet running. Trying Python fallback.")
         except Exception as e:
             logger.debug(f"[OllamaUtils] Native helper failed: {e}. Falling back to Python.")
 
@@ -64,11 +68,19 @@ def ensure_ollama_running(url: str = "http://localhost:11434"):
     def _start_service():
         logger.info("[OllamaUtils] Ollama not found. Attempting to start 'ollama serve' in background...")
         try:
+            cmd = "ollama"
+            if os.name == "nt":
+                import shutil
+                if not shutil.which("ollama"):
+                    local_appdata = os.environ.get("LOCALAPPDATA")
+                    if local_appdata:
+                        std_path = Path(local_appdata) / "Programs" / "Ollama" / "ollama.exe"
+                        if std_path.exists():
+                            cmd = str(std_path)
+            
             # Start ollama serve. Use Popen so it doesn't block.
-            # On Windows, this will start the server. 
-            # If the user has Ollama installed, this command should be in PATH.
             subprocess.Popen(
-                ["ollama", "serve"],
+                [cmd, "serve"],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 creationflags=subprocess.CREATE_NO_WINDOW if hasattr(subprocess, 'CREATE_NO_WINDOW') else 0

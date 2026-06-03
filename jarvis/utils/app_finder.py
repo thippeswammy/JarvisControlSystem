@@ -53,6 +53,12 @@ class AppFinder:
             variations.append("powerpnt.exe")
         elif app_clean == "settings":
             return "ms-settings:"
+        elif app_clean in ["display settings", "display"]:
+            return "ms-settings:display"
+        elif app_clean in ["sound settings", "sound"]:
+            return "ms-settings:sound"
+        elif app_clean == "calculator":
+            variations.append("calc.exe")
 
         # 1. Try Registry App Paths
         for var in variations:
