@@ -1,7 +1,13 @@
 # MCP Server Registry
 # Add your MCP servers here. Jarvis discovers them at boot.
 # Transport: 'stdio' (subprocess) or 'http' (HTTP/SSE endpoint)
-mcp_servers: []
+mcp_servers:
+  - name: ui_windows
+    transport: stdio
+    command: ["python", "jarvis/mcp/servers/ui_windows/mcp_ui_windows_server.py"]
+    description: >
+      Windows desktop UI automation — capture full DOM, click, type, read any
+      element in any application. Provides structured element context for LLM.
   # Example stdio server:
   # - name: filesystem
   #   transport: stdio

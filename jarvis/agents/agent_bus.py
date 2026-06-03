@@ -308,6 +308,12 @@ class AgentBus:
         except ImportError as exc:
             logger.debug(f"[AgentBus] Builtin BraveAgent not found/imported: {exc}")
 
+        try:
+            from jarvis.agents.builtin.ui_windows_agent import UIWindowsAgent
+            self.register(UIWindowsAgent())
+        except ImportError as exc:
+            logger.debug(f"[AgentBus] Builtin UIWindowsAgent not found/imported: {exc}")
+
     def _discover_from_yaml(self, config_path: Optional[str]) -> int:
         """Load agents listed in config/agents.yaml."""
         if yaml is None:
