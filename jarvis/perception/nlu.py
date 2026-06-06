@@ -56,7 +56,8 @@ class NLU:
             "- 'intent_category' must accurately reflect if the user wants to execute a command (EXECUTION) vs asking how to do something (EDUCATIONAL), asking a hypothetical 'what if' (HYPOTHETICAL), or asking about your features (CAPABILITY).\n"
             "- If the utterance is not execution (e.g. hypothetical), set intent to 'chat_reply'.\n"
             "- If it contains multiple commands (like 'open notepad and type hello'), set compound to true and fill sub_commands array with the individual commands following the same format.\n"
-            "- Prioritize quoted strings when extracting entities."
+            "- Prioritize quoted strings when extracting entities.\n"
+            "- CRITICAL: If the command is context-dependent, relative, contains pronouns ('it', 'this', 'them', 'this window'), refers to a sub-feature (like 'open history' or 'show logs'), or is ambiguous given the App Context, set the intent to 'llm_route' (with category 'EXECUTION') to route it to the cognitive planner for dynamic resolution."
         )
 
         try:

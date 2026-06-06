@@ -28,7 +28,7 @@ class SemanticEncoder:
         self,
         api_url: str = "http://localhost:11434/api/embeddings",
         model: str = "nomic-embed-text",
-        timeout: float = 30.0
+        timeout: float = 60.0
     ):
         self.api_url = api_url
         self.model = model

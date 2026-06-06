@@ -244,7 +244,7 @@ class MemoryManager:
                     data=json.dumps(preload_payload).encode("utf-8"),
                     headers={"Content-Type": "application/json"}
                 )
-                with urllib.request.urlopen(req, timeout=30.0) as resp:
+                with urllib.request.urlopen(req, timeout=60.0) as resp:
                     resp.read()
                 logger.info(f"[MemoryManager] Model '{self._encoder.model}' loaded successfully.")
             except Exception as e:

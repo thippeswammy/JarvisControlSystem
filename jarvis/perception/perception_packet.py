@@ -88,6 +88,10 @@ class PerceptionPacket:
         return self.utterance.text
 
     @property
+    def sub_location(self) -> str:
+        return self.entities.get("sub_location", "")
+
+    @property
     def needs_confirmation(self) -> bool:
         """True if voice confidence is too low to act without confirming."""
         return self.utterance.source == "voice" and self.utterance.confidence < 0.70
