@@ -13,11 +13,14 @@ class TestWindowsUIABridge:
 
     @pytest.fixture
     def mock_env(self):
-        # Force mock mode
+        # Force mock mode and restore original value on cleanup
+        old_val = os.environ.get("JARVIS_ALLOW_MOCK")
         os.environ["JARVIS_ALLOW_MOCK"] = "true"
         yield
         # Cleanup
-        if "JARVIS_ALLOW_MOCK" in os.environ:
+        if old_val is not None:
+            os.environ["JARVIS_ALLOW_MOCK"] = old_val
+        elif "JARVIS_ALLOW_MOCK" in os.environ:
             del os.environ["JARVIS_ALLOW_MOCK"]
 
     def test_bridge_connect_and_disconnect(self, mock_env):

@@ -33,6 +33,10 @@ class TestLLMRouterFailover(unittest.TestCase):
 
     def setUp(self):
         """Create a router with mocked backends. Disable health monitor thread."""
+        import os
+        self._old_allow_mock = os.environ.get("JARVIS_ALLOW_MOCK")
+        os.environ["JARVIS_ALLOW_MOCK"] = "true"
+
         self.primary = _make_backend(
             "local/ollama",
             healthy=True,
@@ -59,6 +63,13 @@ class TestLLMRouterFailover(unittest.TestCase):
                 "tunneled/qwen": True,
                 self.emergency.name: True,
             }
+
+    def tearDown(self):
+        import os
+        if self._old_allow_mock is not None:
+            os.environ["JARVIS_ALLOW_MOCK"] = self._old_allow_mock
+        elif "JARVIS_ALLOW_MOCK" in os.environ:
+            del os.environ["JARVIS_ALLOW_MOCK"]
 
     def test_primary_used_when_healthy(self):
         """Primary backend is called when healthy."""
