@@ -234,12 +234,14 @@ class Orchestrator:
         if is_conversational and packet.intent_category == "TEXT_ANALYSIS":
             packet.safe_mode = True
 
-        is_fast_path = (
-            mem_path is not None 
-            or (not packet.compound and self._bus.is_fast_path_eligible(packet.intent) and (packet.intent_category == "EXECUTION" or packet.intent == "chat_reply"))
-            or getattr(packet, "safe_mode", False)
-            or is_conversational
-        )
+        # is_fast_path = (
+        #     mem_path is not None 
+        #     or (not packet.compound and self._bus.is_fast_path_eligible(packet.intent) and (packet.intent_category == "EXECUTION" or packet.intent == "chat_reply"))
+        #     or getattr(packet, "safe_mode", False)
+        #     or is_conversational
+        # )
+        # Force all command execution through Closed-Loop LLM reasoning (fast-path disabled)
+        is_fast_path = False
 
         if is_fast_path:
             if mem_path:

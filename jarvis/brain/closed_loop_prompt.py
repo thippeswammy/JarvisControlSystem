@@ -32,7 +32,7 @@ def build_closed_loop_system_prompt() -> str:
         '   {"status": "done", "reasoning": "why the goal is complete", "summary": "what was accomplished"}\n'
         "\n"
         '3. Blocked (cannot proceed without help):\n'
-        '   {"status": "blocked", "reasoning": "why blocked", "block_reason": "description of the issue"}\n'
+        '   {"status": "blocked", "reasoning": "why blocked", "block_reason": "description of the issue", "question": "specific context-aware clarification question to ask the user"}\n'
         "\n"
         "CRITICAL RULES:\n"
         "1. Return ONLY valid JSON. No markdown, no explanations outside the JSON.\n"
@@ -43,6 +43,7 @@ def build_closed_loop_system_prompt() -> str:
         "6. Only use skills listed in [Available Skills].\n"
         "7. When the user's request involves content generation AND a target app, use 'type_text' to deliver content.\n"
         "8. For 'chat_reply' responses (conversational answers with no desktop action), use status='done' with the message in 'summary'.\n"
+        "9. When blocked or needing clarification, write a direct, context-aware clarification question in the 'question' field so that Jarvis can ask the user directly.\n"
     )
 
 

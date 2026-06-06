@@ -37,7 +37,10 @@ SKIP_VERIFY_SKILLS = {
     "type_text", "press_key", "search_web", "search_windows",
     "session_activate", "session_deactivate", "system_status",
     "ask_user", "set_volume", "set_brightness", "power_action",
-    "scroll_page", "chat_reply"
+    "scroll_page", "chat_reply",
+    # Add new read-only / non-mutating skills
+    "get_active_window_title", "verify_element_exists", "extract_browser_dom_tree",
+    "log_analysis", "greet_user"
 }
 
 _DEFAULT_SETTLE_MS = 600   # ms to wait after action before re-harvesting

@@ -122,6 +122,9 @@ class AgentBus:
         """
         Load built-in and external agents from configuration and directory scanning.
         """
+        if self._discovered:
+            logger.debug("[AgentBus] Agents already discovered. Skipping.")
+            return len(self._registry)
         # 1. Discover built-in agents
         self._discover_builtins()
 
