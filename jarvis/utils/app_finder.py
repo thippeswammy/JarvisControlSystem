@@ -132,8 +132,11 @@ class AppFinder:
                     for path in Path(d).glob(pattern):
                         if path.is_file():
                             p_str = str(path.resolve())
-                            logger.info(f"[AppFinder] Discovered {app_name} via dir scan: {p_str}")
-                            return p_str
+                            pathext = os.environ.get("PATHEXT", ".EXE;.BAT;.CMD;.VBS;.JS;.WSF").lower().split(";")
+                            ext = os.path.splitext(p_str)[1].lower()
+                            if ext in pathext or ext == ".lnk":
+                                logger.info(f"[AppFinder] Discovered {app_name} via dir scan: {p_str}")
+                                return p_str
 
         logger.warning(f"[AppFinder] Could not discover path for application: {app_name}")
         return None

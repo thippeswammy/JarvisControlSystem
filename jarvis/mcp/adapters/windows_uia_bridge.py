@@ -149,14 +149,28 @@ class WindowsUIABridge:
             "Patterns": ["ValuePattern", "InvokePattern"]
         }
 
-        if method == "get_element" or method == "get_focused_element":
+        if method == "get_focused_element":
+            profile = mock_profile.copy()
+            profile["element_id"] = "focused_edit_1"
+            profile["Properties"] = mock_profile["Properties"].copy()
+            profile["Properties"]["ControlTypeString"] = "edit"
+            return profile
+        elif method == "get_element":
             return mock_profile
         elif method == "find_element":
-            mock_profile["element_id"] = f"elem_{params.get('value', '1')}"
-            mock_profile["Properties"]["Name"] = params.get("value", "Find Result")
-            return mock_profile
+            profile = mock_profile.copy()
+            profile["element_id"] = f"elem_{params.get('value', '1')}"
+            profile["Properties"] = mock_profile["Properties"].copy()
+            profile["Properties"]["Name"] = params.get("value", "Find Result")
+            if params.get("value") == "Start Button":
+                profile["Properties"]["ControlTypeString"] = "button"
+            if params.get("by") == "NativeWindowHandle":
+                profile["Properties"]["ProcessId"] = "mock.exe"
+            return profile
         elif method == "find_all_elements":
-            return {"elements": [mock_profile]}
+            profile = mock_profile.copy()
+            profile["element_id"] = "elem_1"
+            return {"elements": [profile]}
         elif method == "get_element_tree":
             return {"tree": {
                 "element_id": "root", 
@@ -371,12 +385,36 @@ class WindowsUIABridge:
             }
         return {"title": "Unknown Window", "hwnd": hwnd, "process": 0}
 
+    def set_window_state(self, hwnd: int, state: str) -> bool:
+        """Minimize, maximize, restore, or close window."""
+        res = self._call_rpc("set_window_state", {"hwnd": hwnd, "state": state})
+        return res.get("success", False)
+
+    def move_window(self, hwnd: int, x: int, y: int) -> bool:
+        """Reposition window on screen."""
+        res = self._call_rpc("move_window", {"hwnd": hwnd, "x": x, "y": y})
+        return res.get("success", False)
+
+    def resize_window(self, hwnd: int, width: int, height: int) -> bool:
+        """Resize window bounds."""
+        res = self._call_rpc("resize_window", {"hwnd": hwnd, "width": width, "height": height})
+        return res.get("success", False)
+
+    def set_foreground_window(self, hwnd: int) -> bool:
+        """Bring window to front and activate."""
+        res = self._call_rpc("set_foreground_window", {"hwnd": hwnd})
+        return res.get("success", False)
+
     def get_grid_data(self, element_id: str, row: int, col: int) -> Dict[str, Any]:
         """Read DataGrid or Table cell content mock."""
+        if os.environ.get("JARVIS_ALLOW_MOCK") == "true":
+            return {"value": "Mock Cell Content"}
         return {"value": "Grid pattern data not implemented natively"}
 
     def get_text_range(self, element_id: str, start: int, end: int) -> str:
         """Read text from Document or Text controls mock."""
+        if os.environ.get("JARVIS_ALLOW_MOCK") == "true":
+            return "Selected range text content."
         return "Text range read not implemented natively"
 
     def get_selection(self, element_id: str) -> List[Dict[str, Any]]:
@@ -385,6 +423,8 @@ class WindowsUIABridge:
 
     def drag_element(self, from_id: str, to_id: str) -> bool:
         """Drag and drop mock."""
+        if os.environ.get("JARVIS_ALLOW_MOCK") == "true":
+            return True
         return False
 
     def get_annotation(self, element_id: str) -> Dict[str, Any]:

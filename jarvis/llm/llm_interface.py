@@ -65,6 +65,7 @@ class ClosedLoopDecision:
     actions: list = field(default_factory=list)  # list[SkillCallSpec] — empty when done
     summary: Optional[str] = None  # Populated when status="done" — what was accomplished
     block_reason: Optional[str] = None  # Populated when status="blocked"
+    question: Optional[str] = None  # Custom dynamic question to ask the user when blocked
 
 
 
@@ -173,6 +174,7 @@ class LLMInterface(ABC):
                 status="blocked",
                 reasoning="LLM needs clarification",
                 block_reason=decision.question or "Need more information",
+                question=decision.question or "Need more information",
             )
         elif decision.type in ("plan", "mixed"):
             actions = decision.steps or []
@@ -284,6 +286,7 @@ class LLMInterface(ABC):
             actions=actions,
             summary=data.get("summary"),
             block_reason=data.get("block_reason"),
+            question=data.get("question") or data.get("block_reason"),
         )
 
     def _is_valid_json_decision(self, content: str) -> tuple[bool, Optional[str]]:

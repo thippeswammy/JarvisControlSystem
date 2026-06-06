@@ -66,6 +66,10 @@ class MCPBus:
         Returns:
             Number of servers successfully loaded.
         """
+        if self._discovered:
+            logger.debug("[MCPBus] Servers already discovered. Skipping.")
+            return len(self._registry)
+
         if yaml is None:
             logger.warning(
                 "[MCPBus] Cannot discover — PyYAML is not installed"

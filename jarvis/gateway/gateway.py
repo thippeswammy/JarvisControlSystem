@@ -50,6 +50,11 @@ class GatewayDaemon:
         self._cm = ConfigManager(self._config_path)
         self._cfg = self._cm.show(mask_secrets=False)
 
+        # 0. Ensure Ollama is running
+        from jarvis.utils.ollama_utils import enable_auto_start, ensure_ollama_running
+        enable_auto_start(True)
+        ensure_ollama_running()
+
         # 1. Memory
         db_cfg = self._cfg.get("memory", {}).get("graph_db", {})
         db_path = db_cfg.get("path", "memory/jarvis.db")
