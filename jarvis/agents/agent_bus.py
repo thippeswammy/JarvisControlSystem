@@ -144,7 +144,17 @@ class AgentBus:
     def register(self, agent: AgentInterface) -> None:
         """Manually register an agent."""
         if agent.name in self._registry:
-            logger.warning(f"[AgentBus] Overriding existing agent: {agent.name!r}")
+            existing = self._registry[agent.name]
+            is_same = False
+            if type(existing) is type(agent):
+                if type(agent).__name__ == "FunctionalAgentWrapper":
+                    is_same = getattr(existing, "_fn", None) == getattr(agent, "_fn", None)
+                else:
+                    is_same = True
+            if is_same:
+                logger.debug(f"[AgentBus] Re-registering identical agent: {agent.name!r}")
+            else:
+                logger.warning(f"[AgentBus] Overriding existing agent: {agent.name!r}")
         self._registry[agent.name] = agent
         logger.debug(f"[AgentBus] Registered agent: {agent.name!r}")
 

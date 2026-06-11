@@ -44,6 +44,9 @@ class GatewayDaemon:
 
     def bootstrap(self):
         """Initialize all shared components from config."""
+        if self.memory is not None:
+            logger.debug("[Gateway] Already bootstrapped. Skipping.")
+            return
         logger.info(f"[Gateway] Bootstrapping from {self._config_path}")
         
         from jarvis.config.config_manager import ConfigManager
