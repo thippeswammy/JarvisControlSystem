@@ -102,9 +102,9 @@ def test_closed_loop_engine_loop_prevention():
         
         # Verify it halted and completed is False
         assert result.completed is False
-        assert "Action loop detected" in result.summary or "repeated more than 3 times" in result.summary
-        # Iterations should be at most 4
-        assert result.iterations <= 4
+        assert "Action loop detected" in result.summary or "repeated more than 2 times" in result.summary
+        # Iterations should be at most 3
+        assert result.iterations <= 3
 
 # ── 3. AppFinder Dynamic Scan Filtering Tests ──────────────────
 

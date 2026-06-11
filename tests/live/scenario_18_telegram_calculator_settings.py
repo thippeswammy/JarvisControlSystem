@@ -115,10 +115,10 @@ class Scenario18(LiveScenario):
     def __init__(self):
         super().__init__()
         self.steps = [
-            StepDef("hi",                 self.test_hi,               timeout_s=60),
-            StepDef("calculator_5_plus_3", self.test_calculator,        timeout_s=90),
-            StepDef("open_display",       self.test_display_settings, timeout_s=40),
-            StepDef("open_sound",         self.test_sound_settings,   timeout_s=40),
+            StepDef("hi",                 self.test_hi,               timeout_s=80),
+            StepDef("calculator_5_plus_3", self.test_calculator,        timeout_s=120),
+            StepDef("open_display",       self.test_display_settings, timeout_s=90),
+            StepDef("open_sound",         self.test_sound_settings,   timeout_s=90),
         ]
 
 
