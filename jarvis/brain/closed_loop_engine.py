@@ -342,12 +342,12 @@ class ClosedLoopEngine:
                 action_key = (action_spec.skill, params_key)
                 
                 action_counts[action_key] = action_counts.get(action_key, 0) + 1
-                if action_counts[action_key] > 3:
+                if action_counts[action_key] > 2:
                     logger.warning(f"[ClosedLoop] Loop detected: Action {action_spec.skill} with params {clean_params} executed {action_counts[action_key]} times.")
                     result.completed = False
-                    result.summary = f"Execution halted: Action '{action_spec.skill}' with params {clean_params} was repeated more than 3 times."
+                    result.summary = f"Execution halted: Action '{action_spec.skill}' with params {clean_params} was repeated more than 2 times."
                     if adapter and session:
-                        adapter.send(session.id, f"🛑 *Execution Halted: Action Loop Detected!*\nAction `{action_spec.skill}` was repeated more than 3 times. Halting execution loop.")
+                        adapter.send(session.id, f"🛑 *Execution Halted: Action Loop Detected!*\nAction `{action_spec.skill}` was repeated more than 2 times. Halting execution loop.")
                     return result
 
                 call = SkillCall(

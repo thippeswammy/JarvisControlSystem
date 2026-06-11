@@ -259,7 +259,8 @@ class LLMInterface(ABC):
         except Exception:
             # Try healing common JSON issues
             try:
-                healed = candidate.replace("'", '"')
+                healed = LLMInterface._heal_json(candidate)
+                healed = healed.replace("'", '"')
                 # Fix trailing commas
                 healed = re.sub(r",\s*([}\]])", r"\1", healed)
                 data = json.loads(healed)
@@ -424,13 +425,13 @@ class LLMInterface(ABC):
                 pass
         return text
         
-    def _heal_json(self, s: str) -> str:
+    @staticmethod
+    def _heal_json(s: str) -> str:
         """Autonomously closes open JSON structures for truncated LLM responses."""
         s = s.strip()
         if not s.startswith("{"):
             return s
-        open_braces = 0
-        open_brackets = 0
+        stack = []
         in_string = False
         escape = False
         
@@ -445,21 +446,23 @@ class LLMInterface(ABC):
                 in_string = not in_string
                 continue
             if not in_string:
-                if char == "{":
-                    open_braces += 1
+                if char in ("{", "["):
+                    stack.append(char)
                 elif char == "}":
-                    open_braces = max(0, open_braces - 1)
-                elif char == "[":
-                    open_brackets += 1
+                    if stack and stack[-1] == "{":
+                        stack.pop()
                 elif char == "]":
-                    open_brackets = max(0, open_brackets - 1)
-                    
+                    if stack and stack[-1] == "[":
+                        stack.pop()
+                        
         if in_string:
             s += '"'
-        if open_brackets > 0:
-            s += "]" * open_brackets
-        if open_braces > 0:
-            s += "}" * open_braces
+        while stack:
+            top = stack.pop()
+            if top == "{":
+                s += "}"
+            elif top == "[":
+                s += "]"
         return s
 
     # ── System Prompt ────────────────────────────────────────
