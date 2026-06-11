@@ -32,3 +32,6 @@ __pycache__/
 # Process ID and runtime files
 *.pid
 *.exe
+
+# Logs folder
+/logs/
