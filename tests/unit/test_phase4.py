@@ -32,7 +32,7 @@ class TestPeerReviewAuditor:
         mock_router = MagicMock()
         mock_decision = MagicMock()
         mock_decision.message = '{"accepted": true, "confidence": 0.95, "feedback": "Looks great!"}'
-        mock_router.decide.return_value = mock_decision
+        mock_router.decide_for_task.return_value = mock_decision
 
         auditor = PeerReviewAuditor(router=mock_router)
         res = auditor.audit("print('hello')", "test_agent")
@@ -81,7 +81,7 @@ class TestAgentBusPeerReviewWiring:
         res = bus.run_single("audited_agent", "Write code", {"_router": mock_router})
         assert res.success is True
         assert res.output == "Valid code output"
-        mock_router.decide.assert_called_once()
+        mock_router.decide_for_task.assert_called_once()
 
     def test_run_single_with_audit_fail_then_success(self):
         bus = AgentBus()
@@ -109,11 +109,11 @@ class TestAgentBusPeerReviewWiring:
         mock_decision_1.message = '{"accepted": false, "confidence": 0.4, "feedback": "Fix syntax error"}'
         mock_decision_2 = MagicMock()
         mock_decision_2.message = '{"accepted": true, "confidence": 0.95, "feedback": "Correct"}'
-        mock_router.decide.side_effect = [mock_decision_1, mock_decision_2]
+        mock_router.decide_for_task.side_effect = [mock_decision_1, mock_decision_2]
 
         res = bus.run_single("regenerated_agent", "Write code", {"_router": mock_router})
         
         assert res.success is True
         assert res.output == "Corrected output"
         assert calls == 2  # Proves regeneration was triggered with feedback
-        assert mock_router.decide.call_count == 2
+        assert mock_router.decide_for_task.call_count == 2

@@ -32,6 +32,9 @@ class MockRouter:
     def _clean_and_parse_json(self, raw):
         return json.loads(raw)
 
+    def call_raw_for_task(self, task, prompt, context=""):
+        return self._primary._call_llm_closed_loop(prompt, context)
+
 @pytest.fixture
 def nlu_with_mock():
     return NLU(router=MockRouter())

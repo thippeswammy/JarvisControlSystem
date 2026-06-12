@@ -16,18 +16,13 @@ from jarvis.mcp.mcp_bus import MCPBus
 def test_nlu_context_routing_ambiguous_and_pronouns():
     # Mock LLM router
     router = MagicMock()
-    # Mock backend to return custom JSON
-    mock_backend = MagicMock()
-    router._primary = mock_backend
-    router._fallback = None
-    router._emergency = None
     
     # Mock clean and parse JSON method
     router._clean_and_parse_json.side_effect = lambda raw: json.loads(raw)
     
     # Utterance: 'open history' when active app context is empty (ambiguous)
     # Should route to 'llm_route'
-    mock_backend._call_llm_closed_loop.return_value = json.dumps({
+    router.call_raw_for_task.return_value = json.dumps({
         "intent": "llm_route",
         "entities": {"target": "history"},
         "intent_category": "EXECUTION",
@@ -57,7 +52,7 @@ def test_closed_loop_engine_loop_prevention():
     bus._discovered = True
     
     # LLM decision returns a repeated type_text action in closed loop
-    router.decide_closed_loop.return_value = ClosedLoopDecision(
+    router.decide_closed_loop_for_task.return_value = ClosedLoopDecision(
         status="in_progress",
         reasoning="I will type hello",
         actions=[SkillCallSpec(skill="type_text", params={"text": "hello"})]

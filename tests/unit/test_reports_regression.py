@@ -54,7 +54,7 @@ def test_test031_repeat_action_suppression():
     bus._discovered = True
     
     # Decision returns same action repeatedly
-    router.decide_closed_loop.return_value = ClosedLoopDecision(
+    router.decide_closed_loop_for_task.return_value = ClosedLoopDecision(
         status="in_progress",
         reasoning="I will mutate",
         actions=[SkillCallSpec(skill="dummy_mutation", params={"x": 1})]
@@ -107,13 +107,9 @@ def test_test031_repeat_action_suppression():
 # ── TEST-032: Context Injection (NLU) ────────────────────────────────
 def test_test032_context_injection_nlu():
     router = MagicMock()
-    mock_backend = MagicMock()
-    router._primary = mock_backend
-    router._fallback = None
-    router._emergency = None
     
-    # NLU calls closed loop LLM
-    mock_backend._call_llm_closed_loop.return_value = json.dumps({
+    # NLU calls closed loop LLM via call_raw_for_task
+    router.call_raw_for_task.return_value = json.dumps({
         "intent": "llm_route",
         "entities": {"target": "history"},
         "intent_category": "EXECUTION",
@@ -180,7 +176,7 @@ def test_test035_goal_completion_detection():
     bus = SkillBus()
     
     # Decision returns status="done"
-    router.decide_closed_loop.return_value = ClosedLoopDecision(
+    router.decide_closed_loop_for_task.return_value = ClosedLoopDecision(
         status="done",
         reasoning="Task completed successfully.",
         summary="Task completed successfully.",
