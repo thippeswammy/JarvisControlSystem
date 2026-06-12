@@ -77,7 +77,8 @@ class PeerReviewAuditor:
             )
 
             try:
-                decision = self._router.decide(
+                decision = self._router.decide_for_task(
+                    task="peer_review",
                     prompt=prompt,
                     context="You are the Critic validating proposed agent artifacts for safety and quality."
                 )

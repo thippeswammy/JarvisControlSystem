@@ -33,6 +33,28 @@ _DEFAULT_CONFIG = (
 )
 
 
+class TaskRouterWrapper:
+    """Wraps an LLMRouter to force all calls to route via a specific task name."""
+    def __init__(self, router, task_name: str):
+        self._router = router
+        self._task_name = task_name
+
+    def decide(self, prompt: str, context: str = "") -> Any:
+        return self._router.decide_for_task(self._task_name, prompt, context)
+
+    def route(self, prompt: str, memory_context: str = "") -> Any:
+        return self._router.route_for_task(self._task_name, prompt, memory_context)
+
+    def decide_closed_loop(self, prompt: str, context: str = "") -> Any:
+        return self._router.decide_closed_loop_for_task(self._task_name, prompt, context)
+
+    def call_raw_for_task(self, task: str, prompt: str, context: str) -> Any:
+        return self._router.call_raw_for_task(task, prompt, context)
+
+    def __getattr__(self, name):
+        return getattr(self._router, name)
+
+
 class FunctionalAgentWrapper(AgentInterface):
     """Wraps a simple function as a compliant AgentInterface agent."""
 
@@ -174,8 +196,15 @@ class AgentBus:
         local_mem = AgentLocalMemory(agent_name=name)
         shared_ctx = SharedAgentContext(self._memory_manager) if self._memory_manager else None
 
+        # Wrap routers in a copy of the context to isolate task routing
+        local_context = dict(context)
+        for key in ("router", "llm_router", "_router"):
+            r = local_context.get(key)
+            if r is not None and type(r).__name__ != "TaskRouterWrapper":
+                local_context[key] = TaskRouterWrapper(r, "agent_execution")
+
         from jarvis.agents.peer_review import PeerReviewAuditor
-        auditor = PeerReviewAuditor(router=context.get("_router"))
+        auditor = PeerReviewAuditor(router=local_context.get("_router") or local_context.get("router"))
 
         max_attempts = 2  # 1 initial + 1 regeneration attempt if audit fails
         current_task = task
@@ -190,7 +219,7 @@ class AgentBus:
                 )
 
             try:
-                result = agent.run(current_task, context, local_mem, shared_ctx)
+                result = agent.run(current_task, local_context, local_mem, shared_ctx)
             except Exception as exc:
                 logger.exception(f"Unhandled exception in agent {name}: {exc}")
                 return AgentResult(
