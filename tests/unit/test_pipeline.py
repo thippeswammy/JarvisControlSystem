@@ -47,15 +47,22 @@ class TestNLU(unittest.TestCase):
         # Use real LLM backend (Ollama) per user request
         from jarvis.llm.backends.local_llm import LocalLLM
         from jarvis.llm.llm_router import LLMRouter
+        from jarvis.config.config_manager import ConfigManager
+        import os
+        from pathlib import Path
+        
+        config_path = str(Path(__file__).parent.parent.parent / "jarvis" / "config" / "config.yaml")
+        cm = ConfigManager(config_path)
+        bc = cm.get("llm.backends.local", {})
         
         real_llm = LocalLLM(
-            api_url="http://localhost:11434/v1",
-            model="gemma3:4b",
-            fallback_model="gemma3:4b",
-            max_tokens=8000,
-            temperature=0.1,
-            timeout=60,
-            auto_pull=True
+            api_url=bc.get("api_url", "http://localhost:11434/v1"),
+            model=bc.get("model", "qwen3.5:2b"),
+            fallback_model=bc.get("fallback_model", "qwen3.5:2b"),
+            max_tokens=bc.get("max_tokens", 8000),
+            temperature=bc.get("temperature", 0.1),
+            timeout=bc.get("timeout_seconds", 60),
+            auto_pull=bc.get("auto_pull", False),
         )
         self.router = LLMRouter(primary=real_llm, emergency=real_llm)
         self.nlu = NLU(router=self.router)
@@ -149,6 +156,8 @@ class TestPlanner(unittest.TestCase):
         from jarvis.brain.planner import Planner
         from jarvis.llm.backends.local_llm import LocalLLM
         from jarvis.llm.llm_router import LLMRouter
+        from jarvis.config.config_manager import ConfigManager
+        from pathlib import Path
         
         # Mock memory and bus
         self.memory = MagicMock()
@@ -156,14 +165,18 @@ class TestPlanner(unittest.TestCase):
         self.memory.get_relevant_context.return_value = ""
         
         # Use real LLMRouter (Ollama)
+        config_path = str(Path(__file__).parent.parent.parent / "jarvis" / "config" / "config.yaml")
+        cm = ConfigManager(config_path)
+        bc = cm.get("llm.backends.local", {})
+        
         real_llm = LocalLLM(
-            api_url="http://localhost:11434/v1",
-            model="gemma3:4b",
-            fallback_model="gemma3:4b",
-            max_tokens=8000,
-            temperature=0.1,
-            timeout=60,
-            auto_pull=True
+            api_url=bc.get("api_url", "http://localhost:11434/v1"),
+            model=bc.get("model", "qwen3.5:2b"),
+            fallback_model=bc.get("fallback_model", "qwen3.5:2b"),
+            max_tokens=bc.get("max_tokens", 8000),
+            temperature=bc.get("temperature", 0.1),
+            timeout=bc.get("timeout_seconds", 60),
+            auto_pull=bc.get("auto_pull", False),
         )
         self.router = LLMRouter(primary=real_llm, emergency=real_llm)
         
@@ -270,6 +283,8 @@ class TestOrchestratorPipeline(unittest.TestCase):
         from jarvis.brain.orchestrator import Orchestrator
         from jarvis.llm.backends.local_llm import LocalLLM
         from jarvis.llm.llm_router import LLMRouter
+        from jarvis.config.config_manager import ConfigManager
+        from pathlib import Path
         
         memory = MagicMock()
         memory.recall.return_value = None
@@ -277,14 +292,18 @@ class TestOrchestratorPipeline(unittest.TestCase):
         memory.get_db.return_value = MagicMock()
         
         # Use real LLMRouter (Ollama)
+        config_path = str(Path(__file__).parent.parent.parent / "jarvis" / "config" / "config.yaml")
+        cm = ConfigManager(config_path)
+        bc = cm.get("llm.backends.local", {})
+        
         real_llm = LocalLLM(
-            api_url="http://localhost:11434/v1",
-            model="gemma3:4b",
-            fallback_model="gemma3:4b",
-            max_tokens=8000,
-            temperature=0.1,
-            timeout=60,
-            auto_pull=True
+            api_url=bc.get("api_url", "http://localhost:11434/v1"),
+            model=bc.get("model", "qwen3.5:2b"),
+            fallback_model=bc.get("fallback_model", "qwen3.5:2b"),
+            max_tokens=bc.get("max_tokens", 8000),
+            temperature=bc.get("temperature", 0.1),
+            timeout=bc.get("timeout_seconds", 60),
+            auto_pull=bc.get("auto_pull", False),
         )
         router = LLMRouter(primary=real_llm, emergency=real_llm)
         

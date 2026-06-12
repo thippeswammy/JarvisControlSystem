@@ -52,6 +52,16 @@ class NLU:
             '  "compound": false,\n'
             '  "sub_commands": []\n'
             "}\n\n"
+            "Examples:\n"
+            '1. App Context: ""\n'
+            '   User: "open <APP_NAME>"\n'
+            '   Response: {"intent": "open_app", "entities": {"target": "<APP_NAME>"}, "intent_category": "EXECUTION", "compound": false, "sub_commands": []}\n'
+            '2. App Context: ""\n'
+            '   User: "open <APP_NAME> and then type <TEXT_CONTENT>"\n'
+            '   Response: {"intent": "llm_route", "entities": {}, "intent_category": "EXECUTION", "compound": true, "sub_commands": [{"intent": "open_app", "entities": {"target": "<APP_NAME>"}, "text": "open <APP_NAME>"}, {"intent": "type_text", "entities": {"text": "<TEXT_CONTENT>"}, "text": "type <TEXT_CONTENT>"}]}\n'
+            '3. App Context: "<APP_NAME>"\n'
+            '   User: "open <ELEMENT_NAME>"\n'
+            '   Response: {"intent": "llm_route", "entities": {"target": "<ELEMENT_NAME>"}, "intent_category": "EXECUTION", "compound": false, "sub_commands": []}\n\n'
             "Rules:\n"
             "- 'intent_category' must accurately reflect if the user wants to execute a command (EXECUTION) vs asking how to do something (EDUCATIONAL), asking a hypothetical 'what if' (HYPOTHETICAL), or asking about your features (CAPABILITY).\n"
             "- If the utterance is not execution (e.g. hypothetical), set intent to 'chat_reply'.\n"
