@@ -26,6 +26,16 @@ class AgentInterface(ABC):
         """Human-readable name of the agent."""
 
     @property
+    @abstractmethod
+    def description(self) -> str:
+        """Brief explanation of what the agent does."""
+
+    @property
+    def audit_required(self) -> bool:
+        """Whether all actions/artifacts from this agent require peer review auditing."""
+        return False
+
+    @property
     def parallel_safe(self) -> bool:
         """Whether this agent is safe to run concurrently with other agents.
 

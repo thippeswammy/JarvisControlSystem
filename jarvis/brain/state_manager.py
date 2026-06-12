@@ -88,6 +88,15 @@ class WindowFocusController:
             # Calculate fuzzy match score against title and process name
             title_score = fuzz.partial_ratio(target, title.lower())
             proc_score = fuzz.ratio(target, proc_name) if proc_name else 0
+            
+            # Prevent development environments, shells, or scripts from hijacking focus matching
+            # e.g., target='calculator' matching a python process running 'scenario_18_telegram_calculator_settings.py'
+            dev_processes = {"python", "pythonw", "code", "pycharm", "idea", "conhost", "powershell", "cmd", "git", "bash", "wsl", "antigravity"}
+            if proc_name in dev_processes and target not in dev_processes:
+                # Discard low-quality partial title matches on editor/shell windows
+                if fuzz.ratio(target, title.lower()) < 85:
+                    continue
+
             best_score = max(title_score, proc_score)
             
             if best_score > 60:  # Candidate threshold
@@ -158,3 +167,72 @@ class WindowFocusController:
                     pass
 
         return False
+
+
+from jarvis.brain.world_state import FiveTierWorldState
+from typing import List
+
+class StateManager:
+    """
+    Manages and tracks FiveTierWorldState history, state updates, and rollback logic.
+    """
+    def __init__(self, initial_state: Optional[FiveTierWorldState] = None):
+        self._current_state = initial_state or FiveTierWorldState()
+        self._history: List[FiveTierWorldState] = []
+        self._max_history = 50
+
+    def get_current_state(self) -> FiveTierWorldState:
+        return self._current_state
+
+    def update_state(self, tier: str, delta: Dict[str, Any]) -> None:
+        """
+        Updates a specific tier of the world state with a delta.
+        Saves a snapshot to history for rollback support.
+        """
+        import copy
+        # Save current state to history
+        self._history.append(copy.deepcopy(self._current_state))
+        if len(self._history) > self._max_history:
+            self._history.pop(0)
+
+        # Apply delta
+        t = tier.lower().strip()
+        if t in ("env", "environment"):
+            for k, v in delta.items():
+                if hasattr(self._current_state.env_state, k):
+                    setattr(self._current_state.env_state, k, v)
+        elif t in ("ui", "user_interface"):
+            for k, v in delta.items():
+                if hasattr(self._current_state.ui_state, k):
+                    setattr(self._current_state.ui_state, k, v)
+        elif t in ("knowledge", "semantic"):
+            for k, v in delta.items():
+                if k == "variables":
+                    self._current_state.knowledge_state.variables.update(v)
+                elif hasattr(self._current_state.knowledge_state, k):
+                    setattr(self._current_state.knowledge_state, k, v)
+        elif t in ("task", "progress"):
+            for k, v in delta.items():
+                if k == "progress_logs":
+                    self._current_state.task_state.progress_logs.extend(v)
+                elif hasattr(self._current_state.task_state, k):
+                    setattr(self._current_state.task_state, k, v)
+        elif t in ("agent", "coordination"):
+            for k, v in delta.items():
+                if hasattr(self._current_state.agent_state, k):
+                    setattr(self._current_state.agent_state, k, v)
+        else:
+            logger.warning(f"[StateManager] Unknown state tier: {tier}")
+
+    def rollback(self) -> Optional[FiveTierWorldState]:
+        """
+        Rolls back to the previous state.
+        Returns the restored state or None if no history.
+        """
+        if self._history:
+            self._current_state = self._history.pop()
+            logger.info("[StateManager] Rolled back to previous state snapshot.")
+            return self._current_state
+        logger.warning("[StateManager] Rollback failed: no history available.")
+        return None
+

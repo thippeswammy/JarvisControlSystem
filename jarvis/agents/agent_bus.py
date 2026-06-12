@@ -42,11 +42,13 @@ class FunctionalAgentWrapper(AgentInterface):
         fn: Callable[..., Any],
         description: str = "",
         parallel_safe: bool = True,
+        audit_required: bool = False,
     ) -> None:
         self._name = name
         self._fn = fn
         self._description = description
         self._parallel_safe = parallel_safe
+        self._audit_required = audit_required
 
     @property
     def name(self) -> str:
@@ -59,6 +61,10 @@ class FunctionalAgentWrapper(AgentInterface):
     @property
     def description(self) -> str:
         return self._description
+
+    @property
+    def audit_required(self) -> bool:
+        return self._audit_required
 
     def run(
         self,
@@ -116,6 +122,9 @@ class AgentBus:
         """
         Load built-in and external agents from configuration and directory scanning.
         """
+        if self._discovered:
+            logger.debug("[AgentBus] Agents already discovered. Skipping.")
+            return len(self._registry)
         # 1. Discover built-in agents
         self._discover_builtins()
 
@@ -135,7 +144,17 @@ class AgentBus:
     def register(self, agent: AgentInterface) -> None:
         """Manually register an agent."""
         if agent.name in self._registry:
-            logger.warning(f"[AgentBus] Overriding existing agent: {agent.name!r}")
+            existing = self._registry[agent.name]
+            is_same = False
+            if type(existing) is type(agent):
+                if type(agent).__name__ == "FunctionalAgentWrapper":
+                    is_same = getattr(existing, "_fn", None) == getattr(agent, "_fn", None)
+                else:
+                    is_same = True
+            if is_same:
+                logger.debug(f"[AgentBus] Re-registering identical agent: {agent.name!r}")
+            else:
+                logger.warning(f"[AgentBus] Overriding existing agent: {agent.name!r}")
         self._registry[agent.name] = agent
         logger.debug(f"[AgentBus] Registered agent: {agent.name!r}")
 
@@ -155,16 +174,58 @@ class AgentBus:
         local_mem = AgentLocalMemory(agent_name=name)
         shared_ctx = SharedAgentContext(self._memory_manager) if self._memory_manager else None
 
-        try:
-            return agent.run(task, context, local_mem, shared_ctx)
-        except Exception as exc:
-            logger.exception(f"Unhandled exception in agent {name}: {exc}")
-            return AgentResult(
-                success=False,
-                output=f"Unhandled exception running agent '{name}': {exc}",
-                agent_name=name,
-                steps_taken=local_mem.exec_log.copy(),
-            )
+        from jarvis.agents.peer_review import PeerReviewAuditor
+        auditor = PeerReviewAuditor(router=context.get("_router"))
+
+        max_attempts = 2  # 1 initial + 1 regeneration attempt if audit fails
+        current_task = task
+        feedback = ""
+
+        for attempt in range(1, max_attempts + 1):
+            if feedback:
+                current_task = (
+                    f"{task}\n\n"
+                    f"[PEER REVIEW AUDIT FEEDBACK]: The previous attempt failed validation. "
+                    f"Please regenerate/correct the output according to this feedback: {feedback}"
+                )
+
+            try:
+                result = agent.run(current_task, context, local_mem, shared_ctx)
+            except Exception as exc:
+                logger.exception(f"Unhandled exception in agent {name}: {exc}")
+                return AgentResult(
+                    success=False,
+                    output=f"Unhandled exception running agent '{name}': {exc}",
+                    agent_name=name,
+                    steps_taken=local_mem.exec_log.copy(),
+                )
+
+            # If the run itself failed, return it immediately without auditing
+            if not result.success:
+                return result
+
+            # If peer review is not required, return immediately
+            if not getattr(agent, "audit_required", False):
+                return result
+
+            # Audit the output
+            audit_res = auditor.audit(result.output, name)
+            if audit_res.accepted:
+                logger.info(f"[AgentBus] Peer review PASSED for agent '{name}' (confidence={audit_res.confidence})")
+                return result
+            else:
+                logger.warning(f"[AgentBus] Peer review FAILED for agent '{name}': {audit_res.feedback}")
+                feedback = audit_res.feedback
+                local_mem.log_step(f"Peer review failed (attempt {attempt}): {feedback}")
+
+        # If it failed all attempts
+        logger.error(f"[AgentBus] Peer review failed after {max_attempts} attempts for agent '{name}'")
+        return AgentResult(
+            success=False,
+            output=f"Peer review audit failed after {max_attempts} attempts. Feedback: {feedback}",
+            agent_name=name,
+            steps_taken=local_mem.exec_log.copy(),
+        )
 
     async def run_parallel(
         self, tasks: List[Tuple[str, str]], context: dict
@@ -259,6 +320,12 @@ class AgentBus:
             self.register(BraveAgent())
         except ImportError as exc:
             logger.debug(f"[AgentBus] Builtin BraveAgent not found/imported: {exc}")
+
+        try:
+            from jarvis.agents.builtin.ui_windows_agent import UIWindowsAgent
+            self.register(UIWindowsAgent())
+        except ImportError as exc:
+            logger.debug(f"[AgentBus] Builtin UIWindowsAgent not found/imported: {exc}")
 
     def _discover_from_yaml(self, config_path: Optional[str]) -> int:
         """Load agents listed in config/agents.yaml."""

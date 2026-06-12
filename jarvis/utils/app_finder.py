@@ -6,6 +6,7 @@ without relying on hardcoded dictionaries.
 Uses registry key analysis, Start Menu shortcut resolution (.lnk), and PATH scans.
 """
 
+import json
 import logging
 import os
 import re
@@ -15,8 +16,37 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
+_MAPPING_FILE = Path(__file__).resolve().parent.parent / "config" / "app_mappings.json"
+
 class AppFinder:
     """Discovers application executable paths dynamically on Windows."""
+
+    @staticmethod
+    def register_mapping(app_name: str, path_or_uri: str) -> bool:
+        """Register a new mapping dynamically and save it to config."""
+        app_clean = app_name.strip().lower()
+        if not app_clean or not path_or_uri:
+            return False
+            
+        mappings = {}
+        _MAPPING_FILE.parent.mkdir(parents=True, exist_ok=True)
+        if _MAPPING_FILE.exists():
+            try:
+                with open(_MAPPING_FILE, "r", encoding="utf-8") as f:
+                    mappings = json.load(f)
+            except Exception:
+                pass
+                
+        mappings[app_clean] = path_or_uri
+        
+        try:
+            with open(_MAPPING_FILE, "w", encoding="utf-8") as f:
+                json.dump(mappings, f, indent=4)
+            logger.info(f"[AppFinder] Registered custom mapping: {app_clean} -> {path_or_uri}")
+            return True
+        except Exception as e:
+            logger.error(f"[AppFinder] Failed to save app_mappings.json: {e}")
+            return False
 
     @staticmethod
     def find_exe_path(app_name: str) -> Optional[str]:
@@ -45,14 +75,25 @@ class AppFinder:
         variations = [app_clean]
         if not app_clean.endswith(".exe"):
             variations.append(f"{app_clean}.exe")
-        if app_clean == "word":
-            variations.append("winword.exe")
-        elif app_clean == "excel":
-            variations.append("excel.exe")
-        elif app_clean == "powerpoint":
-            variations.append("powerpnt.exe")
-        elif app_clean == "settings":
-            return "ms-settings:"
+
+        # Load dynamic mappings from config file
+        mappings = {}
+        if _MAPPING_FILE.exists():
+            try:
+                with open(_MAPPING_FILE, "r", encoding="utf-8") as f:
+                    mappings = json.load(f)
+            except Exception as e:
+                logger.error(f"[AppFinder] Failed to load app_mappings.json: {e}")
+
+        # Check mapping for app name
+        if app_clean in mappings:
+            mapped_val = mappings[app_clean]
+            # If it's a deep link or URI, return it directly
+            if ":" in mapped_val and not (len(mapped_val) > 1 and mapped_val[1] == ":"):
+                return mapped_val
+            # Otherwise, add it to variations to search for it
+            if mapped_val not in variations:
+                variations.append(mapped_val)
 
         # 1. Try Registry App Paths
         for var in variations:
@@ -91,8 +132,11 @@ class AppFinder:
                     for path in Path(d).glob(pattern):
                         if path.is_file():
                             p_str = str(path.resolve())
-                            logger.info(f"[AppFinder] Discovered {app_name} via dir scan: {p_str}")
-                            return p_str
+                            pathext = os.environ.get("PATHEXT", ".EXE;.BAT;.CMD;.VBS;.JS;.WSF").lower().split(";")
+                            ext = os.path.splitext(p_str)[1].lower()
+                            if ext in pathext or ext == ".lnk":
+                                logger.info(f"[AppFinder] Discovered {app_name} via dir scan: {p_str}")
+                                return p_str
 
         logger.warning(f"[AppFinder] Could not discover path for application: {app_name}")
         return None

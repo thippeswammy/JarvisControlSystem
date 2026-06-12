@@ -76,6 +76,27 @@ class Orchestrator:
         self._learner = ReactiveLearner(memory)
         self._pathfinder: Optional[GraphPathfinder] = None
 
+        
+        from jarvis.perception.goal_understanding import GoalUnderstandingLayer
+        from jarvis.perception.grounding_layer import GroundingLayer
+        from jarvis.perception.knowledge_gap_engine import KnowledgeGapEngine
+
+        self._goal_understanding = GoalUnderstandingLayer(router=self._router)
+        self._grounding = GroundingLayer(episodic=self._episodic)
+        self._knowledge_gap = KnowledgeGapEngine()
+
+        
+        from jarvis.brain.capability_planner import CapabilityPlanner
+        from jarvis.brain.execution_authority import ExecutionAuthority
+        from jarvis.brain.user_interaction_manager import UserInteractionManager
+        from jarvis.brain.interaction_adapter import AdapterRegistry
+
+        self._capability_planner = CapabilityPlanner()
+        self._execution_authority = ExecutionAuthority()
+        self.interaction_registry = AdapterRegistry()
+        self._interaction_manager = UserInteractionManager(registry=self.interaction_registry)
+
+
     def boot(self) -> None:
         """
         Initialize all subsystems. Call once before processing commands.
@@ -137,6 +158,51 @@ class Orchestrator:
         # Coreference and context fusion
         packet = self._context_fusion.fuse(packet, snapshot=snapshot)
         packet.context_snapshot = snapshot # Store for planner
+
+        # Dynamically wrap and register interaction adapter
+        session_id = session.id if session else f"{source}:default"
+        if adapter and session:
+            from jarvis.brain.interaction_adapter import TelegramInteractionAdapter, TUIInteractionAdapter, WebUIInteractionAdapter
+            channel = getattr(session, "channel", source)
+            
+            interaction_adapter = self.interaction_registry.get_adapter(channel)
+            if not interaction_adapter:
+                if channel in ("telegram", "telegram-test"):
+                    interaction_adapter = TelegramInteractionAdapter(channel_adapter=adapter)
+                elif channel in ("tui", "cli"):
+                    interaction_adapter = TUIInteractionAdapter(channel_adapter=adapter)
+                else:
+                    interaction_adapter = WebUIInteractionAdapter(channel_adapter=adapter)
+                self.interaction_registry.register(interaction_adapter)
+            
+            if hasattr(interaction_adapter, "register_session"):
+                interaction_adapter.register_session(session)
+
+        # Goal-centric perception layers (Phase 1)
+        goal_model = self._goal_understanding.understand(text, app_context=snapshot.active_app)
+        goal_model = self._grounding.ground(goal_model, snapshot=snapshot)
+        
+        # Knowledge Gap Check & Clarification
+        gap_result = self._knowledge_gap.check(goal_model)
+        if gap_result.clarification_needed:
+            for gap in gap_result.gaps:
+                if gap.severity == "critical":
+                    clarified_value = self._interaction_manager.prompt_clarification(
+                        session_id=session_id,
+                        question=f"I need more information: {gap.message}. Please clarify:",
+                    )
+                    if clarified_value:
+                        goal_model = self._knowledge_gap.fill_gap(goal_model, gap.parameter, clarified_value)
+            # Re-check gaps
+            gap_result = self._knowledge_gap.check(goal_model)
+            
+        packet.goal_model = goal_model
+
+        # Capability Planner (Phase 2 thinker)
+        capabilities = self._capability_planner.resolve_capabilities(packet.goal_model)
+        providers = self._capability_planner.select_providers(capabilities, self._bus)
+        logger.info(f"[Orchestrator] Resolved capabilities: {capabilities} -> Providers: {providers}")
+
         
         procedural_ctx = self._memory.get_relevant_context(
             text, 
@@ -168,12 +234,14 @@ class Orchestrator:
         if is_conversational and packet.intent_category == "TEXT_ANALYSIS":
             packet.safe_mode = True
 
-        is_fast_path = (
-            mem_path is not None 
-            or (not packet.compound and self._bus.is_fast_path_eligible(packet.intent) and (packet.intent_category == "EXECUTION" or packet.intent == "chat_reply"))
-            or getattr(packet, "safe_mode", False)
-            or is_conversational
-        )
+        # is_fast_path = (
+        #     mem_path is not None 
+        #     or (not packet.compound and self._bus.is_fast_path_eligible(packet.intent) and (packet.intent_category == "EXECUTION" or packet.intent == "chat_reply"))
+        #     or getattr(packet, "safe_mode", False)
+        #     or is_conversational
+        # )
+        # Force all command execution through Closed-Loop LLM reasoning (fast-path disabled)
+        is_fast_path = False
 
         if is_fast_path:
             if mem_path:
@@ -182,6 +250,11 @@ class Orchestrator:
             else:
                 logger.info(f"[Orchestrator] Direct-map fast path for intent: {packet.intent}")
                 plan = self._planner.plan(packet)
+
+            # Safety gate: ExecutionAuthority
+            if not self._execution_authority.validate(plan, self._interaction_manager, session_id):
+                logger.warning(f"[Orchestrator] Plan rejected by ExecutionAuthority: {plan}")
+                return [SkillResult(success=False, action_taken="Plan aborted due to safety/user rejection.")]
 
             # Execute the plan sequentially
             for call in plan:
