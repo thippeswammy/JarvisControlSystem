@@ -44,11 +44,19 @@ class GatewayDaemon:
 
     def bootstrap(self):
         """Initialize all shared components from config."""
+        if self.memory is not None:
+            logger.debug("[Gateway] Already bootstrapped. Skipping.")
+            return
         logger.info(f"[Gateway] Bootstrapping from {self._config_path}")
         
         from jarvis.config.config_manager import ConfigManager
         self._cm = ConfigManager(self._config_path)
         self._cfg = self._cm.show(mask_secrets=False)
+
+        # 0. Ensure Ollama is running
+        from jarvis.utils.ollama_utils import enable_auto_start, ensure_ollama_running
+        enable_auto_start(True)
+        ensure_ollama_running()
 
         # 1. Memory
         db_cfg = self._cfg.get("memory", {}).get("graph_db", {})

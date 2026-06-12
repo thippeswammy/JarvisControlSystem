@@ -36,7 +36,7 @@ def _build_test_orchestrator(db_path: str):
     # Force mock LLM (no Ollama needed)
     router = MagicMock()
     from jarvis.llm.llm_interface import LLMDecision
-    router.decide.return_value = LLMDecision(type="chat", message="mocked")
+    router.decide.return_value = LLMDecision(type="chat", message="mocked hello from Jarvis")
 
     bus = SkillBus()
     bus.discover(include_external=False)

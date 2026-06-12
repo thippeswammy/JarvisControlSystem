@@ -65,6 +65,7 @@ class ClosedLoopDecision:
     actions: list = field(default_factory=list)  # list[SkillCallSpec] — empty when done
     summary: Optional[str] = None  # Populated when status="done" — what was accomplished
     block_reason: Optional[str] = None  # Populated when status="blocked"
+    question: Optional[str] = None  # Custom dynamic question to ask the user when blocked
 
 
 
@@ -173,6 +174,7 @@ class LLMInterface(ABC):
                 status="blocked",
                 reasoning="LLM needs clarification",
                 block_reason=decision.question or "Need more information",
+                question=decision.question or "Need more information",
             )
         elif decision.type in ("plan", "mixed"):
             actions = decision.steps or []
@@ -257,7 +259,8 @@ class LLMInterface(ABC):
         except Exception:
             # Try healing common JSON issues
             try:
-                healed = candidate.replace("'", '"')
+                healed = LLMInterface._heal_json(candidate)
+                healed = healed.replace("'", '"')
                 # Fix trailing commas
                 healed = re.sub(r",\s*([}\]])", r"\1", healed)
                 data = json.loads(healed)
@@ -284,6 +287,7 @@ class LLMInterface(ABC):
             actions=actions,
             summary=data.get("summary"),
             block_reason=data.get("block_reason"),
+            question=data.get("question") or data.get("block_reason"),
         )
 
     def _is_valid_json_decision(self, content: str) -> tuple[bool, Optional[str]]:
@@ -421,13 +425,13 @@ class LLMInterface(ABC):
                 pass
         return text
         
-    def _heal_json(self, s: str) -> str:
+    @staticmethod
+    def _heal_json(s: str) -> str:
         """Autonomously closes open JSON structures for truncated LLM responses."""
         s = s.strip()
         if not s.startswith("{"):
             return s
-        open_braces = 0
-        open_brackets = 0
+        stack = []
         in_string = False
         escape = False
         
@@ -442,21 +446,23 @@ class LLMInterface(ABC):
                 in_string = not in_string
                 continue
             if not in_string:
-                if char == "{":
-                    open_braces += 1
+                if char in ("{", "["):
+                    stack.append(char)
                 elif char == "}":
-                    open_braces = max(0, open_braces - 1)
-                elif char == "[":
-                    open_brackets += 1
+                    if stack and stack[-1] == "{":
+                        stack.pop()
                 elif char == "]":
-                    open_brackets = max(0, open_brackets - 1)
-                    
+                    if stack and stack[-1] == "[":
+                        stack.pop()
+                        
         if in_string:
             s += '"'
-        if open_brackets > 0:
-            s += "]" * open_brackets
-        if open_braces > 0:
-            s += "}" * open_braces
+        while stack:
+            top = stack.pop()
+            if top == "{":
+                s += "}"
+            elif top == "[":
+                s += "]"
         return s
 
     # ── System Prompt ────────────────────────────────────────

@@ -2,6 +2,16 @@
 .idea/
 .venv/
 .vscode/
+.gemini/
+.github/
+.windsurfrules
+.qoder/
+.cursor/
+.claude/
+.kiro/
+QODER.md
+.opencode.json
+.mcp.json
 
 # Python artifacts
 __pycache__/
@@ -15,10 +25,6 @@ __pycache__/
 /reports/
 
 .code-review-graph/
-.claude/
-.kiro/
-.opencode.json
-.mcp.json
 
 # Runtime Memory DBs
 /memory/
@@ -26,3 +32,6 @@ __pycache__/
 # Process ID and runtime files
 *.pid
 *.exe
+
+# Logs folder
+/logs/

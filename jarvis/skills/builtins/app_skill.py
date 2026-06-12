@@ -86,19 +86,40 @@ def close_app(params: dict) -> SkillResult:
             exe = AppFinder.find_exe_path(target)
             exe_name = os.path.basename(exe) if exe and not exe.startswith("ms-settings:") else f"{target}.exe"
             
-            if exe_name.lower() == "explorer.exe":
+            # PID-based close strategy
+            pid_killed = False
+            if exe_name.lower() != "explorer.exe":
                 try:
-                    import win32com.client
-                    shell = win32com.client.Dispatch("Shell.Application")
-                    for window in shell.Windows():
-                        window.Quit()
-                except Exception as ex:
-                    logger.error(f"[app_skill] Failed to gracefully close Explorer: {ex}")
-            else:
-                os.system(f'taskkill /IM "{exe_name}" /F')
-                # Try raw target too in case it was launched directly
-                if exe_name.lower() != f"{target.lower()}.exe":
-                    os.system(f'taskkill /IM "{target}.exe" /F')
+                    from pywinauto import Desktop
+                    windows = Desktop(backend="uia").windows()
+                    for win in windows:
+                        try:
+                            title = win.window_text().lower()
+                            if target.lower() in title:
+                                pid = win.process_id()
+                                if pid:
+                                    logger.info(f"[app_skill] PID-based close targeting {win.window_text()!r} (PID: {pid}).")
+                                    os.system(f"taskkill /PID {pid} /F")
+                                    pid_killed = True
+                        except Exception:
+                            continue
+                except Exception as pe:
+                    logger.debug(f"[app_skill] PID close check failed: {pe}")
+
+            if not pid_killed:
+                if exe_name.lower() == "explorer.exe":
+                    try:
+                        import win32com.client
+                        shell = win32com.client.Dispatch("Shell.Application")
+                        for window in shell.Windows():
+                            window.Quit()
+                    except Exception as ex:
+                        logger.error(f"[app_skill] Failed to gracefully close Explorer: {ex}")
+                else:
+                    os.system(f'taskkill /IM "{exe_name}" /F')
+                    # Try raw target too in case it was launched directly
+                    if exe_name.lower() != f"{target.lower()}.exe":
+                        os.system(f'taskkill /IM "{target}.exe" /F')
                     
         return SkillResult(success=True, action_taken=f"Closed application: {target}")
     except Exception as e:
