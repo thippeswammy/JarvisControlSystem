@@ -52,11 +52,23 @@ class NLU:
             '  "compound": false,\n'
             '  "sub_commands": []\n'
             "}\n\n"
+            "Examples:\n"
+            '1. App Context: ""\n'
+            '   User: "open <APP_NAME>"\n'
+            '   Response: {"intent": "open_app", "entities": {"target": "<APP_NAME>"}, "intent_category": "EXECUTION", "compound": false, "sub_commands": []}\n'
+            '2. App Context: ""\n'
+            '   User: "open <APP_NAME> and then type <TEXT_CONTENT>"\n'
+            '   Response: {"intent": "llm_route", "entities": {}, "intent_category": "EXECUTION", "compound": true, "sub_commands": [{"intent": "open_app", "entities": {"target": "<APP_NAME>"}, "text": "open <APP_NAME>"}, {"intent": "type_text", "entities": {"text": "<TEXT_CONTENT>"}, "text": "type <TEXT_CONTENT>"}]}\n'
+            '3. App Context: "<APP_NAME>"\n'
+            '   User: "open <ELEMENT_NAME>"\n'
+            '   Response: {"intent": "llm_route", "entities": {"target": "<ELEMENT_NAME>"}, "intent_category": "EXECUTION", "compound": false, "sub_commands": []}\n\n'
             "Rules:\n"
             "- 'intent_category' must accurately reflect if the user wants to execute a command (EXECUTION) vs asking how to do something (EDUCATIONAL), asking a hypothetical 'what if' (HYPOTHETICAL), or asking about your features (CAPABILITY).\n"
             "- If the utterance is not execution (e.g. hypothetical), set intent to 'chat_reply'.\n"
             "- If it contains multiple commands (like 'open notepad and type hello'), set compound to true and fill sub_commands array with the individual commands following the same format.\n"
-            "- Prioritize quoted strings when extracting entities."
+            "- Prioritize quoted strings when extracting entities.\n"
+            "- Differentiate opening an application (intent open_app) from executing actions inside it (like clicking, typing, or opening sub-features). Utterances like 'In calculator open the history' or 'Press history button in calculator' are not open_app requests; they are context-dependent actions.\n"
+            "- CRITICAL: If the command is context-dependent, relative, contains pronouns ('it', 'this', 'them', 'this window'), refers to a sub-feature (like 'open history' or 'show logs'), or is ambiguous given the App Context, set the intent to 'llm_route' (with category 'EXECUTION') to route it to the cognitive planner for dynamic resolution."
         )
 
         try:

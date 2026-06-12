@@ -66,6 +66,10 @@ class MCPBus:
         Returns:
             Number of servers successfully loaded.
         """
+        if self._discovered:
+            logger.debug("[MCPBus] Servers already discovered. Skipping.")
+            return len(self._registry)
+
         if yaml is None:
             logger.warning(
                 "[MCPBus] Cannot discover — PyYAML is not installed"
@@ -117,9 +121,21 @@ class MCPBus:
     def register(self, adapter: MCPInterface) -> None:
         """Manually register an MCP adapter."""
         if adapter.name in self._registry:
-            logger.warning(
-                f"[MCPBus] Overriding existing server: {adapter.name!r}"
-            )
+            existing = self._registry[adapter.name]
+            is_same = False
+            if type(existing) is type(adapter):
+                if type(adapter).__name__ == "StdioMCPAdapter":
+                    is_same = getattr(existing, "_command", None) == getattr(adapter, "_command", None)
+                elif type(adapter).__name__ == "HttpMCPAdapter":
+                    is_same = getattr(existing, "_url", None) == getattr(adapter, "_url", None)
+                else:
+                    is_same = True
+            if is_same:
+                logger.debug(f"[MCPBus] Re-registering identical server: {adapter.name!r}")
+            else:
+                logger.warning(
+                    f"[MCPBus] Overriding existing server: {adapter.name!r}"
+                )
         self._registry[adapter.name] = adapter
         logger.debug(f"[MCPBus] Registered server: {adapter.name!r}")
 

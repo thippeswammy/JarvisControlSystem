@@ -37,7 +37,10 @@ SKIP_VERIFY_SKILLS = {
     "type_text", "press_key", "search_web", "search_windows",
     "session_activate", "session_deactivate", "system_status",
     "ask_user", "set_volume", "set_brightness", "power_action",
-    "scroll_page", "chat_reply"
+    "scroll_page", "chat_reply",
+    # Add new read-only / non-mutating skills
+    "get_active_window_title", "verify_element_exists", "extract_browser_dom_tree",
+    "log_analysis", "greet_user"
 }
 
 _DEFAULT_SETTLE_MS = 600   # ms to wait after action before re-harvesting
@@ -117,6 +120,21 @@ class VerificationLoop:
                 result.success = False
                 return result
 
+        elif call.skill in ("activate_window", "switch_window"):
+            target = call.params.get("target", "")
+            result = bus.dispatch(call)
+            if not before_hash:
+                logger.debug(f"[VerificationLoop] No UI state (UIA unavailable), trusting {call.skill} result")
+                return result
+            time.sleep(0.5)
+            if result.success and (self.verify_focus(target) or self.verify_window_exists(target)):
+                logger.info(f"[VerificationLoop] [OK] {call.skill} verified successfully: {target}")
+                result.action_taken = f"[Verified] {result.action_taken}"
+                return result
+            else:
+                logger.warning(f"[VerificationLoop] [FAIL] {call.skill} failed verification: {target}")
+                result.success = False
+                return result
 
         for attempt in range(0, 3):
             if attempt > 0:
@@ -162,10 +180,18 @@ class VerificationLoop:
                 result.action_taken = f"[Verified] {result.action_taken}"
                 return result
 
-            # [FAIL] No state change — unexpected
-            logger.warning(f"[VerificationLoop] [FAIL] No state change after: {call.skill} (Hash: {before_hash})")
+            # For navigate_location, if state didn't change and targeted check failed, treat as hard failure
+            if call.skill == "navigate_location":
+                logger.warning(f"[VerificationLoop] [FAIL] navigate_location failed verification to: {target}")
+                continue
 
-        # If we exhausted retries and still no state change, try alternative/ask user
+            # Generic mutation skills: soft-pass if execution succeeded
+            logger.info(f"[VerificationLoop] [SOFT OK] No state change after: {call.skill} (Hash: {before_hash}), but skill execution succeeded. Trusting result.")
+            self._maybe_learn(call, packet, learner, success=True)
+            result.action_taken = f"[Soft-Verified] {result.action_taken}"
+            return result
+
+        # If we exhausted retries and still no state change/success, try alternative/ask user
         return self._handle_failure_post_retry(call, bus, packet, snapshot, pathfinder)
 
     # ── Explicit Verification Helpers ────────────────

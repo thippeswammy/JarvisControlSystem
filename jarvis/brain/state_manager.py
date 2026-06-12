@@ -88,6 +88,15 @@ class WindowFocusController:
             # Calculate fuzzy match score against title and process name
             title_score = fuzz.partial_ratio(target, title.lower())
             proc_score = fuzz.ratio(target, proc_name) if proc_name else 0
+            
+            # Prevent development environments, shells, or scripts from hijacking focus matching
+            # e.g., target='calculator' matching a python process running 'scenario_18_telegram_calculator_settings.py'
+            dev_processes = {"python", "pythonw", "code", "pycharm", "idea", "conhost", "powershell", "cmd", "git", "bash", "wsl", "antigravity"}
+            if proc_name in dev_processes and target not in dev_processes:
+                # Discard low-quality partial title matches on editor/shell windows
+                if fuzz.ratio(target, title.lower()) < 85:
+                    continue
+
             best_score = max(title_score, proc_score)
             
             if best_score > 60:  # Candidate threshold

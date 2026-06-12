@@ -122,6 +122,9 @@ class AgentBus:
         """
         Load built-in and external agents from configuration and directory scanning.
         """
+        if self._discovered:
+            logger.debug("[AgentBus] Agents already discovered. Skipping.")
+            return len(self._registry)
         # 1. Discover built-in agents
         self._discover_builtins()
 
@@ -141,7 +144,17 @@ class AgentBus:
     def register(self, agent: AgentInterface) -> None:
         """Manually register an agent."""
         if agent.name in self._registry:
-            logger.warning(f"[AgentBus] Overriding existing agent: {agent.name!r}")
+            existing = self._registry[agent.name]
+            is_same = False
+            if type(existing) is type(agent):
+                if type(agent).__name__ == "FunctionalAgentWrapper":
+                    is_same = getattr(existing, "_fn", None) == getattr(agent, "_fn", None)
+                else:
+                    is_same = True
+            if is_same:
+                logger.debug(f"[AgentBus] Re-registering identical agent: {agent.name!r}")
+            else:
+                logger.warning(f"[AgentBus] Overriding existing agent: {agent.name!r}")
         self._registry[agent.name] = agent
         logger.debug(f"[AgentBus] Registered agent: {agent.name!r}")
 
@@ -307,6 +320,12 @@ class AgentBus:
             self.register(BraveAgent())
         except ImportError as exc:
             logger.debug(f"[AgentBus] Builtin BraveAgent not found/imported: {exc}")
+
+        try:
+            from jarvis.agents.builtin.ui_windows_agent import UIWindowsAgent
+            self.register(UIWindowsAgent())
+        except ImportError as exc:
+            logger.debug(f"[AgentBus] Builtin UIWindowsAgent not found/imported: {exc}")
 
     def _discover_from_yaml(self, config_path: Optional[str]) -> int:
         """Load agents listed in config/agents.yaml."""

@@ -1,0 +1,11 @@
+{
+    "word": "winword.exe",
+    "excel": "excel.exe",
+    "powerpoint": "powerpnt.exe",
+    "settings": "ms-settings:",
+    "display settings": "ms-settings:display",
+    "display": "ms-settings:display",
+    "sound settings": "ms-settings:sound",
+    "sound": "ms-settings:sound",
+    "calculator": "calc.exe"
+}
