@@ -72,20 +72,14 @@ class NLU:
         )
 
         try:
-            # We will use the router's decision logic but wrapped for JSON extraction
-            # We can use the primary backend's _call_llm_closed_loop directly for raw generation, or route it safely.
-            backends = [self._router._primary, self._router._fallback, self._router._emergency]
+            raw = self._router.call_raw_for_task(
+                task="nlu",
+                prompt=f"App Context: {app_context}\nUtterance: {text}",
+                context=system_prompt
+            )
             response_json = None
-            for backend in backends:
-                if not backend: continue
-                try:
-                    raw = backend._call_llm_closed_loop(prompt=f"App Context: {app_context}\nUtterance: {text}", context=system_prompt)
-                    # parse json
-                    response_json = self._router._clean_and_parse_json(raw)
-                    if isinstance(response_json, dict) and "intent_category" in response_json:
-                        break
-                except Exception as e:
-                    logger.debug(f"[NLU] Backend {backend.name} failed: {e}")
+            if raw:
+                response_json = self._router._clean_and_parse_json(raw)
             
             if not response_json:
                 return default_packet

@@ -54,10 +54,12 @@ class LLMRouter:
         fallback: Optional[LLMInterface] = None,
         emergency: Optional[LLMInterface] = None,
         health_check_interval: float = _HEALTH_CHECK_INTERVAL,
+        routing: Optional[dict[str, LLMInterface]] = None,
     ):
         self._primary = primary
         self._fallback = fallback
         self._emergency = emergency or MockLLM()
+        self._routing = routing or {}
         self._health: dict[str, bool] = {}
         self._lock = threading.Lock()
 
@@ -75,7 +77,8 @@ class LLMRouter:
         self._monitor.start()
         logger.debug(f"[LLMRouter] Initialized. Primary: {primary.name} | "
                     f"Fallback: {fallback.name if fallback else 'none'} | "
-                    f"Emergency: {self._emergency.name}")
+                    f"Emergency: {self._emergency.name} | "
+                    f"Routing tasks: {list(self._routing.keys())}")
 
 
     @classmethod
@@ -149,7 +152,16 @@ class LLMRouter:
         fallback = _build(fallback_name) if fallback_name != primary_name else None
         emergency = _build("mock") or MockLLM()
 
-        return cls(primary=primary, fallback=fallback, emergency=emergency)
+        # Build task-specific routing
+        routing_cfg = llm_cfg.get("routing", {})
+        routing = {}
+        for task, backend_name in routing_cfg.items():
+            if isinstance(backend_name, str):
+                built_backend = _build(backend_name)
+                if built_backend:
+                    routing[task] = built_backend
+
+        return cls(primary=primary, fallback=fallback, emergency=emergency, routing=routing)
 
     def _clean_and_parse_json(self, raw_text: str):
         import json
@@ -249,14 +261,22 @@ class LLMRouter:
         Route a prompt through the backend chain.
         Always returns a Plan (uses mock as last resort — never None).
         """
-        backends = [b for b in [self._primary, self._fallback, self._emergency] if b]
+        return self.route_for_task("default", prompt, memory_context)
+
+    def route_for_task(self, task: str, prompt: str, memory_context: str = "") -> Plan:
+        """
+        Route a prompt through the backend chain, with task-specific overrides.
+        """
+        task_primary = self._routing.get(task) if hasattr(self, "_routing") else None
+        primary = task_primary or self._primary
+        backends = [b for b in [primary, self._fallback, self._emergency] if b]
 
         for backend in backends:
             if not self._is_healthy(backend):
                 logger.info(f"[LLMRouter] Skipping unhealthy backend: {backend.name}")
                 continue
 
-            logger.info(f"[LLMRouter] Trying backend: {backend.name}")
+            logger.info(f"[LLMRouter] Trying backend: {backend.name} for task: {task}")
             
             # Reconstruct raw system prompt payload
             system_instructions = backend.build_system_prompt()
@@ -303,9 +323,17 @@ class LLMRouter:
         New unified LLM router path. Tries primary → fallback → emergency mock.
         Never crashes — mock is the safety net.
         """
-        for backend in [self._primary, self._fallback, self._emergency]:
-            if not backend:
-                continue
+        return self.decide_for_task("default", prompt, context)
+
+    def decide_for_task(self, task: str, prompt: str, context: str = "") -> LLMDecision:
+        """
+        New unified LLM router path with task-specific overrides.
+        """
+        task_primary = self._routing.get(task) if hasattr(self, "_routing") else None
+        primary = task_primary or self._primary
+        backends = [b for b in [primary, self._fallback, self._emergency] if b]
+
+        for backend in backends:
             if not self._is_healthy(backend):
                 logger.info(f"[LLMRouter] Skipping unhealthy backend: {backend.name}")
                 continue
@@ -315,7 +343,7 @@ class LLMRouter:
                 logger.info(f"[LLMRouter] Disallowing MockLLM fallback for DECIDE.")
                 continue
 
-            logger.info(f"[Cognitive] Requesting decision from {backend.name}...")
+            logger.info(f"[Cognitive] Requesting decision from {backend.name} for task: {task}...")
 
             # Reconstruct raw system prompt payload
             sys_prompt = (
@@ -365,9 +393,17 @@ class LLMRouter:
         Closed-loop decision routing: primary → fallback → emergency.
         Returns ClosedLoopDecision with status/actions/summary.
         """
-        for backend in [self._primary, self._fallback, self._emergency]:
-            if not backend:
-                continue
+        return self.decide_closed_loop_for_task("default", prompt, context)
+
+    def decide_closed_loop_for_task(self, task: str, prompt: str, context: str = "") -> ClosedLoopDecision:
+        """
+        Closed-loop decision routing with task-specific overrides.
+        """
+        task_primary = self._routing.get(task) if hasattr(self, "_routing") else None
+        primary = task_primary or self._primary
+        backends = [b for b in [primary, self._fallback, self._emergency] if b]
+
+        for backend in backends:
             if not self._is_healthy(backend):
                 logger.info(f"[LLMRouter] Skipping unhealthy backend for closed-loop: {backend.name}")
                 continue
@@ -377,7 +413,7 @@ class LLMRouter:
                 logger.info(f"[LLMRouter] Disallowing MockLLM fallback for CLOSED_LOOP.")
                 continue
 
-            logger.info(f"[ClosedLoop] Requesting decision from {backend.name}...")
+            logger.info(f"[ClosedLoop] Requesting decision from {backend.name} for task: {task}...")
 
             # Clear last raw response
             if hasattr(backend, "last_raw_response"):
@@ -410,6 +446,41 @@ class LLMRouter:
             reasoning="All LLM backends failed or unavailable",
             block_reason="No available backend",
         )
+
+    def call_raw_for_task(self, task: str, prompt: str, context: str) -> Optional[str]:
+        """
+        Executes a raw generic LLM call (_call_llm_closed_loop) using the task-specific routing,
+        falling back to primary -> fallback -> emergency chain.
+        """
+        task_primary = self._routing.get(task) if hasattr(self, "_routing") else None
+        primary = task_primary or self._primary
+        backends = [b for b in [primary, self._fallback, self._emergency] if b]
+
+        for backend in backends:
+            if not self._is_healthy(backend):
+                continue
+            try:
+                # Clear last raw response before calling
+                if hasattr(backend, "last_raw_response"):
+                    backend.last_raw_response = ""
+
+                raw = backend._call_llm_closed_loop(prompt, context)
+                if raw is not None:
+                    # Log to raw log
+                    raw_input = {
+                        "messages": [
+                            {"role": "system", "content": context},
+                            {"role": "user", "content": prompt}
+                        ]
+                    }
+                    self._write_to_raw_log(f"RAW_{task.upper()}", backend.name, raw_input, raw)
+                    return raw
+            except Exception as e:
+                logger.error(f"[LLMRouter] RAW call failed on {backend.name} for task {task}: {e}")
+                with self._lock:
+                    self._health[backend.name] = False
+        return None
+
     def stop(self):
         """Stop the health monitor thread."""
         self._stop_event.set()

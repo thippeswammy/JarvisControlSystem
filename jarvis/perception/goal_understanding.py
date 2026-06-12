@@ -115,20 +115,18 @@ class GoalUnderstandingLayer:
 
     def _call_llm_for_goal(self, prompt: str) -> Optional[dict]:
         """Call LLM backends for goal extraction JSON."""
-        backends = [self._router._primary, self._router._fallback, self._router._emergency]
-        for backend in backends:
-            if not backend:
-                continue
-            try:
-                raw = backend._call_llm_closed_loop(
-                    prompt=prompt,
-                    context=_GOAL_EXTRACTION_PROMPT,
-                )
+        try:
+            raw = self._router.call_raw_for_task(
+                task="goal_understanding",
+                prompt=prompt,
+                context=_GOAL_EXTRACTION_PROMPT,
+            )
+            if raw:
                 parsed = self._router._clean_and_parse_json(raw)
                 if isinstance(parsed, dict) and "primary_goal" in parsed:
                     return parsed
-            except Exception as e:
-                logger.debug(f"[GoalUnderstanding] Backend {backend.name} failed: {e}")
+        except Exception as e:
+            logger.error(f"[GoalUnderstanding] call_raw_for_task failed: {e}")
         return None
 
     def _parse_goal_response(self, data: dict, original_text: str) -> GoalModel:

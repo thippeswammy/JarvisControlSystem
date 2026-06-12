@@ -565,9 +565,9 @@ class ClosedLoopEngine:
         prompt = goal
 
         try:
-            decision = self._router.decide_closed_loop(prompt=prompt, context=context)
+            decision = self._router.decide_closed_loop_for_task(task="action_planning", prompt=prompt, context=context)
         except Exception as e:
-            logger.warning(f"[ClosedLoop] decide_closed_loop failed: {e}. Trying fallback.")
+            logger.warning(f"[ClosedLoop] decide_closed_loop_for_task failed: {e}. Trying fallback.")
             decision = None
 
         # Robust Mock / MagicMock fallback for testing
