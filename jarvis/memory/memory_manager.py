@@ -237,7 +237,7 @@ class MemoryManager:
                 logger.info(f"[MemoryManager] Pre-loading embedding model '{self._encoder.model}' in Ollama...")
                 preload_payload = {
                     "model": self._encoder.model,
-                    "prompt": "warmup"
+                    "input": "warmup"
                 }
                 req = urllib.request.Request(
                     self._encoder.api_url,
@@ -268,8 +268,9 @@ class MemoryManager:
                         if trigger_clean not in self._trigger_embeddings:
                             if ollama_active:
                                 # Ollama is active, so we want real embeddings. 
-                                # If it fails/cooldown, return None instead of fallback, so we abort.
                                 vec = self._encoder.embed(trigger_clean, fallback=False)
+                                if not vec:
+                                    vec = self._encoder._local_fallback_embed(trigger_clean)
                             else:
                                 # Ollama is offline, so we use fallback embeddings directly.
                                 vec = self._encoder._local_fallback_embed(trigger_clean)
@@ -277,10 +278,6 @@ class MemoryManager:
                             if vec:
                                 self._trigger_embeddings[trigger_clean] = vec
                                 count += 1
-                            else:
-                                # Ollama returned None — abort warm-up, will retry on demand
-                                logger.info(f"[MemoryManager] Embedding service busy — skipping warm-up after {count} entries.")
-                                return
         finally:
             self._encoder.timeout = original_timeout
         

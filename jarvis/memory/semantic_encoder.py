@@ -26,7 +26,7 @@ class SemanticEncoder:
 
     def __init__(
         self,
-        api_url: str = "http://localhost:11434/api/embeddings",
+        api_url: str = "http://localhost:11434/api/embed",
         model: str = "nomic-embed-text",
         timeout: float = 60.0
     ):
@@ -83,7 +83,7 @@ class SemanticEncoder:
 
         payload = {
             "model": self.model,
-            "prompt": text
+            "input": text
         }
         data = json.dumps(payload).encode("utf-8")
         req = urllib.request.Request(
@@ -95,7 +95,10 @@ class SemanticEncoder:
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as response:
                 result = json.loads(response.read().decode("utf-8"))
-                return result.get("embedding")
+                embeddings = result.get("embeddings")
+                if embeddings and isinstance(embeddings, list) and len(embeddings) > 0:
+                    return embeddings[0]
+                return None
         except urllib.error.URLError as e:
             logger.warning(f"[SemanticEncoder] Failed to connect to Ollama: {e}. Using local keyword-aware fallback embeddings. Cooling down for 60s.")
             SemanticEncoder._global_next_retry = time.time() + 60.0

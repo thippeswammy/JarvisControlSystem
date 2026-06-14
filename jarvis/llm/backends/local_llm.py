@@ -223,6 +223,9 @@ class LocalLLM(LLMInterface):
                 else:
                     logger.error(f"[LocalLLM] JSON self-correction exhausted all attempts.")
                     return self._parse_decision(content)
+            except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+                logger.error(f"[LocalLLM] Connection/Timeout error on decide attempt {attempt+1}: {e}")
+                return None
             except Exception as e:
                 logger.error(f"[LocalLLM] Decide request failed on attempt {attempt+1}: {e}")
                 if attempt == 2:
@@ -286,6 +289,9 @@ class LocalLLM(LLMInterface):
                 else:
                     logger.error("[LocalLLM] JSON self-correction exhausted.")
                     return content
+            except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+                logger.error(f"[LocalLLM] Connection/Timeout error on closed-loop attempt {attempt+1}: {e}")
+                return None
             except Exception as e:
                 logger.error(f"[LocalLLM] Closed-loop request failed attempt {attempt+1}: {e}")
                 if attempt == 2:
