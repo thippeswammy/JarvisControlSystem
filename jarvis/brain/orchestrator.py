@@ -234,14 +234,9 @@ class Orchestrator:
         if is_conversational and packet.intent_category == "TEXT_ANALYSIS":
             packet.safe_mode = True
 
-        # is_fast_path = (
-        #     mem_path is not None 
-        #     or (not packet.compound and self._bus.is_fast_path_eligible(packet.intent) and (packet.intent_category == "EXECUTION" or packet.intent == "chat_reply"))
-        #     or getattr(packet, "safe_mode", False)
-        #     or is_conversational
-        # )
-        # Force all command execution through Closed-Loop LLM reasoning (fast-path disabled)
-        is_fast_path = False
+        # Force all command execution through Closed-Loop LLM reasoning (fast-path disabled),
+        # but keep conversational, safe_mode, and direct chat replies on the fast path to prevent loops.
+        is_fast_path = is_conversational or getattr(packet, "safe_mode", False) or (not packet.compound and packet.intent == "chat_reply")
 
         if is_fast_path:
             if mem_path:
@@ -284,6 +279,11 @@ class Orchestrator:
                     logger.warning(f"[Orchestrator] Fast path plan halted at skill: {call.skill}")
                     all_success = False
                     break
+
+            if async_run and adapter and session:
+                from jarvis.brain.message_formatter import MessageFormatter
+                reply_text = MessageFormatter.format(results, source=source)
+                adapter.send(session.id, reply_text)
 
         else:
             # ═══ Closed-Loop Engine (replaces old inline ReAct loop) ═══

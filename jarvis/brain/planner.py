@@ -76,7 +76,12 @@ class Planner:
             return self._plan_via_unified_llm(packet, snapshot=snapshot, react_history=react_history)
 
         # 1. Direct map (safety/session intents based on Skill registry)
-        if self._bus.is_fast_path_eligible(packet.intent) and (packet.intent_category == "EXECUTION" or packet.intent == "chat_reply"):
+        is_simple_greeting = False
+        if packet.intent == "chat_reply" and packet.text:
+            t_low = packet.text.lower()
+            is_simple_greeting = any(g in t_low for g in ["hello", "hi", "hey", "thanks", "thank you", "ok", "okay", "sure"])
+
+        if self._bus.is_fast_path_eligible(packet.intent) and (packet.intent_category == "EXECUTION" or is_simple_greeting):
             logger.info(f"[Planner] Direct map bypass for intent: {packet.intent}")
             # Ensure text is in entities if not present (useful for chat_reply)
             params = packet.entities.copy()
