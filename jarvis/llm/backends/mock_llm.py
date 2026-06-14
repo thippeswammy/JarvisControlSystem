@@ -224,3 +224,91 @@ class MockLLM(LLMInterface):
                 return LLMDecision(type="plan", steps=other_steps)
             
         return LLMDecision(type="chat", message="I'm a mock brain, and I don't know what to say.")
+
+    def _call_llm_closed_loop(self, prompt: str, context: str) -> Optional[str]:
+        """
+        Mock closed-loop call. Converts heuristic plans into raw JSON strings 
+        matching either the NLU parser schema or the closed-loop engine schema.
+        """
+        import json
+        text_lower = prompt.lower().strip()
+
+        # Case 1: NLU system prompt context detected
+        if "NLU intent parser" in context or "intent_category" in context:
+            plan = self.plan(prompt)
+            if not plan:
+                return json.dumps({
+                    "intent": "unknown",
+                    "entities": {},
+                    "intent_category": "EXECUTION",
+                    "compound": False,
+                    "sub_commands": []
+                })
+            
+            # Use the first step in the plan for primary classification
+            first = plan[0]
+            category = "EXECUTION"
+            if first.skill in ("chat_reply", "ask_user"):
+                category = "EDUCATIONAL"
+            
+            # Detect compound separator
+            is_compound = False
+            sub_commands = []
+            separators = [" and then ", " then ", " after that ", " also "]
+            if any(sep in text_lower for sep in separators):
+                is_compound = True
+                for step in plan:
+                    sub_commands.append({
+                        "intent": step.skill,
+                        "entities": step.params,
+                        "text": f"execute {step.skill}"
+                    })
+
+            return json.dumps({
+                "intent": first.skill,
+                "entities": first.params,
+                "intent_category": category,
+                "compound": is_compound,
+                "sub_commands": sub_commands
+            })
+
+        # Case 2: Standard Closed-Loop decision prompt/context
+        decision = self.decide(prompt, context)
+        if not decision:
+            return json.dumps({
+                "status": "blocked",
+                "reasoning": "Mock fallback returned no decision",
+                "block_reason": "Fallback failed"
+            })
+
+        # Convert LLMDecision to ClosedLoopDecision JSON
+        if decision.type == "chat":
+            return json.dumps({
+                "status": "done",
+                "reasoning": "Mock chatbot reply",
+                "summary": decision.message
+            })
+        elif decision.type == "clarify":
+            return json.dumps({
+                "status": "blocked",
+                "reasoning": "Mock needs clarification",
+                "block_reason": decision.question,
+                "question": decision.question
+            })
+        else:  # plan, mixed, etc.
+            actions = []
+            if decision.steps:
+                for step in decision.steps:
+                    actions.append({
+                        "skill": step.skill,
+                        "params": step.params
+                    })
+            
+            status = "in_progress" if actions else "done"
+            # If mixed, include the chatbot message in reasoning/summary
+            return json.dumps({
+                "status": status,
+                "reasoning": "Mock execution steps",
+                "actions": actions,
+                "summary": decision.message or "Task complete"
+            })
