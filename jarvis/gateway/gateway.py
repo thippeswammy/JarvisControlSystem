@@ -53,10 +53,18 @@ class GatewayDaemon:
         self._cm = ConfigManager(self._config_path)
         self._cfg = self._cm.show(mask_secrets=False)
 
-        # 0. Ensure Ollama is running
-        from jarvis.utils.ollama_utils import enable_auto_start, ensure_ollama_running
+        # 0. Ensure Ollama is running — wait for it to be reachable before
+        #    proceeding so requests don't arrive before the LLM backend is up.
+        from jarvis.utils.ollama_utils import enable_auto_start, ensure_ollama_running, wait_for_ollama_ready, is_ollama_running
         enable_auto_start(True)
-        ensure_ollama_running()
+        if not is_ollama_running():
+            logger.info("[Gateway] Ollama not running — triggering auto-start and waiting up to 35s...")
+            ensure_ollama_running()
+            ready = wait_for_ollama_ready(timeout=35.0)
+            if ready:
+                logger.info("[Gateway] Ollama is up and ready.")
+            else:
+                logger.warning("[Gateway] Ollama did not start in time. LLM features may be unavailable until it starts.")
 
         # 1. Memory
         db_cfg = self._cfg.get("memory", {}).get("graph_db", {})

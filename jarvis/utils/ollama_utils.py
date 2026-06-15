@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 _OLLAMA_STARTED_LOCK = threading.Lock()
 _OLLAMA_STARTED = False
 _AUTO_START_ENABLED = False
+_OLLAMA_READY_EVENT = threading.Event()  # Set when Ollama becomes reachable
 
 def enable_auto_start(enabled: bool = True):
     """Enable or disable the auto-start functionality globally."""
@@ -86,15 +87,16 @@ def ensure_ollama_running(url: str = "http://localhost:11434"):
                 creationflags=subprocess.CREATE_NO_WINDOW if hasattr(subprocess, 'CREATE_NO_WINDOW') else 0
             )
             
-            # Wait a few seconds and check again
-            for i in range(10):
+            # Wait up to 30s for Ollama to become reachable
+            for i in range(15):
                 time.sleep(2)
                 if is_ollama_running(url):
                     logger.info("[OllamaUtils] Ollama successfully started and reachable.")
+                    _OLLAMA_READY_EVENT.set()
                     return
-                logger.debug(f"[OllamaUtils] Waiting for Ollama to wake up ({i+1}/10)...")
+                logger.debug(f"[OllamaUtils] Waiting for Ollama to wake up ({i+1}/15)...")
             
-            logger.warning("[OllamaUtils] Started Ollama but it's still not reachable after 20s.")
+            logger.warning("[OllamaUtils] Started Ollama but it's still not reachable after 30s.")
         except FileNotFoundError:
             logger.error("[OllamaUtils] 'ollama' command not found. Please install Ollama: https://ollama.com")
         except Exception as e:
@@ -102,6 +104,28 @@ def ensure_ollama_running(url: str = "http://localhost:11434"):
         finally:
             with _OLLAMA_STARTED_LOCK:
                 global _OLLAMA_STARTED
-                _OLLAMA_STARTED = False
+                _OLLAMA_STARTED = False  # Allow retry on next call
 
     threading.Thread(target=_start_service, daemon=True, name="OllamaStarter").start()
+
+
+def wait_for_ollama_ready(url: str = "http://localhost:11434", timeout: float = 35.0) -> bool:
+    """
+    Block until Ollama is reachable or timeout expires.
+    Returns True if Ollama is ready, False if it timed out.
+    Call this after ensure_ollama_running() to synchronise startup.
+    """
+    if is_ollama_running(url):
+        return True
+    # Wait for the background starter thread to signal readiness
+    ready = _OLLAMA_READY_EVENT.wait(timeout=timeout)
+    if ready:
+        logger.info("[OllamaUtils] Ollama is ready (event received).")
+    else:
+        # Last-chance direct check in case the event was already set before we started waiting
+        ready = is_ollama_running(url)
+        if ready:
+            logger.info("[OllamaUtils] Ollama is ready (direct check).")
+        else:
+            logger.warning(f"[OllamaUtils] Timed out waiting {timeout}s for Ollama to become ready.")
+    return ready
