@@ -239,51 +239,127 @@ class Orchestrator:
         is_fast_path = is_conversational or getattr(packet, "safe_mode", False) or (not packet.compound and packet.intent == "chat_reply")
 
         if is_fast_path:
-            if mem_path:
-                logger.info(f"[Orchestrator] Memory HIT (state-aware) for '{text}'")
-                plan = self._planner._path_to_skill_calls(mem_path)
-            else:
-                logger.info(f"[Orchestrator] Direct-map fast path for intent: {packet.intent}")
-                plan = self._planner.plan(packet)
-
-            # Safety gate: ExecutionAuthority
-            if not self._execution_authority.validate(plan, self._interaction_manager, session_id):
-                logger.warning(f"[Orchestrator] Plan rejected by ExecutionAuthority: {plan}")
-                return [SkillResult(success=False, action_taken="Plan aborted due to safety/user rejection.")]
-
-            # Execute the plan sequentially
-            for call in plan:
-                call.params["_interface"] = snapshot.interface
-                call.params["_agent_bus"] = self.agent_bus
-                call.params["_mcp_bus"] = self.mcp_bus
-                call.params["_router"] = self._router
-                
-                import time
-                start_time = time.perf_counter()
-                if self._verification_loop:
-                    result = self._verification_loop.execute_and_verify(
-                        call=call,
-                        bus=self._bus,
-                        packet=packet,
-                        snapshot=snapshot,
-                        learner=self._learner,
-                    )
-                else:
-                    result = self._bus.dispatch(call)
-                duration_ms = int((time.perf_counter() - start_time) * 1000)
-                results.append(result)
-                
-                self._temporal.log_event(app_context=snapshot.active_app or "system", action=f"executed {call.skill}", status="SUCCESS" if result.success else "FAILED", duration_ms=duration_ms)
-                
-                if not result.success:
-                    logger.warning(f"[Orchestrator] Fast path plan halted at skill: {call.skill}")
-                    all_success = False
-                    break
-
             if async_run and adapter and session:
-                from jarvis.brain.message_formatter import MessageFormatter
-                reply_text = MessageFormatter.format(results, source=source)
-                adapter.send(session.id, reply_text)
+                # ── Run the entire fast-path (plan → execute → reply) in a background
+                #    thread so the channel loop is never blocked by LLM inference time.
+                import threading
+
+                def _fast_path_worker():
+                    try:
+                        nonlocal plan, results, all_success
+                        _plan = []
+                        if mem_path:
+                            logger.info(f"[Orchestrator] Memory HIT (state-aware) for '{text}'")
+                            _plan = self._planner._path_to_skill_calls(mem_path)
+                        else:
+                            logger.info(f"[Orchestrator] Direct-map fast path for intent: {packet.intent}")
+                            _plan = self._planner.plan(packet)
+
+                        # Safety gate
+                        if not self._execution_authority.validate(_plan, self._interaction_manager, session_id):
+                            logger.warning(f"[Orchestrator] Plan rejected by ExecutionAuthority: {_plan}")
+                            adapter.send(session.id, "⛔ Action blocked by safety policy.")
+                            return
+
+                        import time as _time
+                        _results = []
+                        _all_success = True
+                        for call in _plan:
+                            call.params["_interface"] = snapshot.interface
+                            call.params["_agent_bus"] = self.agent_bus
+                            call.params["_mcp_bus"] = self.mcp_bus
+                            call.params["_router"] = self._router
+                            start_time = _time.perf_counter()
+                            if self._verification_loop:
+                                result = self._verification_loop.execute_and_verify(
+                                    call=call, bus=self._bus,
+                                    packet=packet, snapshot=snapshot, learner=self._learner,
+                                )
+                            else:
+                                result = self._bus.dispatch(call)
+                            duration_ms = int((_time.perf_counter() - start_time) * 1000)
+                            _results.append(result)
+                            self._temporal.log_event(
+                                app_context=snapshot.active_app or "system",
+                                action=f"executed {call.skill}",
+                                status="SUCCESS" if result.success else "FAILED",
+                                duration_ms=duration_ms
+                            )
+                            if not result.success:
+                                logger.warning(f"[Orchestrator] Fast path plan halted at skill: {call.skill}")
+                                _all_success = False
+                                break
+
+                        from jarvis.brain.message_formatter import MessageFormatter
+                        reply_text = MessageFormatter.format(_results, source=source)
+                        adapter.send(session.id, reply_text)
+
+                        self._episodic.log_command(
+                            command=text, success=_all_success,
+                            app=snapshot.active_app or "",
+                            skill=_plan[-1].skill if _plan else "",
+                            from_memory=bool(mem_path)
+                        )
+                    except Exception as e:
+                        logger.error(f"[Orchestrator] Error in fast-path background worker: {e}", exc_info=True)
+                        try:
+                            adapter.send(session.id, f"⚠️ Sorry, I couldn't complete that: {e}")
+                        except Exception:
+                            pass
+                    finally:
+                        try:
+                            adapter.stop_typing(session.id)
+                        except Exception:
+                            pass
+
+                t = threading.Thread(target=_fast_path_worker, name=f"JarvisFastPath-{session_id}", daemon=True)
+                session.active_task = t
+                t.start()
+                # Return immediately — reply will arrive asynchronously
+                return [SkillResult(success=True, action_taken="Dispatched fast-path background task.")]
+
+            else:
+                # Synchronous path (non-async callers: tests, CLI sync mode)
+                if mem_path:
+                    logger.info(f"[Orchestrator] Memory HIT (state-aware) for '{text}'")
+                    plan = self._planner._path_to_skill_calls(mem_path)
+                else:
+                    logger.info(f"[Orchestrator] Direct-map fast path for intent: {packet.intent}")
+                    plan = self._planner.plan(packet)
+
+                # Safety gate: ExecutionAuthority
+                if not self._execution_authority.validate(plan, self._interaction_manager, session_id):
+                    logger.warning(f"[Orchestrator] Plan rejected by ExecutionAuthority: {plan}")
+                    return [SkillResult(success=False, action_taken="Plan aborted due to safety/user rejection.")]
+
+                # Execute the plan sequentially
+                import time
+                for call in plan:
+                    call.params["_interface"] = snapshot.interface
+                    call.params["_agent_bus"] = self.agent_bus
+                    call.params["_mcp_bus"] = self.mcp_bus
+                    call.params["_router"] = self._router
+                    start_time = time.perf_counter()
+                    if self._verification_loop:
+                        result = self._verification_loop.execute_and_verify(
+                            call=call, bus=self._bus,
+                            packet=packet, snapshot=snapshot, learner=self._learner,
+                        )
+                    else:
+                        result = self._bus.dispatch(call)
+                    duration_ms = int((time.perf_counter() - start_time) * 1000)
+                    results.append(result)
+                    self._temporal.log_event(
+                        app_context=snapshot.active_app or "system",
+                        action=f"executed {call.skill}",
+                        status="SUCCESS" if result.success else "FAILED",
+                        duration_ms=duration_ms
+                    )
+                    if not result.success:
+                        logger.warning(f"[Orchestrator] Fast path plan halted at skill: {call.skill}")
+                        all_success = False
+                        break
+
 
         else:
             # ═══ Closed-Loop Engine (replaces old inline ReAct loop) ═══

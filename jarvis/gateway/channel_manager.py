@@ -62,52 +62,67 @@ class ChannelManager:
                 
                 logger.info(f"[Channel] {name} >> {utterance.text}")
                 
-                # Identify user and get session
-                user_id = utterance.metadata.get("user_id", "default")
-                session = self._session_mgr.get_or_create(name, user_id)
-                
-                # Handle slash commands (bypass orchestrator)
-                slash_reply = session.slash_handler.handle(utterance.text)
-                if slash_reply:
-                    logger.info(f"[ChannelManager] Slash command handled for {session.id}: {utterance.text}")
-                    adapter.send(session.id, slash_reply)
-                    continue
+                # ── Per-message guard: errors here must NOT kill the loop ──
+                try:
+                    # Identify user and get session
+                    user_id = utterance.metadata.get("user_id", "default")
+                    session = self._session_mgr.get_or_create(name, user_id)
+                    
+                    # Handle slash commands (bypass orchestrator)
+                    slash_reply = session.slash_handler.handle(utterance.text)
+                    if slash_reply:
+                        logger.info(f"[ChannelManager] Slash command handled for {session.id}: {utterance.text}")
+                        adapter.send(session.id, slash_reply)
+                        continue
 
-                # If an active closed-loop task is running in the background, enqueue the utterance as an event
-                if session.active_task and session.active_task.is_alive():
-                    logger.info(f"[ChannelManager] Active task is running for session {session.id}. Enqueuing event: {utterance.text!r}")
-                    session.event_queue.put(utterance)
-                    continue
+                    # If an active closed-loop task is running in the background, enqueue the utterance as an event
+                    if session.active_task and session.active_task.is_alive():
+                        logger.info(f"[ChannelManager] Active task is running for session {session.id}. Enqueuing event: {utterance.text!r}")
+                        session.event_queue.put(utterance)
+                        continue
 
-                # Process via session-isolated orchestrator (asynchronously in production)
-                logger.info(f"[ChannelManager] Processing utterance via session {session.id}")
-                
-                # We run asynchronously for telegram, cli, and tui production channels
-                if name in ("telegram", "cli", "tui", "telegram-test"):
-                    session.orchestrator.process(
-                        utterance.text,
-                        source=name,
-                        typing_callback=lambda: adapter.start_typing(session.id),
-                        async_run=True,
-                        session=session,
-                        adapter=adapter
-                    )
-                else:
-                    results = session.orchestrator.process(
-                        utterance.text,
-                        source=name,
-                        typing_callback=lambda: adapter.start_typing(session.id)
-                    )
-                    logger.info(f"[ChannelManager] Processed (sync). Results count: {len(results)}")
-                    # Format and send reply
-                    reply_text = MessageFormatter.format(results, source=name)
-                    logger.info(f"[ChannelManager] Sending reply to {session.id}: {reply_text[:50]}...")
-                    adapter.send(session.id, reply_text)
-                
+                    # Process via session-isolated orchestrator (asynchronously in production)
+                    logger.info(f"[ChannelManager] Processing utterance via session {session.id}")
+                    
+                    # We run asynchronously for telegram, cli, and tui production channels
+                    if name in ("telegram", "cli", "tui", "telegram-test"):
+                        session.orchestrator.process(
+                            utterance.text,
+                            source=name,
+                            typing_callback=lambda: adapter.start_typing(session.id),
+                            async_run=True,
+                            session=session,
+                            adapter=adapter
+                        )
+                    else:
+                        results = session.orchestrator.process(
+                            utterance.text,
+                            source=name,
+                            typing_callback=lambda: adapter.start_typing(session.id)
+                        )
+                        logger.info(f"[ChannelManager] Processed (sync). Results count: {len(results)}")
+                        # Format and send reply
+                        reply_text = MessageFormatter.format(results, source=name)
+                        logger.info(f"[ChannelManager] Sending reply to {session.id}: {reply_text[:50]}...")
+                        adapter.send(session.id, reply_text)
+
+                except Exception as msg_err:
+                    # Log the per-message failure but keep the channel alive
+                    logger.error(f"[ChannelManager] Error processing message in channel {name}: {msg_err}", exc_info=True)
+                    try:
+                        # Try to send a friendly error back to the user
+                        user_id = utterance.metadata.get("user_id", "default") if utterance else "default"
+                        session = self._session_mgr.get_or_create(name, user_id)
+                        adapter.send(session.id, "⚠️ Sorry, I ran into an error processing that. Please try again.")
+                    except Exception:
+                        pass  # Don't let the error-reply attempt crash anything either
+
         except Exception as e:
-            logger.error(f"[ChannelManager] Error in channel {name}: {e}", exc_info=True)
+            # This only triggers on fatal stream-level errors (e.g. Telegram polling crash)
+            logger.error(f"[ChannelManager] Fatal stream error in channel {name}: {e}", exc_info=True)
         finally:
             logger.info(f"[ChannelManager] Loop exited for {name}")
+
 
     def list_channels(self) -> List[dict]:
         res = []
