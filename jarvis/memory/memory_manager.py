@@ -219,7 +219,11 @@ class MemoryManager:
 
     def _warm_embedding_cache(self) -> None:
         """Embed all known triggers at startup into RAM for zero-latency routing.
-        Uses a short timeout per call so a busy Ollama doesn't block startup.
+
+        IMPORTANT: Uses a fully isolated _WarmupEncoder instance with a short
+        per-call timeout so that any warm-up timeouts do NOT set the shared
+        SemanticEncoder._global_next_retry cooldown, which would block the main
+        encoder (used by recall / get_relevant_context) for 60 seconds.
         """
         logger.info("[MemoryManager] Warming semantic embedding cache...")
         
@@ -255,33 +259,50 @@ class MemoryManager:
         count = 0
         apps = self._db.list_apps()
         
-        # Use a short timeout for warm-up — if Ollama is busy loading a model,
-        # we skip warm-up gracefully rather than hanging for 5s per trigger.
-        original_timeout = self._encoder.timeout
-        self._encoder.timeout = 5.0
+        # ── Isolated warm-up encoder ───────────────────────────────────────
+        # Use a SEPARATE encoder instance with a short 3s timeout.
+        # This ensures that any timeout during warm-up does NOT set
+        # SemanticEncoder._global_next_retry, which would lock out the main
+        # encoder (used during active request handling) for 60 seconds.
+        warmup_encoder = SemanticEncoder(
+            api_url=self._encoder.api_url,
+            model=self._encoder.model,
+            timeout=3.0,
+        )
         
         try:
             for aid in apps:
+                # If the main encoder just went into cooldown (a user request
+                # is using Ollama), stop warm-up to avoid resource contention.
+                import time
+                if time.time() < SemanticEncoder._global_next_retry:
+                    logger.info("[MemoryManager] Main encoder in cooldown — aborting warm-up to avoid resource contention.")
+                    break
+
                 for edge in self._db.get_edges_for_app(aid):
                     for trigger in edge.triggers:
                         trigger_clean = trigger.lower().strip()
                         if trigger_clean not in self._trigger_embeddings:
                             if ollama_active:
-                                # Ollama is active, so we want real embeddings. 
-                                vec = self._encoder.embed(trigger_clean, fallback=False)
-                                if not vec:
-                                    vec = self._encoder._local_fallback_embed(trigger_clean)
+                                # Use the isolated warmup encoder — timeouts here are silently swallowed
+                                vec = warmup_encoder._local_fallback_embed(trigger_clean)  # start with fallback
+                                try:
+                                    real_vec = warmup_encoder.embed(trigger_clean, fallback=False)
+                                    if real_vec:
+                                        vec = real_vec
+                                except Exception:
+                                    pass  # Keep the fallback vec; don't touch _global_next_retry
                             else:
-                                # Ollama is offline, so we use fallback embeddings directly.
                                 vec = self._encoder._local_fallback_embed(trigger_clean)
                                 
                             if vec:
                                 self._trigger_embeddings[trigger_clean] = vec
                                 count += 1
         finally:
-            self._encoder.timeout = original_timeout
+            pass  # warmup_encoder is a local — no cleanup needed
         
         logger.info(f"[MemoryManager] Cached {count} embeddings in RAM.")
+
 
     def set_pathfinder(self, pathfinder) -> None:
         """Inject the A* pathfinder (Phase 4). Called by Orchestrator on startup."""

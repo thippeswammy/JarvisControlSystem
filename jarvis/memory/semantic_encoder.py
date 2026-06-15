@@ -69,10 +69,16 @@ class SemanticEncoder:
             
         return vector
 
-    def embed(self, text: str, fallback: bool = True) -> Optional[List[float]]:
+    def embed(self, text: str, fallback: bool = True, use_cooldown: bool = True) -> Optional[List[float]]:
         """
         Get the vector embedding for a single text string.
         Returns local fallback embeddings if the request fails or is in cooldown.
+
+        Args:
+            fallback: If True, return a keyword-based local embedding on failure.
+            use_cooldown: If True (default), errors set _global_next_retry for 60s.
+                          Set to False for background warm-up callers so that their
+                          timeouts do not lock out the main encoder.
         """
         if not text:
             return None
@@ -100,16 +106,22 @@ class SemanticEncoder:
                     return embeddings[0]
                 return None
         except urllib.error.URLError as e:
-            logger.warning(f"[SemanticEncoder] Failed to connect to Ollama: {e}. Using local keyword-aware fallback embeddings. Cooling down for 60s.")
-            SemanticEncoder._global_next_retry = time.time() + 60.0
-            from urllib.parse import urlparse
-            parsed = urlparse(self.api_url)
-            base_url = f"{parsed.scheme}://{parsed.netloc}"
-            ensure_ollama_running(url=base_url)
+            if use_cooldown:
+                logger.warning(f"[SemanticEncoder] Failed to connect to Ollama: {e}. Using local keyword-aware fallback embeddings. Cooling down for 60s.")
+                SemanticEncoder._global_next_retry = time.time() + 60.0
+                from urllib.parse import urlparse
+                parsed = urlparse(self.api_url)
+                base_url = f"{parsed.scheme}://{parsed.netloc}"
+                ensure_ollama_running(url=base_url)
+            else:
+                logger.debug(f"[SemanticEncoder] Warm-up embed connection error (ignored): {e}")
             return self._local_fallback_embed(text) if fallback else None
         except Exception as e:
-            logger.error(f"[SemanticEncoder] Error generating embedding: {e}. Cooling down for 60s.")
-            SemanticEncoder._global_next_retry = time.time() + 60.0
+            if use_cooldown:
+                logger.error(f"[SemanticEncoder] Error generating embedding: {e}. Cooling down for 60s.")
+                SemanticEncoder._global_next_retry = time.time() + 60.0
+            else:
+                logger.debug(f"[SemanticEncoder] Warm-up embed error (ignored): {e}")
             return self._local_fallback_embed(text) if fallback else None
 
     @staticmethod

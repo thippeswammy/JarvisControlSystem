@@ -55,7 +55,7 @@ class GatewayDaemon:
 
         # 0. Ensure Ollama is running — wait for it to be reachable before
         #    proceeding so requests don't arrive before the LLM backend is up.
-        from jarvis.utils.ollama_utils import enable_auto_start, ensure_ollama_running, wait_for_ollama_ready, is_ollama_running
+        from jarvis.utils.ollama_utils import enable_auto_start, ensure_ollama_running, wait_for_ollama_ready, is_ollama_running, prewarm_models
         enable_auto_start(True)
         if not is_ollama_running():
             logger.info("[Gateway] Ollama not running — triggering auto-start and waiting up to 35s...")
@@ -65,6 +65,21 @@ class GatewayDaemon:
                 logger.info("[Gateway] Ollama is up and ready.")
             else:
                 logger.warning("[Gateway] Ollama did not start in time. LLM features may be unavailable until it starts.")
+        else:
+            ready = True
+
+        # Pre-warm LLM + embedding models into VRAM so the first user request
+        # doesn't pay the cold-start penalty. Runs in background thread.
+        if ready:
+            llm_cfg = self._cfg.get("llm", {}).get("backends", {}).get("local", {})
+            llm_model = llm_cfg.get("model", "qwen3.5:2b")
+            embed_model = "nomic-embed-text"   # always used by SemanticEncoder
+            prewarm_models(
+                models=[embed_model, llm_model],   # embed first (smaller, faster)
+                ollama_base_url="http://localhost:11434"
+            )
+            logger.info(f"[Gateway] Model prewarm dispatched for: [{embed_model}, {llm_model}]")
+
 
         # 1. Memory
         db_cfg = self._cfg.get("memory", {}).get("graph_db", {})

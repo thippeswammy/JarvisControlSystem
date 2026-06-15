@@ -79,11 +79,18 @@ def ensure_ollama_running(url: str = "http://localhost:11434"):
                         if std_path.exists():
                             cmd = str(std_path)
             
-            # Start ollama serve. Use Popen so it doesn't block.
+            # Set OLLAMA_MAX_LOADED_MODELS=2 so Ollama keeps both the LLM model
+            # and nomic-embed-text resident in VRAM simultaneously, preventing
+            # the costly model-swap that causes 60s timeouts.
+            env = os.environ.copy()
+            env["OLLAMA_MAX_LOADED_MODELS"] = "2"
+            env["OLLAMA_NUM_PARALLEL"] = "1"   # 1 request at a time, no queue buildup
+
             subprocess.Popen(
                 [cmd, "serve"],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
+                env=env,
                 creationflags=subprocess.CREATE_NO_WINDOW if hasattr(subprocess, 'CREATE_NO_WINDOW') else 0
             )
             
@@ -109,6 +116,7 @@ def ensure_ollama_running(url: str = "http://localhost:11434"):
     threading.Thread(target=_start_service, daemon=True, name="OllamaStarter").start()
 
 
+
 def wait_for_ollama_ready(url: str = "http://localhost:11434", timeout: float = 35.0) -> bool:
     """
     Block until Ollama is reachable or timeout expires.
@@ -129,3 +137,45 @@ def wait_for_ollama_ready(url: str = "http://localhost:11434", timeout: float = 
         else:
             logger.warning(f"[OllamaUtils] Timed out waiting {timeout}s for Ollama to become ready.")
     return ready
+
+
+def prewarm_models(models: list, ollama_base_url: str = "http://localhost:11434", timeout: float = 45.0) -> None:
+    """
+    Pre-load each model into Ollama's VRAM by sending a minimal generation request.
+    This prevents the first real user request from waiting for model-load cold-start.
+
+    Call this after wait_for_ollama_ready() returns True.
+    Runs in a background thread so it never blocks the gateway startup.
+
+    Args:
+        models: list of model name strings, e.g. ["qwen3.5:2b", "nomic-embed-text"]
+        ollama_base_url: base URL of the Ollama server
+        timeout: per-model prewarm timeout in seconds
+    """
+    def _do_prewarm():
+        for model in models:
+            try:
+                logger.info(f"[OllamaUtils] Pre-warming model into VRAM: {model}")
+                # Use /api/generate with keep_alive to pin model in VRAM
+                payload = {
+                    "model": model,
+                    "prompt": "",
+                    "keep_alive": "10m",   # keep model hot for 10 minutes
+                    "stream": False,
+                }
+                resp = requests.post(
+                    f"{ollama_base_url}/api/generate",
+                    json=payload,
+                    timeout=timeout,
+                )
+                if resp.status_code == 200:
+                    logger.info(f"[OllamaUtils] Model '{model}' is warm and resident in VRAM.")
+                else:
+                    logger.warning(f"[OllamaUtils] Prewarm for '{model}' returned HTTP {resp.status_code}.")
+            except requests.exceptions.Timeout:
+                logger.warning(f"[OllamaUtils] Prewarm for '{model}' timed out after {timeout}s — model may be loading slowly.")
+            except Exception as e:
+                logger.warning(f"[OllamaUtils] Prewarm for '{model}' failed: {e}")
+
+    threading.Thread(target=_do_prewarm, daemon=True, name="OllamaPrewarm").start()
+
