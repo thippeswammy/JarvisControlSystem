@@ -8,11 +8,32 @@ jarvis:
 
 # ── LLM Router ──────────────────────────────────────────────
 llm:
-  primary: local                     # Local Ollama primary
-  fallback: local                   # Tunneled ngrok fallback
+  primary: nvidia                    # NVIDIA NIM cloud primary
+  fallback: local                    # Local Ollama fallback
   emergency_fallback: mock           # always works
 
   backends:
+    # Cloud: NVIDIA NIM (OpenAI-compatible) — open-weight model, free API tier
+    nvidia:
+      model: "openai/gpt-oss-20b"
+      api_key: "${NVIDIA_API_KEY}"
+      base_url: "https://integrate.api.nvidia.com/v1"
+      max_tokens: 6000                   # gpt-oss emits a reasoning trace before the JSON answer
+      temperature: 0.3
+      top_p: 0.8
+      timeout_seconds: 30
+
+    # Cloud: OpenRouter (OpenAI-compatible) — free-tier open-weight model
+    openrouter:
+      model: "google/gemma-4-26b-a4b-it:free"
+      api_key: "${OPENROUTER_API_KEY}"
+      base_url: "https://openrouter.ai/api/v1"
+      max_tokens: 4096
+      temperature: 0.3
+      top_p: 0.9
+      timeout_seconds: 30
+
+    # Local: Ollama (offline fallback)
     local:
       engine: ollama
       api_url: "http://localhost:11434/v1"
@@ -23,15 +44,6 @@ llm:
       timeout_seconds: 60
       auto_pull: false
 
-  # Task-Specific Routing
-  routing:
-    nlu: local
-    goal_understanding: local
-    action_planning: local
-    agent_execution: local
-    peer_review: local
-    recovery: local
-
     # Cloud: OpenAI or Anthropic
     openai:
       provider: openai
@@ -40,16 +52,6 @@ llm:
       max_tokens: 300
       temperature: 0.1
       timeout_seconds: 20
-
-    # Cloud: NVIDIA NIM (OpenAI-compatible)
-    nvidia:
-      model: "qwen/qwen3-coder-480b-a35b-instruct"
-      api_key: "${NVIDIA_API_KEY}"
-      base_url: "https://integrate.api.nvidia.com/v1"
-      max_tokens: 4096
-      temperature: 0.7
-      top_p: 0.8
-      timeout_seconds: 30
 
     # Tunneled: self-hosted model via ngrok / cloudflared / bore.pub
     tunneled:
@@ -62,6 +64,15 @@ llm:
 
     mock:
       enabled: true
+
+  # Task-Specific Routing
+  routing:
+    nlu: nvidia
+    goal_understanding: nvidia
+    action_planning: nvidia
+    agent_execution: nvidia
+    peer_review: nvidia
+    recovery: nvidia
 
 # ── Channels ────────────────────────────────────────────────
 channels:

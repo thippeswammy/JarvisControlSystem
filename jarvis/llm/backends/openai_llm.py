@@ -50,7 +50,7 @@ class OpenAILLM(LLMInterface):
         try:
             client = self._get_client()
             # Lightweight check: list available models
-            client.models.list()
+            client.models.list(timeout=min(self._timeout, 10.0))
             return True
         except Exception as e:
             logger.debug(f"[OpenAILLM] Health check failed: {e}")

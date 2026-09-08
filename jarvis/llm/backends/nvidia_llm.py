@@ -42,6 +42,7 @@ class NvidiaLLM(LLMInterface):
         temperature: float = 0.7,
         top_p: float = 0.8,
         timeout: float = 30.0,
+        provider: str = "nvidia",
     ):
         self._model = model
         self._max_tokens = max_tokens
@@ -49,11 +50,13 @@ class NvidiaLLM(LLMInterface):
         self._top_p = top_p
         self._timeout = timeout
         self._base_url = base_url or _DEFAULT_BASE_URL
+        self._provider = provider
         self._api_key = api_key or os.environ.get("NVIDIA_API_KEY", "")
         self._client = None
 
         logger.debug(
-            "[NvidiaLLM] Initialized — model=%s  base_url=%s  key_set=%s",
+            "[NvidiaLLM] Initialized — provider=%s  model=%s  base_url=%s  key_set=%s",
+            self._provider,
             self._model,
             self._base_url,
             bool(self._api_key),
@@ -63,7 +66,7 @@ class NvidiaLLM(LLMInterface):
 
     @property
     def name(self) -> str:
-        return f"nvidia/{self._model}"
+        return f"{self._provider}/{self._model}"
 
     # ── Health check ─────────────────────────────────────────
 
@@ -79,6 +82,7 @@ class NvidiaLLM(LLMInterface):
                 messages=[{"role": "user", "content": "hi"}],
                 max_tokens=5,
                 temperature=0.0,
+                timeout=min(self._timeout, 10.0),
             )
             return True
         except Exception as e:

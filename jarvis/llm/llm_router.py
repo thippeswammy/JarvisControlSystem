@@ -134,15 +134,23 @@ class LLMRouter:
                     temperature=bc.get("temperature", 0.1),
                     timeout=bc.get("timeout_seconds", 60),
                 )
-            if name == "nvidia":
+            if name in ("nvidia", "openrouter"):
+                # Both are OpenAI-compatible cloud APIs serving open-weight models —
+                # same client, different base_url/key/model.
+                default_base_url = (
+                    "https://openrouter.ai/api/v1" if name == "openrouter"
+                    else "https://integrate.api.nvidia.com/v1"
+                )
+                default_key_env = "OPENROUTER_API_KEY" if name == "openrouter" else "NVIDIA_API_KEY"
                 return NvidiaLLM(
                     model=bc.get("model", "qwen/qwen3-coder-480b-a35b-instruct"),
-                    api_key=_resolve(bc.get("api_key", "")),
-                    base_url=bc.get("base_url", "https://integrate.api.nvidia.com/v1"),
+                    api_key=_resolve(bc.get("api_key", "")) or os.environ.get(default_key_env, ""),
+                    base_url=bc.get("base_url", default_base_url),
                     max_tokens=bc.get("max_tokens", 40960),
                     temperature=bc.get("temperature", 0.7),
                     top_p=bc.get("top_p", 0.8),
                     timeout=bc.get("timeout_seconds", 60),
+                    provider=name,
                 )
             if name == "mock":
                 return MockLLM()
