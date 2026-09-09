@@ -49,11 +49,9 @@ def mock_router():
     from jarvis.llm.llm_interface import LLMDecision
     router = MagicMock()
     router.decide.return_value = LLMDecision(
-        intent="chat_reply",
-        reply="Hello from mock.",
-        skills=[],
-        confidence=1.0,
-        raw={}
+        type="chat",
+        message="Hello from mock.",
+        steps=[]
     )
     router.status.return_value = {"local": True}
     return router
@@ -80,7 +78,7 @@ def mock_gateway(tmp_db_path, mock_router, mock_bus):
     Returns the daemon after bootstrap().
     """
     with patch("jarvis.memory.semantic_encoder.SemanticEncoder.embed", return_value=None), \
-         patch("jarvis.llm.llm_router.LLMRouter._check_backend", return_value=True):
+         patch("jarvis.llm.llm_router.LLMRouter._check_all_backends", return_value=None):
         from jarvis.gateway.gateway import GatewayDaemon
         gw = GatewayDaemon()
         gw.bootstrap()

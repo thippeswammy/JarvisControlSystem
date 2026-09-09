@@ -91,3 +91,90 @@ class TestSlashRegistry(unittest.TestCase):
         res = SlashRegistry.handle("/broken", [], MagicMock(), MagicMock())
         self.assertIn("❌ Error executing command `/broken`", res)
         self.assertIn("bad parameter value", res)
+
+    def test_register_duplicate_command_overwrites_silently(self):
+        """register() has no duplicate-name check: registering the same
+        command twice silently replaces the existing SlashEntry with the new
+        one -- no exception, no warning surfaced to the caller, and the old
+        handler becomes unreachable."""
+        def first_handler(args, session, gateway):
+            return "first"
+
+        def second_handler(args, session, gateway):
+            return "second"
+
+        SlashRegistry.register("/dup", first_handler, "First description", "general")
+        SlashRegistry.register("/dup", second_handler, "Second description", "agent")
+
+        commands = SlashRegistry.list_commands()
+        # Still exactly one entry -- overwritten in place, not appended.
+        self.assertEqual(len(commands), 1)
+        self.assertEqual(commands["/dup"].handler, second_handler)
+        self.assertEqual(commands["/dup"].description, "Second description")
+        self.assertEqual(commands["/dup"].category, "agent")
+
+        res = SlashRegistry.handle("/dup", [], MagicMock(), MagicMock())
+        self.assertEqual(res, "second")  # only the newest handler is reachable
+
+    def test_register_and_lookup_are_case_insensitive(self):
+        """Both register() and handle() lowercase the command name, so a
+        command registered with mixed case is stored lowercase and remains
+        reachable regardless of the case used to invoke it."""
+        def dummy_handler(args, session, gateway):
+            return "ok"
+
+        SlashRegistry.register("/TestCmd", dummy_handler, "Mixed case description")
+
+        commands = SlashRegistry.list_commands()
+        self.assertIn("/testcmd", commands)
+        self.assertNotIn("/TestCmd", commands)
+
+        # Lookup succeeds no matter what case is used to invoke it.
+        self.assertEqual(SlashRegistry.handle("/TESTCMD", [], MagicMock(), MagicMock()), "ok")
+        self.assertEqual(SlashRegistry.handle("/TestCmd", [], MagicMock(), MagicMock()), "ok")
+        self.assertEqual(SlashRegistry.handle("/testcmd", [], MagicMock(), MagicMock()), "ok")
+
+    def test_unregister_is_case_insensitive(self):
+        """unregister() also normalizes case, so a command registered with
+        one case can be removed by passing a different case."""
+        def dummy_handler(args, session, gateway):
+            return "ok"
+
+        SlashRegistry.register("/CaseCmd", dummy_handler, "Description")
+        self.assertIn("/casecmd", SlashRegistry.list_commands())
+
+        SlashRegistry.unregister("/CASECMD")
+        self.assertNotIn("/casecmd", SlashRegistry.list_commands())
+
+    def test_concurrent_registration_from_multiple_threads(self):
+        """_commands is a plain class-level dict mutated with no explicit
+        lock. Registering many distinct commands concurrently from separate
+        threads must not raise or drop entries (CPython dict __setitem__ is
+        effectively atomic under the GIL, but this pins down the expected
+        behavior as a regression guard)."""
+        import threading
+
+        num_threads = 25
+        errors = []
+
+        def register_one(i):
+            try:
+                SlashRegistry.register(
+                    f"/concurrent{i}",
+                    lambda args, session, gateway: "ok",
+                    f"Concurrent test command {i}",
+                )
+            except Exception as exc:  # pragma: no cover - failure path
+                errors.append(exc)
+
+        threads = [threading.Thread(target=register_one, args=(i,)) for i in range(num_threads)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        self.assertEqual(errors, [])
+        commands = SlashRegistry.list_commands()
+        self.assertEqual(len(commands), num_threads)
+        for i in range(num_threads):
+            self.assertIn(f"/concurrent{i}", commands)
