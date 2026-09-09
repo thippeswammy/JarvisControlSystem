@@ -82,67 +82,64 @@ class TestMultiLLMRouting(unittest.TestCase):
     # route()/plan()), so their exception and total-failure behavior is
     # covered here instead of being duplicated there.
 
-    def test_decide_for_task_exception_falls_back_to_next_backend(self):
-        """If the routed backend's decide() raises, the router logs it, marks
-        that backend unhealthy, and falls through to the next backend in the
-        chain instead of propagating the exception."""
+    def test_decide_for_task_exception_raises_no_fallback(self):
+        """If the routed backend's decide() raises, the router marks that
+        backend unhealthy and raises immediately naming it -- it must NOT
+        silently try the fallback or emergency backend."""
         with patch.object(self.primary, "decide", side_effect=RuntimeError("boom")):
-            dec = self.router.decide_for_task("goal_understanding", "hello")
+            with self.assertRaises(RuntimeError) as ctx:
+                self.router.decide_for_task("goal_understanding", "hello")
 
-        self.assertEqual(dec.message, "Response from fallback")
+        self.assertIn("primary", str(ctx.exception))
         self.assertFalse(self.router._health.get("primary"))
 
     def test_decide_for_task_all_backends_fail_raises(self):
-        """When every backend in the chain returns no decision, decide_for_task
-        raises RuntimeError rather than returning None or an empty decision --
-        this is the router's actual current contract for total failure."""
+        """When the selected backend returns no decision, decide_for_task
+        raises RuntimeError naming that backend rather than trying another
+        backend or returning an empty decision."""
         with patch.object(self.primary, "decide", return_value=None), \
              patch.object(self.fallback, "decide", return_value=None), \
              patch.object(self.emergency, "decide", return_value=None):
             with self.assertRaises(RuntimeError):
                 self.router.decide_for_task("goal_understanding", "hello")
 
-    def test_decide_closed_loop_exception_falls_back_to_next_backend(self):
+    def test_decide_closed_loop_exception_raises_no_fallback(self):
         """If the routed backend's decide_closed_loop() raises, the router
-        falls back to the next backend in the chain."""
+        must raise immediately instead of silently trying another backend."""
         with patch.object(self.primary, "decide_closed_loop", side_effect=RuntimeError("boom")):
-            dec = self.router.decide_closed_loop_for_task("goal_understanding", "hello")
+            with self.assertRaises(RuntimeError) as ctx:
+                self.router.decide_closed_loop_for_task("goal_understanding", "hello")
 
-        self.assertEqual(dec.reasoning, "Done by fallback")
+        self.assertIn("primary", str(ctx.exception))
         self.assertFalse(self.router._health.get("primary"))
 
-    def test_decide_closed_loop_all_backends_fail_returns_blocked(self):
-        """Unlike decide_for_task, when every backend fails to produce a
-        closed-loop decision, decide_closed_loop_for_task does NOT raise --
-        it returns a 'blocked' ClosedLoopDecision as a safe default. This is a
-        genuinely different failure contract from decide_for_task's raise."""
-        with patch.object(self.primary, "decide_closed_loop", return_value=None), \
-             patch.object(self.fallback, "decide_closed_loop", return_value=None), \
-             patch.object(self.emergency, "decide_closed_loop", return_value=None):
-            dec = self.router.decide_closed_loop_for_task("goal_understanding", "hello")
+    def test_decide_closed_loop_all_backends_fail_raises(self):
+        """When the selected backend produces no closed-loop decision,
+        decide_closed_loop_for_task raises naming that backend instead of
+        silently falling back to another backend or returning 'blocked'."""
+        with patch.object(self.primary, "decide_closed_loop", return_value=None):
+            with self.assertRaises(RuntimeError) as ctx:
+                self.router.decide_closed_loop_for_task("goal_understanding", "hello")
 
-        self.assertEqual(dec.status, "blocked")
-        self.assertEqual(dec.block_reason, "No available backend")
+        self.assertIn("primary", str(ctx.exception))
 
-    def test_call_raw_for_task_exception_falls_back_to_next_backend(self):
+    def test_call_raw_for_task_exception_raises_no_fallback(self):
         """If the routed backend's raw closed-loop call raises, call_raw_for_task
-        falls back to the next backend in the chain."""
+        must raise immediately instead of silently trying another backend."""
         with patch.object(self.primary, "_call_llm_closed_loop", side_effect=RuntimeError("boom")):
-            raw = self.router.call_raw_for_task("goal_understanding", "hello", "system")
+            with self.assertRaises(RuntimeError) as ctx:
+                self.router.call_raw_for_task("goal_understanding", "hello", "system")
 
-        self.assertEqual(raw, "Raw Response from fallback")
+        self.assertIn("primary", str(ctx.exception))
         self.assertFalse(self.router._health.get("primary"))
 
-    def test_call_raw_for_task_all_backends_fail_returns_none(self):
-        """A third distinct failure contract: unlike decide_for_task's
-        RuntimeError and decide_closed_loop's blocked decision, call_raw_for_task
-        silently returns None when every backend in the chain raises."""
-        with patch.object(self.primary, "_call_llm_closed_loop", side_effect=RuntimeError("boom")), \
-             patch.object(self.fallback, "_call_llm_closed_loop", side_effect=RuntimeError("boom")), \
-             patch.object(self.emergency, "_call_llm_closed_loop", side_effect=RuntimeError("boom")):
-            raw = self.router.call_raw_for_task("goal_understanding", "hello", "system")
+    def test_call_raw_for_task_unhealthy_backend_raises_immediately(self):
+        """If the selected backend is already known unhealthy, call_raw_for_task
+        raises without even attempting another backend."""
+        with self.router._lock:
+            self.router._health["primary"] = False
 
-        self.assertIsNone(raw)
-        self.assertFalse(self.router._health.get("primary"))
-        self.assertFalse(self.router._health.get("fallback"))
-        self.assertFalse(self.router._health.get("emergency"))
+        with self.assertRaises(RuntimeError) as ctx:
+            self.router.call_raw_for_task("goal_understanding", "hello", "system")
+
+        self.assertIn("primary", str(ctx.exception))

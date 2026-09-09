@@ -564,16 +564,18 @@ class ClosedLoopEngine:
         # The prompt is the goal itself
         prompt = goal
 
+        think_error: Optional[Exception] = None
         try:
             decision = self._router.decide_closed_loop_for_task(task="action_planning", prompt=prompt, context=context)
         except Exception as e:
-            logger.warning(f"[ClosedLoop] decide_closed_loop_for_task failed: {e}. Trying fallback.")
+            logger.warning(f"[ClosedLoop] decide_closed_loop_for_task failed: {e}")
             decision = None
+            think_error = e
 
-        # Robust Mock / MagicMock fallback for testing
+        # Robust Mock / MagicMock fallback for testing only — not a model fallback.
         from unittest.mock import Mock
         is_mock = isinstance(decision, Mock) or type(decision).__name__ in ("MagicMock", "Mock")
-        
+
         is_decide_mocked = False
         try:
             is_decide_mocked = isinstance(self._router.decide, Mock) or type(self._router.decide).__name__ in ("MagicMock", "Mock")
@@ -598,6 +600,11 @@ class ClosedLoopEngine:
                         return wrapped
             except Exception as e:
                 logger.error(f"[ClosedLoop] Mock fallback failed: {e}")
+
+        # A real backend failure (not a test mock) must surface to the user
+        # as an explicit error, not be swallowed into a generic "blocked" state.
+        if decision is None and think_error is not None:
+            raise think_error
 
         return decision
 

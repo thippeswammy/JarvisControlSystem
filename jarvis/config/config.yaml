@@ -7,10 +7,14 @@ jarvis:
   voice_confidence_threshold: 0.70   # below this → ask to confirm
 
 # ── LLM Router ──────────────────────────────────────────────
+# NOTE: There is no automatic fallback. Each task calls exactly one backend
+# (its `routing` override below, else `primary`). If that backend is down
+# or errors, Jarvis raises an explicit error instead of silently trying
+# `fallback`/`emergency_fallback` or the local/mock backend.
 llm:
   primary: nvidia                    # NVIDIA NIM cloud primary
-  fallback: local                    # Local Ollama fallback
-  emergency_fallback: mock           # always works
+  fallback: local                    # unused by the router (no auto-fallback); kept for manual reconfiguration
+  emergency_fallback: mock           # unused by the router (no auto-fallback); kept for manual reconfiguration
 
   backends:
     # Cloud: NVIDIA NIM (OpenAI-compatible) — open-weight model, free API tier

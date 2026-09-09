@@ -1,20 +1,18 @@
 """
 LLM Router
 ==========
-Implements the primary → fallback → emergency_fallback chain.
-Reads backend config from config.yaml.
-
-Decision algorithm:
-    attempt_primary()  → healthy? → call it
-                       → fail/timeout → attempt_fallback()
-    attempt_fallback() → healthy? → call it
-                       → fail → use mock
-    mock              → always returns (cannot be disabled)
+Routes each call to exactly one backend: the task-specific routing
+override if configured, otherwise the configured primary. There is
+no automatic fallback — if the selected backend is unhealthy, errors,
+or returns nothing, the router raises immediately and names the
+backend that failed. It never silently substitutes another model,
+the local backend, or the mock backend.
 
 Health monitoring:
     Background thread checks all backends every 60s.
     On startup: checks immediately.
-    Logs which backend is currently active so user knows.
+    Used only to report status and to fail fast with a clear message
+    when the selected backend is already known to be down.
 
 Usage:
     router = LLMRouter.from_config("jarvis/config/config.yaml")
@@ -44,8 +42,9 @@ _HEALTH_CHECK_INTERVAL = 60  # seconds
 
 class LLMRouter:
     """
-    Routes LLM calls through: primary → fallback → emergency mock.
-    Never crashes — mock is always the safety net.
+    Routes each LLM call to exactly one backend (task override, else primary).
+    No automatic fallback: a failing or unhealthy backend raises a clear
+    error instead of silently trying another backend, local, or mock.
     """
 
     def __init__(
@@ -76,8 +75,7 @@ class LLMRouter:
         )
         self._monitor.start()
         logger.debug(f"[LLMRouter] Initialized. Primary: {primary.name} | "
-                    f"Fallback: {fallback.name if fallback else 'none'} | "
-                    f"Emergency: {self._emergency.name} | "
+                    f"Configured (unused, no auto-fallback) fallback: {fallback.name if fallback else 'none'} | "
                     f"Routing tasks: {list(self._routing.keys())}")
 
 
@@ -266,228 +264,177 @@ class LLMRouter:
 
     def route(self, prompt: str, memory_context: str = "") -> Plan:
         """
-        Route a prompt through the backend chain.
-        Always returns a Plan (uses mock as last resort — never None).
+        Route a prompt to the selected backend. Raises if it fails — no
+        automatic fallback to another backend, local, or mock.
         """
         return self.route_for_task("default", prompt, memory_context)
 
     def route_for_task(self, task: str, prompt: str, memory_context: str = "") -> Plan:
         """
-        Route a prompt through the backend chain, with task-specific overrides.
+        Route a prompt to the selected backend for this task. No fallback:
+        raises immediately if that backend is unhealthy, errors, or is empty.
         """
-        task_primary = self._routing.get(task) if hasattr(self, "_routing") else None
-        primary = task_primary or self._primary
-        backends = [b for b in [primary, self._fallback, self._emergency] if b]
+        backend = self._select_backend(task)
+        self._require_healthy(backend)
 
-        for backend in backends:
-            if not self._is_healthy(backend):
-                logger.info(f"[LLMRouter] Skipping unhealthy backend: {backend.name}")
-                continue
+        logger.info(f"[LLMRouter] Calling backend: {backend.name} for task: {task}")
 
-            logger.info(f"[LLMRouter] Trying backend: {backend.name} for task: {task}")
-            
-            # Reconstruct raw system prompt payload
-            system_instructions = backend.build_system_prompt()
-            raw_input = {
-                "messages": [
-                    {"role": "system", "content": system_instructions},
-                    {"role": "system", "content": f"Relevant memory from past sessions:\n{memory_context}"} if memory_context.strip() else None,
-                    {"role": "user", "content": prompt}
-                ]
-            }
-            raw_input["messages"] = [m for m in raw_input["messages"] if m is not None]
+        # Reconstruct raw system prompt payload
+        system_instructions = backend.build_system_prompt()
+        raw_input = {
+            "messages": [
+                {"role": "system", "content": system_instructions},
+                {"role": "system", "content": f"Relevant memory from past sessions:\n{memory_context}"} if memory_context.strip() else None,
+                {"role": "user", "content": prompt}
+            ]
+        }
+        raw_input["messages"] = [m for m in raw_input["messages"] if m is not None]
 
-            # Clear last raw response before calling
-            if hasattr(backend, "last_raw_response"):
-                backend.last_raw_response = ""
+        # Clear last raw response before calling
+        if hasattr(backend, "last_raw_response"):
+            backend.last_raw_response = ""
 
-            # Check if MockLLM is disallowed
-            if "mock" in backend.name.lower() and os.environ.get("JARVIS_ALLOW_MOCK") != "true":
-                logger.info(f"[LLMRouter] Disallowing MockLLM fallback for PLAN.")
-                continue
+        try:
+            plan = backend.plan(prompt, memory_context)
+        except Exception as e:
+            with self._lock:
+                self._health[backend.name] = False
+            raise RuntimeError(f"LLM backend '{backend.name}' failed: {e}") from e
 
-            try:
-                plan = backend.plan(prompt, memory_context)
-            except Exception as e:
-                logger.error(f"[LLMRouter] {backend.name} raised: {e} — trying next.")
-                with self._lock:
-                    self._health[backend.name] = False
-                continue
+        raw_response_text = getattr(backend, "last_raw_response", "") or "No raw response captured"
+        self._write_to_raw_log("PLAN", backend.name, raw_input, raw_response_text)
 
-            raw_response_text = getattr(backend, "last_raw_response", "") or "No raw response captured"
-            self._write_to_raw_log("PLAN", backend.name, raw_input, raw_response_text)
+        if not plan:
+            raise RuntimeError(f"LLM backend '{backend.name}' returned an empty plan.")
 
-            if plan:
-                logger.info(f"[LLMRouter] Plan from {backend.name}: {[s.skill for s in plan]}")
-                return plan
-            else:
-                logger.warning(f"[LLMRouter] {backend.name} returned empty plan — trying next.")
-
-        # Final fallback: Raise error instead of falling back to Mock
-        raise RuntimeError("Jarvis local cognitive core (Ollama gemma3) is offline. Please make sure the service is running ('ollama serve').")
+        logger.info(f"[LLMRouter] Plan from {backend.name}: {[s.skill for s in plan]}")
+        return plan
 
     def decide(self, prompt: str, context: str = "") -> LLMDecision:
         """
-        New unified LLM router path. Tries primary → fallback → emergency mock.
-        Never crashes — mock is the safety net.
+        Decide via the selected backend. Raises if it fails — no automatic
+        fallback to another backend, local, or mock.
         """
         return self.decide_for_task("default", prompt, context)
 
     def decide_for_task(self, task: str, prompt: str, context: str = "") -> LLMDecision:
         """
-        New unified LLM router path with task-specific overrides.
+        Decide via the selected backend for this task. No fallback: raises
+        immediately if that backend is unhealthy, errors, or is empty.
         """
-        task_primary = self._routing.get(task) if hasattr(self, "_routing") else None
-        primary = task_primary or self._primary
-        backends = [b for b in [primary, self._fallback, self._emergency] if b]
+        backend = self._select_backend(task)
+        self._require_healthy(backend)
 
-        for backend in backends:
-            if not self._is_healthy(backend):
-                logger.info(f"[LLMRouter] Skipping unhealthy backend: {backend.name}")
-                continue
+        logger.info(f"[Cognitive] Requesting decision from {backend.name} for task: {task}...")
 
-            # Check if MockLLM is disallowed
-            if "mock" in backend.name.lower() and os.environ.get("JARVIS_ALLOW_MOCK") != "true":
-                logger.info(f"[LLMRouter] Disallowing MockLLM fallback for DECIDE.")
-                continue
+        # Reconstruct raw system prompt payload
+        sys_prompt = (
+            "You are JARVIS, an advanced AI desktop assistant.\n"
+            "You must ALWAYS return a SINGLE valid JSON object and absolutely nothing else. No markdown, no explanations.\n"
+            "If you just want to talk (greetings, quick help), return a 'chat' type JSON.\n"
+            "Your JSON object must exactly match one of these 4 formats:\n"
+            "1. Chat only: {\"type\": \"chat\", \"message\": \"your reply here\"}\n"
+            "2. Plan only: {\"type\": \"plan\", \"steps\": [{\"skill\": \"skill_name\", \"params\": {}}]}\n"
+            "3. Mixed (talk AND act): {\"type\": \"mixed\", \"message\": \"your reply\", \"steps\": [{\"skill\": \"skill_name\", \"params\": {}}]}\n"
+            "4. Clarify (ask user): {\"type\": \"clarify\", \"question\": \"your question\"}"
+        )
+        raw_input = {
+            "messages": [
+                {"role": "system", "content": sys_prompt},
+                {"role": "system", "content": context},
+                {"role": "user", "content": prompt}
+            ]
+        }
 
-            logger.info(f"[Cognitive] Requesting decision from {backend.name} for task: {task}...")
+        # Clear last raw response before calling
+        if hasattr(backend, "last_raw_response"):
+            backend.last_raw_response = ""
 
-            # Reconstruct raw system prompt payload
-            sys_prompt = (
-                "You are JARVIS, an advanced AI desktop assistant.\n"
-                "You must ALWAYS return a SINGLE valid JSON object and absolutely nothing else. No markdown, no explanations.\n"
-                "If you just want to talk (greetings, quick help), return a 'chat' type JSON.\n"
-                "Your JSON object must exactly match one of these 4 formats:\n"
-                "1. Chat only: {\"type\": \"chat\", \"message\": \"your reply here\"}\n"
-                "2. Plan only: {\"type\": \"plan\", \"steps\": [{\"skill\": \"skill_name\", \"params\": {}}]}\n"
-                "3. Mixed (talk AND act): {\"type\": \"mixed\", \"message\": \"your reply\", \"steps\": [{\"skill\": \"skill_name\", \"params\": {}}]}\n"
-                "4. Clarify (ask user): {\"type\": \"clarify\", \"question\": \"your question\"}"
-            )
-            raw_input = {
-                "messages": [
-                    {"role": "system", "content": sys_prompt},
-                    {"role": "system", "content": context},
-                    {"role": "user", "content": prompt}
-                ]
-            }
+        try:
+            decision = backend.decide(prompt, context)
+        except Exception as e:
+            with self._lock:
+                self._health[backend.name] = False
+            raise RuntimeError(f"LLM backend '{backend.name}' failed: {e}") from e
 
-            # Clear last raw response before calling
-            if hasattr(backend, "last_raw_response"):
-                backend.last_raw_response = ""
+        raw_response_text = getattr(backend, "last_raw_response", "") or "No raw response captured"
+        self._write_to_raw_log("DECIDE", backend.name, raw_input, raw_response_text)
 
-            try:
-                decision = backend.decide(prompt, context)
-            except Exception as e:
-                logger.error(f"[LLMRouter] {backend.name} raised: {e} — trying next.")
-                with self._lock:
-                    self._health[backend.name] = False
-                continue
+        if not decision:
+            raise RuntimeError(f"LLM backend '{backend.name}' returned an empty decision.")
 
-            raw_response_text = getattr(backend, "last_raw_response", "") or "No raw response captured"
-            self._write_to_raw_log("DECIDE", backend.name, raw_input, raw_response_text)
-
-            if decision:
-                logger.info(f"[Decision] Mode identified: {decision.type.upper()}")
-                return decision
-            else:
-                logger.warning(f"[LLMRouter] {backend.name} returned empty decision — trying next.")
-
-        # Final fallback: Raise error instead of falling back to Mock
-        raise RuntimeError("Jarvis local cognitive core (Ollama gemma3) is offline. Please make sure the service is running ('ollama serve').")
+        logger.info(f"[Decision] Mode identified: {decision.type.upper()}")
+        return decision
 
     def decide_closed_loop(self, prompt: str, context: str = "") -> ClosedLoopDecision:
         """
-        Closed-loop decision routing: primary → fallback → emergency.
-        Returns ClosedLoopDecision with status/actions/summary.
+        Closed-loop decision via the selected backend. Raises if it fails —
+        no automatic fallback to another backend, local, or mock.
         """
         return self.decide_closed_loop_for_task("default", prompt, context)
 
     def decide_closed_loop_for_task(self, task: str, prompt: str, context: str = "") -> ClosedLoopDecision:
         """
-        Closed-loop decision routing with task-specific overrides.
+        Closed-loop decision via the selected backend for this task. No
+        fallback: raises immediately if that backend is unhealthy, doesn't
+        support closed-loop, errors, or returns nothing.
         """
-        task_primary = self._routing.get(task) if hasattr(self, "_routing") else None
-        primary = task_primary or self._primary
-        backends = [b for b in [primary, self._fallback, self._emergency] if b]
+        backend = self._select_backend(task)
+        self._require_healthy(backend)
 
-        for backend in backends:
-            if not self._is_healthy(backend):
-                logger.info(f"[LLMRouter] Skipping unhealthy backend for closed-loop: {backend.name}")
-                continue
+        logger.info(f"[ClosedLoop] Requesting decision from {backend.name} for task: {task}...")
 
-            # Check if MockLLM is disallowed
-            if "mock" in backend.name.lower() and os.environ.get("JARVIS_ALLOW_MOCK") != "true":
-                logger.info(f"[LLMRouter] Disallowing MockLLM fallback for CLOSED_LOOP.")
-                continue
+        # Clear last raw response
+        if hasattr(backend, "last_raw_response"):
+            backend.last_raw_response = ""
 
-            logger.info(f"[ClosedLoop] Requesting decision from {backend.name} for task: {task}...")
+        try:
+            decision = backend.decide_closed_loop(prompt, context)
+        except NotImplementedError as e:
+            raise RuntimeError(f"LLM backend '{backend.name}' does not support closed-loop decisions.") from e
+        except Exception as e:
+            with self._lock:
+                self._health[backend.name] = False
+            raise RuntimeError(f"LLM backend '{backend.name}' closed-loop call failed: {e}") from e
 
-            # Clear last raw response
-            if hasattr(backend, "last_raw_response"):
-                backend.last_raw_response = ""
+        raw_response_text = getattr(backend, "last_raw_response", "") or "No raw response captured"
+        self._write_to_raw_log("CLOSED_LOOP", backend.name, {"prompt": prompt[:200]}, raw_response_text)
 
-            try:
-                decision = backend.decide_closed_loop(prompt, context)
-            except NotImplementedError:
-                logger.warning(f"[LLMRouter] {backend.name} does not support closed-loop. Trying next.")
-                continue
-            except Exception as e:
-                logger.error(f"[LLMRouter] {backend.name} closed-loop raised: {e} — trying next.")
-                with self._lock:
-                    self._health[backend.name] = False
-                continue
+        if not decision:
+            raise RuntimeError(f"LLM backend '{backend.name}' returned an empty closed-loop decision.")
 
-            raw_response_text = getattr(backend, "last_raw_response", "") or "No raw response captured"
-            self._write_to_raw_log("CLOSED_LOOP", backend.name, {"prompt": prompt[:200]}, raw_response_text)
-
-            if decision:
-                logger.info(f"[ClosedLoop] Status: {decision.status.upper()} | Actions: {len(decision.actions)}")
-                return decision
-            else:
-                logger.warning(f"[LLMRouter] {backend.name} returned empty closed-loop decision — trying next.")
-
-        # Final fallback: return blocked
-        from jarvis.llm.llm_interface import ClosedLoopDecision as CLD
-        return CLD(
-            status="blocked",
-            reasoning="All LLM backends failed or unavailable",
-            block_reason="No available backend",
-        )
+        logger.info(f"[ClosedLoop] Status: {decision.status.upper()} | Actions: {len(decision.actions)}")
+        return decision
 
     def call_raw_for_task(self, task: str, prompt: str, context: str) -> Optional[str]:
         """
-        Executes a raw generic LLM call (_call_llm_closed_loop) using the task-specific routing,
-        falling back to primary -> fallback -> emergency chain.
+        Executes a raw generic LLM call (_call_llm_closed_loop) against the
+        selected backend for this task. No fallback: raises immediately if
+        that backend is unhealthy or errors.
         """
-        task_primary = self._routing.get(task) if hasattr(self, "_routing") else None
-        primary = task_primary or self._primary
-        backends = [b for b in [primary, self._fallback, self._emergency] if b]
+        backend = self._select_backend(task)
+        self._require_healthy(backend)
 
-        for backend in backends:
-            if not self._is_healthy(backend):
-                continue
-            try:
-                # Clear last raw response before calling
-                if hasattr(backend, "last_raw_response"):
-                    backend.last_raw_response = ""
+        # Clear last raw response before calling
+        if hasattr(backend, "last_raw_response"):
+            backend.last_raw_response = ""
 
-                raw = backend._call_llm_closed_loop(prompt, context)
-                if raw is not None:
-                    # Log to raw log
-                    raw_input = {
-                        "messages": [
-                            {"role": "system", "content": context},
-                            {"role": "user", "content": prompt}
-                        ]
-                    }
-                    self._write_to_raw_log(f"RAW_{task.upper()}", backend.name, raw_input, raw)
-                    return raw
-            except Exception as e:
-                logger.error(f"[LLMRouter] RAW call failed on {backend.name} for task {task}: {e}")
-                with self._lock:
-                    self._health[backend.name] = False
-        return None
+        try:
+            raw = backend._call_llm_closed_loop(prompt, context)
+        except Exception as e:
+            with self._lock:
+                self._health[backend.name] = False
+            raise RuntimeError(f"LLM backend '{backend.name}' raw call failed: {e}") from e
+
+        if raw is not None:
+            raw_input = {
+                "messages": [
+                    {"role": "system", "content": context},
+                    {"role": "user", "content": prompt}
+                ]
+            }
+            self._write_to_raw_log(f"RAW_{task.upper()}", backend.name, raw_input, raw)
+        return raw
 
     def stop(self):
         """Stop the health monitor thread."""
@@ -499,6 +446,19 @@ class LLMRouter:
             return dict(self._health)
 
     # ── Private ──────────────────────────────────
+
+    def _select_backend(self, task: str) -> LLMInterface:
+        """Resolve the single backend for this task: routing override, else primary."""
+        task_primary = self._routing.get(task) if hasattr(self, "_routing") else None
+        return task_primary or self._primary
+
+    def _require_healthy(self, backend: LLMInterface) -> None:
+        """Raise immediately if the selected backend is already known to be down."""
+        if not self._is_healthy(backend):
+            raise RuntimeError(
+                f"LLM backend '{backend.name}' is unavailable (failed last health check). "
+                f"No other backend will be tried automatically."
+            )
 
     def _is_healthy(self, backend: LLMInterface) -> bool:
         with self._lock:
